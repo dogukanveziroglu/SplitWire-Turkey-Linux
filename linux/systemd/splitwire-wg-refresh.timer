@@ -1,0 +1,20 @@
+[Unit]
+Description=SplitWire-Turkey WireGuard Refresh Timer
+Documentation=https://github.com/cagritaskn/SplitWire-Turkey
+
+[Timer]
+# Run every 30 minutes
+OnBootSec=30min
+OnUnitActiveSec=30min
+
+# Randomize start time slightly to avoid thundering herd
+RandomizedDelaySec=60
+
+# Persist timer across reboots
+Persistent=true
+
+# What unit to trigger
+Unit=splitwire-wg-refresh.service
+
+[Install]
+WantedBy=timers.target
