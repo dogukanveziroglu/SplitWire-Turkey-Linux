@@ -8,6 +8,7 @@ Provides:
 """
 
 import json
+import logging
 import shutil
 import tarfile
 from dataclasses import dataclass, asdict
@@ -16,6 +17,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Any
 import hashlib
+
+_logger = logging.getLogger(__name__)
 
 
 class BackupType(Enum):
@@ -540,7 +543,8 @@ class SnapshotManager:
 
             return True
 
-        except Exception:
+        except Exception as e:
+            _logger.error(f"Failed to rollback snapshot: {e}")
             return False
 
     def cleanup_snapshot(self, snapshot_id: Optional[str] = None) -> bool:
@@ -584,7 +588,8 @@ class SnapshotManager:
                     timeout=5
                 )
                 states[service] = result.stdout.strip()
-            except Exception:
+            except Exception as e:
+                _logger.debug(f"Failed to get state of {service}: {e}")
                 states[service] = "unknown"
 
         return states

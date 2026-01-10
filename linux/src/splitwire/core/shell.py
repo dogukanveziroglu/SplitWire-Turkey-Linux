@@ -414,19 +414,34 @@ class ShellExecutor:
 
             # Read output with timeout
             def read_output():
-                for line in iter(process.stdout.readline, ""):
-                    if line:
-                        stdout_lines.append(line.rstrip())
-                        callback(line.rstrip())
-                process.stdout.close()
+                if process.stdout is None:
+                    return
+                try:
+                    for line in iter(process.stdout.readline, ""):
+                        if line:
+                            stdout_lines.append(line.rstrip())
+                            callback(line.rstrip())
+                except (IOError, OSError):
+                    pass  # Pipe closed during read (process killed)
+                finally:
+                    if process.stdout:
+                        try:
+                            process.stdout.close()
+                        except (IOError, OSError):
+                            pass
 
             reader_thread = threading.Thread(target=read_output)
             reader_thread.start()
             reader_thread.join(timeout=run_timeout)
 
             if reader_thread.is_alive():
-                process.kill()
-                reader_thread.join()
+                # Graceful termination first
+                process.terminate()
+                reader_thread.join(timeout=1)
+                if reader_thread.is_alive():
+                    # Force kill if still running
+                    process.kill()
+                    reader_thread.join()
                 duration = time.time() - start_time
                 return CommandResult(
                     status=CommandStatus.TIMEOUT,

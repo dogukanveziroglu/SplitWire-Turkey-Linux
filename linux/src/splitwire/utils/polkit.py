@@ -412,6 +412,7 @@ class PolkitHelper:
     def write_file_as_root(self, content: str, path: str) -> ElevationResult:
         """Write content to a root-owned file using tee."""
         # Use tee to write to file
+        proc = None
         try:
             proc = subprocess.Popen(
                 ["pkexec", "tee", path],
@@ -431,7 +432,20 @@ class PolkitHelper:
                 cancelled=proc.returncode == 126,
                 method=ElevationMethod.PKEXEC
             )
+        except subprocess.TimeoutExpired:
+            if proc:
+                proc.kill()
+                proc.communicate()  # Clean up
+            return ElevationResult(
+                success=False,
+                returncode=-1,
+                stdout="",
+                stderr="Command timed out",
+                method=ElevationMethod.PKEXEC
+            )
         except Exception as e:
+            if proc and proc.poll() is None:
+                proc.kill()
             return ElevationResult(
                 success=False,
                 returncode=-1,

@@ -207,7 +207,7 @@ class SystemDetector:
                         self._info.ubuntu.minor = int(parts[1])
 
                 # Check if supported (22.04+)
-                if self._info.ubuntu.major >= 22:
+                if self._info.ubuntu.major > 22:
                     self._info.ubuntu.is_supported = True
                 elif self._info.ubuntu.major == 22 and self._info.ubuntu.minor >= 4:
                     self._info.ubuntu.is_supported = True
