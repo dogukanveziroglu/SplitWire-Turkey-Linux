@@ -8,7 +8,6 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Gtk, Adw, GLib
 from typing import Optional, Callable, TYPE_CHECKING
-from abc import ABC, abstractmethod
 
 from splitwire.core import get_text, get_logger
 
@@ -37,10 +36,9 @@ class BasePage(Gtk.Box):
         # Build the page content
         self._build_ui()
 
-    @abstractmethod
     def _build_ui(self):
         """Build the page UI. Must be implemented by subclasses."""
-        pass
+        raise NotImplementedError("Subclasses must implement _build_ui()")
 
     def refresh(self):
         """Refresh page data. Override in subclasses if needed."""

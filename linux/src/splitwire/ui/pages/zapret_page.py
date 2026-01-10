@@ -237,6 +237,9 @@ class ZapretPage(BasePage):
         scan_modes = [ScanMode.QUICK, ScanMode.STANDARD, ScanMode.FULL]
         scan_mode = scan_modes[scan_idx]
 
+        # Add progress callback before starting scan
+        self._blockcheck_service.add_progress_callback(self._on_scan_progress)
+
         def do_scan():
             # Install zapret first if needed
             if not self._zapret_service.is_installed():
@@ -246,24 +249,30 @@ class ZapretPage(BasePage):
             # Run blockcheck
             GLib.idle_add(self._update_progress, 0.2, "Tarama başlatılıyor...")
 
-            result = self._blockcheck_service.start_scan(
+            # start_scan returns bool, get result via get_last_result()
+            success = self._blockcheck_service.start_scan(
                 mode=scan_mode,
-                progress_callback=self._on_scan_progress
+                async_mode=False  # Run synchronously in thread
             )
 
-            return result
+            if success:
+                return self._blockcheck_service.get_last_result()
+            return None
 
         def on_complete(result):
             self._scan_in_progress = False
             self._progress_box.set_visible(False)
             self._btn_auto.set_sensitive(True)
 
-            if result and result.best_strategy:
-                # Apply best strategy
-                self._zapret_service.configure(params=result.best_strategy.params)
+            # Remove progress callback when done
+            self._blockcheck_service.remove_progress_callback(self._on_scan_progress)
+
+            if result and result.success and result.recommended_args:
+                # Apply recommended strategy
+                self._zapret_service.configure(params=result.recommended_args)
                 self._zapret_service.start()
                 self._update_status_indicator()
-                self.show_toast(f"En iyi strateji bulundu: {result.best_strategy.name}")
+                self.show_toast(f"En iyi strateji bulundu: {result.recommended_mode}")
             else:
                 self.show_toast("Uygun strateji bulunamadı")
 
@@ -274,7 +283,7 @@ class ZapretPage(BasePage):
         GLib.idle_add(
             self._update_progress,
             progress.percent / 100.0,
-            f"Test ediliyor: {progress.current_strategy}"
+            f"Test ediliyor: {progress.current_test}"
         )
 
     def _update_progress(self, fraction, text):
