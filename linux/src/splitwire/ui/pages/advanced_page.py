@@ -202,6 +202,7 @@ class AdvancedPage(BasePage):
 
     def _refresh_all_status(self):
         """Refresh all service statuses."""
+        self._logger.debug("[UI:Advanced] Refreshing all service statuses...")
         def do_refresh():
             results = {}
             for key, info in self._services.items():
@@ -210,8 +211,9 @@ class AdvancedPage(BasePage):
                     status = service.status()
                     installed = service.is_installed()
                     results[key] = (status, installed)
+                    self._logger.debug(f"[UI:Advanced] {key}: status={status.value}, installed={installed}")
                 except Exception as e:
-                    self._logger.error(f"Error checking {key}: {e}")
+                    self._logger.error(f"[UI:Advanced] Error checking {key}: {e}")
                     results[key] = (ServiceStatus.UNKNOWN, False)
             return results
 
@@ -241,6 +243,7 @@ class AdvancedPage(BasePage):
         if not info:
             return
 
+        self._logger.info(f"[UI:Advanced] User requested removal of service: {key}")
         name = info["name"]
         dialog = Adw.MessageDialog(
             transient_for=self._window,
@@ -294,6 +297,7 @@ class AdvancedPage(BasePage):
     def _on_remove_all_confirmed(self, dialog, response):
         """Handle remove all confirmation."""
         if response == "remove":
+            self._logger.info("[UI:Advanced] Removing all services...")
             self.set_status("Tüm hizmetler kaldırılıyor...")
 
             def do_remove_all():
@@ -330,6 +334,7 @@ class AdvancedPage(BasePage):
     def _on_reset_dns_confirmed(self, dialog, response):
         """Handle DNS reset confirmation."""
         if response == "reset":
+            self._logger.info("[UI:Advanced] Resetting DNS settings...")
             self.set_status("DNS ayarları sıfırlanıyor...")
 
             def do_reset():
@@ -361,6 +366,7 @@ class AdvancedPage(BasePage):
     def _on_uninstall_confirmed(self, dialog, response):
         """Handle uninstall confirmation."""
         if response == "uninstall":
+            self._logger.info("[UI:Advanced] Uninstalling SplitWire-Turkey...")
             self.set_status("SplitWire-Turkey kaldırılıyor...")
 
             def do_uninstall():

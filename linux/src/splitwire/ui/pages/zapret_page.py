@@ -228,6 +228,7 @@ class ZapretPage(BasePage):
         if self._scan_in_progress:
             return
 
+        self._logger.info("[UI:Zapret] Starting auto setup with blockcheck...")
         self._scan_in_progress = True
         self._progress_box.set_visible(True)
         self._btn_auto.set_sensitive(False)
@@ -269,11 +270,13 @@ class ZapretPage(BasePage):
 
             if result and result.success and result.recommended_args:
                 # Apply recommended strategy
+                self._logger.info(f"[UI:Zapret] Best strategy found: {result.recommended_mode}")
                 self._zapret_service.configure(params=result.recommended_args)
                 self._zapret_service.start()
                 self._update_status_indicator()
                 self.show_toast(f"En iyi strateji bulundu: {result.recommended_mode}")
             else:
+                self._logger.warning("[UI:Zapret] No suitable strategy found")
                 self.show_toast("Uygun strateji bulunamadı")
 
         self.run_async(do_scan, on_complete)
@@ -299,6 +302,7 @@ class ZapretPage(BasePage):
 
         if selected < len(preset_names):
             preset_name = preset_names[selected]
+            self._logger.info(f"[UI:Zapret] Preset changed to: {preset_name}")
             preset = DEFAULT_PRESETS.get(preset_name)
             if preset:
                 buffer = self._txt_params.get_buffer()
@@ -307,6 +311,7 @@ class ZapretPage(BasePage):
 
     def _on_install_service(self, button):
         """Handle install service button."""
+        self._logger.info("[UI:Zapret] Installing zapret service...")
         self.set_status("Hizmet kuruluyor...")
 
         def do_install():
@@ -333,6 +338,7 @@ class ZapretPage(BasePage):
 
     def _on_run_once(self, button):
         """Handle run once button."""
+        self._logger.info("[UI:Zapret] Running zapret once...")
         self.set_status("Çalıştırılıyor...")
 
         def do_run():
@@ -367,6 +373,7 @@ class ZapretPage(BasePage):
     def _on_remove_confirmed(self, dialog, response):
         """Handle remove confirmation."""
         if response == "remove":
+            self._logger.info("[UI:Zapret] Removing zapret service...")
             self.set_status("Kaldırılıyor...")
 
             def do_remove():

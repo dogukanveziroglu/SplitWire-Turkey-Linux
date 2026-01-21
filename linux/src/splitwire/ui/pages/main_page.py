@@ -284,6 +284,7 @@ class MainPage(BasePage):
 
     def _on_standard_setup(self, button):
         """Handle standard setup button click."""
+        self._logger.info("[UI:Main] Starting standard setup...")
         self.set_status(get_text("status", "installing") or "Kuruluyor...")
 
         def do_setup():
@@ -322,8 +323,10 @@ class MainPage(BasePage):
             self._update_status_indicator()
             success, error = result if isinstance(result, tuple) else (result, None)
             if success:
+                self._logger.info("[UI:Main] Standard setup completed successfully")
                 self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
             else:
+                self._logger.error(f"[UI:Main] Standard setup failed: {error}")
                 self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
             self.set_status("")
 
@@ -331,6 +334,7 @@ class MainPage(BasePage):
 
     def _on_alternative_setup(self, button):
         """Handle alternative setup button click."""
+        self._logger.info("[UI:Main] Starting alternative setup...")
         self.set_status(get_text("status", "installing") or "Kuruluyor...")
 
         def do_setup():
@@ -368,8 +372,10 @@ class MainPage(BasePage):
             self._update_status_indicator()
             success, error = result if isinstance(result, tuple) else (result, None)
             if success:
+                self._logger.info("[UI:Main] Alternative setup completed successfully")
                 self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
             else:
+                self._logger.error(f"[UI:Main] Alternative setup failed: {error}")
                 self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
             self.set_status("")
 
@@ -377,6 +383,7 @@ class MainPage(BasePage):
 
     def _on_disconnect(self, button):
         """Handle disconnect button click."""
+        self._logger.info("[UI:Main] Disconnecting VPN...")
         self.set_status(get_text("status", "disconnecting") or "Bağlantı kesiliyor...")
 
         def do_disconnect():
@@ -404,13 +411,13 @@ class MainPage(BasePage):
     def _on_browser_tunneling_changed(self, row, param):
         """Handle browser tunneling switch change."""
         active = row.get_active()
-        self._logger.info(f"Browser tunneling: {active}")
+        self._logger.info(f"[UI:Main] Browser tunneling changed: {active}")
         # Will be applied during setup
 
     def _on_refresh_timer_changed(self, row, param):
         """Handle refresh timer switch change."""
         active = row.get_active()
-        self._logger.info(f"Refresh timer: {active}")
+        self._logger.info(f"[UI:Main] Refresh timer changed: {active}")
         # Enable/disable the refresh timer
         if active:
             self._wg_service.enable_refresh_timer()
@@ -422,7 +429,7 @@ class MainPage(BasePage):
         app_id = check.get_name()  # Retrieve app_id from widget name
         active = check.get_active()
         self._enabled_apps[app_id] = active
-        self._logger.info(f"App {app_id}: {'enabled' if active else 'disabled'}")
+        self._logger.info(f"[UI:Main] App toggled: {app_id} {'enabled' if active else 'disabled'}")
         # Save to config immediately
         self._save_settings()
 
@@ -461,7 +468,9 @@ class MainPage(BasePage):
 
     def _on_custom_setup(self, button):
         """Handle custom setup button click."""
+        self._logger.info("[UI:Main] Starting custom setup...")
         if not self._custom_apps:
+            self._logger.warning("[UI:Main] Custom setup cancelled: no custom apps")
             self.show_toast(get_text("messages", "no_custom_apps") or "Özel uygulama listesi boş")
             return
 
@@ -555,6 +564,7 @@ class MainPage(BasePage):
     def _on_remove_confirmed(self, dialog, response):
         """Handle remove confirmation response."""
         if response == "remove":
+            self._logger.info("[UI:Main] Removing WireGuard service...")
             self.set_status(get_text("status", "removing") or "Kaldırılıyor...")
 
             def do_remove():

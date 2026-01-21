@@ -103,6 +103,7 @@ class ProxyRouteService(BaseService):
     def _load_config(self) -> None:
         """Load configuration from file."""
         if PROXY_ROUTE_CONFIG_FILE.exists():
+            self._logger.debug(f"[PROXY] Loading config from {PROXY_ROUTE_CONFIG_FILE}")
             try:
                 data = json.loads(PROXY_ROUTE_CONFIG_FILE.read_text())
                 self._config = ProxyRouteConfig(
@@ -120,11 +121,13 @@ class ProxyRouteService(BaseService):
                         enabled=app_data.get("enabled", True),
                         is_custom=app_data.get("is_custom", False),
                     ))
+                self._logger.debug(f"[PROXY] Config loaded: proxy={self._config.proxy_host}:{self._config.proxy_port}, method={self._config.method.value}")
             except Exception as e:
-                self._logger.warning(f"Failed to load config: {e}")
+                self._logger.warning(f"[PROXY] Failed to load config: {e}")
 
     def _save_config(self) -> None:
         """Save configuration to file."""
+        self._logger.debug(f"[PROXY] Saving config to {PROXY_ROUTE_CONFIG_FILE}")
         data = {
             "enabled": self._config.enabled,
             "method": self._config.method.value,
@@ -143,6 +146,7 @@ class ProxyRouteService(BaseService):
             ]
         }
         PROXY_ROUTE_CONFIG_FILE.write_text(json.dumps(data, indent=2))
+        self._logger.debug(f"[PROXY] Config saved: {len(self._config.apps)} apps")
 
     # =========================================================================
     # BaseService implementation
@@ -352,6 +356,7 @@ class ProxyRouteService(BaseService):
 
     def set_proxy(self, host: str, port: int) -> None:
         """Set proxy server address."""
+        self._logger.info(f"[PROXY] Setting proxy address: {host}:{port}")
         self._config.proxy_host = host
         self._config.proxy_port = port
         self._save_config()
@@ -522,6 +527,7 @@ redsocks {{
 
     def _add_iptables_rules(self) -> None:
         """Add iptables rules for redsocks."""
+        self._logger.info("[PROXY] Adding iptables rules for redsocks...")
         commands = [
             # Create chain
             f"iptables -t nat -N {IPTABLES_CHAIN}",
@@ -541,10 +547,15 @@ redsocks {{
         ]
 
         for cmd in commands:
-            self._run_privileged(cmd.split())
+            self._logger.debug(f"[PROXY] Running iptables: {cmd}")
+            result = self._run_privileged(cmd.split())
+            if not result.success:
+                self._logger.warning(f"[PROXY] iptables rule may have failed: {result.stderr}")
+        self._logger.info("[PROXY] iptables rules added")
 
     def _remove_iptables_rules(self) -> None:
         """Remove iptables rules."""
+        self._logger.info("[PROXY] Removing iptables rules...")
         commands = [
             f"iptables -t nat -D OUTPUT -p tcp -j {IPTABLES_CHAIN}",
             f"iptables -t nat -F {IPTABLES_CHAIN}",
@@ -552,7 +563,11 @@ redsocks {{
         ]
 
         for cmd in commands:
-            self._run_privileged(cmd.split())
+            self._logger.debug(f"[PROXY] Running iptables: {cmd}")
+            result = self._run_privileged(cmd.split())
+            if not result.success:
+                self._logger.debug(f"[PROXY] iptables rule may not exist: {result.stderr}")
+        self._logger.info("[PROXY] iptables rules removed")
 
     # =========================================================================
     # Environment variable method

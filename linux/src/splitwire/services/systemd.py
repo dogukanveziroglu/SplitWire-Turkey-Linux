@@ -257,12 +257,15 @@ class SystemdManager:
         Returns:
             True if successful
         """
+        self._logger.debug("[SYSTEMD] Running daemon-reload...")
         result = self._shell.run(
             ["sudo", "systemctl", "daemon-reload"],
             timeout=30
         )
-        if not result.success:
-            self._logger.error(f"daemon-reload failed: {result.stderr}")
+        if result.success:
+            self._logger.debug("[SYSTEMD] daemon-reload completed successfully")
+        else:
+            self._logger.error(f"[SYSTEMD] daemon-reload failed: {result.stderr}")
         return result.success
 
     def _get_bundled_unit_content(self, unit_name: str) -> Optional[str]:
@@ -633,9 +636,11 @@ class SystemdManager:
                         pid=int(data.get("_PID", 0)) or None,
                         hostname=data.get("_HOSTNAME"),
                     ))
-                except (json.JSONDecodeError, KeyError, ValueError):
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    self._logger.debug(f"[SYSTEMD] Failed to parse journal JSON line: {e}")
                     continue
 
+        self._logger.debug(f"[SYSTEMD] Retrieved {len(entries)} journal entries for {unit_name}")
         return entries
 
     def follow_logs(self, unit_name: str, callback: Callable[[str], None]) -> None:
@@ -690,9 +695,11 @@ class SystemdManager:
         Returns:
             Dict mapping service key to status
         """
+        self._logger.debug("[SYSTEMD] Getting status of all SplitWire services...")
         status_dict = {}
         for key, unit_name in self.SPLITWIRE_SERVICES.items():
             status_dict[key] = self.get_status(unit_name)
+            self._logger.debug(f"[SYSTEMD] {key}: active={status_dict[key].active_state.value}, enabled={status_dict[key].enabled_state.value}")
         return status_dict
 
     def install_splitwire_service(self, service_key: str,

@@ -195,6 +195,7 @@ class ByeDPIPage(BasePage):
 
     def _on_split_setup(self, button):
         """Handle split tunneling setup."""
+        self._logger.info("[UI:ByeDPI] Starting split tunneling setup...")
         self.set_status(get_text("status", "installing") or "Kuruluyor...")
 
         def do_setup():
@@ -228,7 +229,10 @@ class ByeDPIPage(BasePage):
         def on_complete(result):
             self._update_status_indicator()
             if result:
+                self._logger.info("[UI:ByeDPI] Split tunneling setup completed successfully")
                 self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
+            else:
+                self._logger.error("[UI:ByeDPI] Split tunneling setup failed")
             self.set_status("")
 
         self.run_async(do_setup, on_complete)
@@ -236,6 +240,7 @@ class ByeDPIPage(BasePage):
     def _on_browser_tunneling_changed(self, row, param):
         """Handle browser tunneling switch change."""
         active = row.get_active()
+        self._logger.info(f"[UI:ByeDPI] Browser tunneling changed: {active}")
         if active:
             self._lbl_status.set_label(get_text("byedpi", "browser_enabled") or "Tarayıcılar dahil edilecek")
         else:
@@ -248,6 +253,7 @@ class ByeDPIPage(BasePage):
 
         if selected < len(preset_names):
             preset_name = preset_names[selected]
+            self._logger.info(f"[UI:ByeDPI] Preset changed to: {preset_name}")
             preset = BYEDPI_PRESETS.get(preset_name)
             params = preset.args if preset else ""
 
@@ -270,6 +276,7 @@ class ByeDPIPage(BasePage):
     def _on_remove_confirmed(self, dialog, response):
         """Handle remove confirmation."""
         if response == "remove":
+            self._logger.info("[UI:ByeDPI] Removing ByeDPI service...")
             self.set_status(get_text("status", "removing") or "Kaldırılıyor...")
 
             def do_remove():

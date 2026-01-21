@@ -291,13 +291,17 @@ class WireGuardService(BaseService):
     def _check_config_exists(self) -> bool:
         """Check if config file exists (handles permission issues)."""
         try:
-            return self._config_file.exists()
+            exists = self._config_file.exists()
+            self._logger.debug(f"[WG] Config file check: {self._config_file} exists={exists}")
+            return exists
         except PermissionError:
             # Can't check directly, try via shell with sudo
+            self._logger.debug(f"[WG] Permission denied checking config, using sudo")
             result = self._shell.run(
                 ["sudo", "test", "-f", str(self._config_file)],
                 timeout=5
             )
+            self._logger.debug(f"[WG] Config file check via sudo: exists={result.success}")
             return result.success
 
     def is_installed(self) -> bool:
@@ -334,12 +338,15 @@ class WireGuardService(BaseService):
             WireGuardInterface with current state or None
         """
         if not self.is_running():
+            self._logger.debug(f"[WG] get_interface_info: interface not running")
             return None
 
         result = self._run_privileged(["wg", "show", self._interface_name])
         if not result.success:
+            self._logger.error(f"[WG] wg show failed: {result.stderr}")
             return None
 
+        self._logger.debug(f"[WG] Retrieved interface info for {self._interface_name}")
         return self._parse_wg_show(result.stdout)
 
     def test_connection(self, test_host: str = "1.1.1.1") -> bool:
@@ -353,12 +360,18 @@ class WireGuardService(BaseService):
             True if connection is working
         """
         if not self.is_running():
+            self._logger.debug(f"[WG] test_connection: interface not running")
             return False
 
+        self._logger.debug(f"[WG] Testing connection to {test_host} via {self._interface_name}")
         result = self._shell.run(
             ["ping", "-c", "1", "-W", "5", "-I", self._interface_name, test_host],
             timeout=10
         )
+        if result.success:
+            self._logger.info(f"[WG] Connection test successful: {test_host}")
+        else:
+            self._logger.warning(f"[WG] Connection test failed: {test_host}")
         return result.success
 
     def get_transfer_stats(self) -> tuple[int, int]:
@@ -805,8 +818,11 @@ class WireGuardService(BaseService):
         """
         try:
             systemd = get_systemd_manager()
-            return systemd.is_active(REFRESH_TIMER_UNIT)
-        except Exception:
+            is_active = systemd.is_active(REFRESH_TIMER_UNIT)
+            self._logger.debug(f"[WG] Refresh timer {REFRESH_TIMER_UNIT} active={is_active}")
+            return is_active
+        except Exception as e:
+            self._logger.warning(f"[WG] Failed to check refresh timer status: {e}")
             return False
 
     def generate_config(self, allowed_apps: Optional[list[str]] = None,

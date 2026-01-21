@@ -12,6 +12,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+from splitwire.core.logger import get_logger
+
+_logger = get_logger()
+
 
 class DependencyStatus(Enum):
     """Status of a dependency."""
@@ -216,6 +220,7 @@ class DependencyChecker:
 
     def check_system_dependencies(self) -> list[Dependency]:
         """Check all system dependencies."""
+        _logger.info("[DEPS] Checking system dependencies...")
         for dep in self.system_deps:
             if dep.check_command:
                 code, _, _ = self._run_command(dep.check_command)
@@ -223,12 +228,21 @@ class DependencyChecker:
                     DependencyStatus.INSTALLED if code == 0
                     else DependencyStatus.MISSING
                 )
+                status_str = "installed" if dep.status == DependencyStatus.INSTALLED else "missing"
+                _logger.debug(f"[DEPS] {dep.name}: {status_str}")
             else:
                 dep.status = DependencyStatus.UNKNOWN
+
+        missing = [d.name for d in self.system_deps if d.status == DependencyStatus.MISSING]
+        if missing:
+            _logger.warning(f"[DEPS] Missing system packages: {', '.join(missing)}")
+        else:
+            _logger.debug("[DEPS] All system dependencies satisfied")
         return self.system_deps
 
     def check_python_dependencies(self) -> list[Dependency]:
         """Check all Python dependencies."""
+        _logger.info("[DEPS] Checking Python dependencies...")
         for dep in self.python_deps:
             if dep.check_command:
                 code, _, _ = self._run_command(dep.check_command)
@@ -236,8 +250,16 @@ class DependencyChecker:
                     DependencyStatus.INSTALLED if code == 0
                     else DependencyStatus.MISSING
                 )
+                status_str = "installed" if dep.status == DependencyStatus.INSTALLED else "missing"
+                _logger.debug(f"[DEPS] {dep.name}: {status_str}")
             else:
                 dep.status = DependencyStatus.UNKNOWN
+
+        missing = [d.name for d in self.python_deps if d.status == DependencyStatus.MISSING]
+        if missing:
+            _logger.warning(f"[DEPS] Missing Python packages: {', '.join(missing)}")
+        else:
+            _logger.debug("[DEPS] All Python dependencies satisfied")
         return self.python_deps
 
     def get_missing_system_deps(self) -> list[Dependency]:
@@ -285,34 +307,46 @@ class DependencyChecker:
         """
         missing = self.get_missing_system_deps()
         if not missing:
+            _logger.debug("[DEPS] No missing system dependencies to install")
             return True
 
         if not self._is_apt_available():
+            _logger.error("[DEPS] apt package manager not available")
             print("Error: apt package manager not available")
             return False
 
         packages = [d.package_name for d in missing]
+        _logger.info(f"[DEPS] Installing system packages: {', '.join(packages)}")
         print(f"Missing system packages: {', '.join(packages)}")
 
         if interactive:
             response = input("Install missing packages? [Y/n]: ").strip().lower()
             if response and response != 'y':
+                _logger.info("[DEPS] User cancelled installation")
                 return False
 
         cmd = ["sudo", "apt", "update"]
+        _logger.debug(f"[DEPS] Running: {' '.join(cmd)}")
         print(f"Running: {' '.join(cmd)}")
         code, _, _ = self._run_command(cmd, timeout=120)
         if code != 0:
+            _logger.warning("[DEPS] apt update failed, continuing anyway...")
             print("Warning: apt update failed, continuing anyway...")
 
         cmd = ["sudo", "apt", "install", "-y"] + packages
+        _logger.debug(f"[DEPS] Running: {' '.join(cmd)}")
         print(f"Running: {' '.join(cmd)}")
 
         # For installation, we need to run interactively
         try:
             result = subprocess.run(cmd, timeout=300)
+            if result.returncode == 0:
+                _logger.info("[DEPS] System packages installed successfully")
+            else:
+                _logger.error(f"[DEPS] Package installation failed with code {result.returncode}")
             return result.returncode == 0
         except Exception as e:
+            _logger.error(f"[DEPS] Error installing packages: {e}")
             print(f"Error installing packages: {e}")
             return False
 
