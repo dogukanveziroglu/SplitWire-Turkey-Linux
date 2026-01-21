@@ -345,20 +345,30 @@ def is_process_running(name: str) -> bool:
     """
     Check if a process is running by name.
 
+    Excludes zombie processes (state 'Z') which are technically still in
+    the process table but are not running.
+
     Args:
         name: Process name
 
     Returns:
-        True if process is running
+        True if process is running (not zombie)
     """
     try:
-        result = subprocess.run(
-            ["pgrep", "-x", name],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        return result.returncode == 0
+        # Get PIDs of processes with this name
+        pids = os.popen(f"pgrep -x {name} 2>/dev/null").read().strip()
+        if not pids:
+            return False
+
+        # Check if any of them are NOT zombies
+        for pid in pids.split('\n'):
+            pid = pid.strip()
+            if pid:
+                # Check process state - exclude zombies
+                state_output = os.popen(f"ps -o state= -p {pid} 2>/dev/null").read().strip()
+                if state_output and state_output[0] != 'Z':
+                    return True
+        return False
     except Exception:
         return False
 

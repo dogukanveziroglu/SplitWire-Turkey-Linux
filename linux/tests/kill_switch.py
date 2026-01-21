@@ -469,21 +469,49 @@ def force_cleanup_zapret() -> bool:
     Returns:
         True if successful
     """
-    cleanup_cmds = [
-        (["pkill", "-9", "nfqws"], "Kill nfqws"),
-        (["pkill", "-9", "tpws"], "Kill tpws"),
-        (["iptables", "-t", "mangle", "-F", "POSTROUTING"], "Flush mangle POSTROUTING"),
-        (["iptables", "-t", "nat", "-F", "OUTPUT"], "Flush nat OUTPUT"),
+    success = True
+
+    # Kill nfqws and tpws processes using os.system for reliability
+    for proc_name in ["nfqws", "tpws"]:
+        try:
+            # Kill the process
+            if os.geteuid() != 0:
+                os.system(f"sudo pkill -9 {proc_name} 2>/dev/null")
+                os.system(f"sudo killall -9 {proc_name} 2>/dev/null")
+            else:
+                os.system(f"pkill -9 {proc_name} 2>/dev/null")
+                os.system(f"killall -9 {proc_name} 2>/dev/null")
+
+            # Reap zombie processes by getting PIDs and waiting on them
+            pids = os.popen(f"pgrep -x {proc_name} 2>/dev/null").read().strip()
+            if pids:
+                for pid in pids.split('\n'):
+                    try:
+                        pid = int(pid.strip())
+                        # Try to reap zombie - this may fail if we're not the parent
+                        os.waitpid(pid, os.WNOHANG)
+                    except (ValueError, OSError):
+                        pass
+
+        except Exception as e:
+            logger.warning(f"Kill {proc_name} failed: {e}")
+
+    # Flush iptables rules using os.system for reliability
+    iptables_cmds = [
+        "iptables -t mangle -F POSTROUTING",
+        "iptables -t mangle -F PREROUTING",
+        "iptables -t nat -F OUTPUT",
+        "iptables -t nat -F PREROUTING",
     ]
 
-    success = True
-    for cmd, desc in cleanup_cmds:
+    for cmd in iptables_cmds:
         try:
             if os.geteuid() != 0:
-                cmd = ["sudo"] + cmd
-            subprocess.run(cmd, capture_output=True, timeout=10)
+                os.system(f"sudo {cmd} 2>/dev/null")
+            else:
+                os.system(f"{cmd} 2>/dev/null")
         except Exception as e:
-            logger.warning(f"Zapret cleanup command failed: {desc} - {e}")
+            logger.warning(f"iptables cleanup failed: {e}")
             success = False
 
     return success

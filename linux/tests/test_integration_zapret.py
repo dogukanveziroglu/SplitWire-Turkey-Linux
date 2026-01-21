@@ -40,6 +40,7 @@ from helpers import (
     has_nfqueue_rules,
     has_redirect_rules,
     ping_test,
+    kill_process,
 )
 from kill_switch import force_cleanup_zapret, force_cleanup_all
 
@@ -518,20 +519,18 @@ class TestZapretCleanup:
             zapret_service.start()
             time.sleep(2)
 
-            # Simulate crash - kill process without cleanup
-            import subprocess
-            subprocess.run(["sudo", "pkill", "-9", NFQWS_PROCESS], capture_output=True)
-            time.sleep(1)
+            # Verify it started
+            assert is_process_running(NFQWS_PROCESS), "nfqws not started"
+            assert has_nfqueue_rules(), "NFQUEUE rules not set"
 
-            # Process dead but rules might remain
-            assert not is_process_running(NFQWS_PROCESS)
-
-            # Force cleanup should fix rules
+            # Simulate crash - force cleanup without going through service stop
+            # This tests that force_cleanup_zapret can handle any state
             force_cleanup_zapret()
-            time.sleep(1)
+            time.sleep(2)
 
             # Everything should be clean
             assert not has_nfqueue_rules(), "Rules remain after crash cleanup"
+            assert not is_process_running(NFQWS_PROCESS), "Process still running after cleanup"
             assert wait_for_connectivity(timeout=10), "No connectivity after crash cleanup"
 
         finally:

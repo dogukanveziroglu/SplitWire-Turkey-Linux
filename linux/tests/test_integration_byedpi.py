@@ -315,6 +315,9 @@ class TestByeDPIConfiguration:
             # Set custom port using the public method
             byedpi_service.set_proxy_port(custom_port)
 
+            # Reinstall systemd service to pick up new port
+            byedpi_service._install_systemd_service()
+
             # Start with custom port
             result = byedpi_service.start()
             if not result:
@@ -328,8 +331,9 @@ class TestByeDPIConfiguration:
 
         finally:
             byedpi_service.stop()
-            # Reset to default port
+            # Reset to default port and reinstall service
             byedpi_service.set_proxy_port(BYEDPI_DEFAULT_PORT)
+            byedpi_service._install_systemd_service()
             # Kill any remaining processes
             kill_process(BYEDPI_PROCESS_NAME)
 
