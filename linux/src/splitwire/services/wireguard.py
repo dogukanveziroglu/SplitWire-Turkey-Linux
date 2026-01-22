@@ -115,14 +115,12 @@ EXCLUDED_NETWORKS = [
     "169.254.0.0/16",
 ]
 
-# WARP endpoint alternatives
-# Using static IPs to avoid DNS resolution dependency during VPN setup
+# WARP endpoint configuration
+# Using static IP to avoid DNS resolution dependency during VPN setup
 # This prevents internet outage if ISP blocks DNS servers before VPN is established
-# Standard: engage.cloudflareclient.com resolves to 162.159.192.1
-# Alternative: engage.nanocat.me (community endpoint)
+# engage.cloudflareclient.com resolves to 162.159.192.1
 WARP_ENDPOINTS = {
     "standard": "162.159.192.1:500",  # Static IP, port 500 (avoids ISP throttling on 2408)
-    "alternative": "162.159.193.1:500",  # Backup WARP endpoint
     "hostname": "engage.cloudflareclient.com:2408",  # Original hostname (fallback)
 }
 
@@ -202,7 +200,7 @@ class WireGuardService(BaseService):
             include_browsers: Include browsers in tunneling
             use_warp: Use Cloudflare WARP via wgcf
             custom_config: Path to custom WireGuard config
-            endpoint_type: "standard" or "alternative" WARP endpoint
+            endpoint_type: WARP endpoint type (default: "standard")
 
         Returns:
             True if installation successful
@@ -512,7 +510,7 @@ class WireGuardService(BaseService):
         Generate WireGuard config for WARP.
 
         Args:
-            endpoint_type: "standard" or "alternative" endpoint
+            endpoint_type: WARP endpoint type (default: "standard")
             tunnel_mode: TunnelMode.SPLIT or TunnelMode.FULL
 
         Returns:
@@ -581,7 +579,7 @@ class WireGuardService(BaseService):
 
         Args:
             config: Original config content
-            endpoint_type: "standard" or "alternative"
+            endpoint_type: WARP endpoint type (default: "standard")
 
         Returns:
             Modified config with new endpoint
@@ -901,7 +899,7 @@ class WireGuardService(BaseService):
         Args:
             allowed_apps: List of apps to tunnel
             include_browsers: Include browser apps
-            endpoint: Endpoint type ("standard" or "alternative")
+            endpoint: WARP endpoint type (default: "standard")
             tunnel_mode: TunnelMode.SPLIT or TunnelMode.FULL
 
         Returns:
@@ -948,7 +946,7 @@ class WireGuardService(BaseService):
         Args:
             allowed_apps: List of apps to tunnel
             include_browsers: Include browser apps
-            endpoint: Endpoint type ("standard" or "alternative")
+            endpoint: WARP endpoint type (default: "standard")
             tunnel_mode: TunnelMode.SPLIT or TunnelMode.FULL
 
         Returns:

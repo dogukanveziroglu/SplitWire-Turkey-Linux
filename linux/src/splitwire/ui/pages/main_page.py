@@ -70,14 +70,6 @@ class MainPage(BasePage):
         )
         buttons_group.add(self._btn_standard)
 
-        # Alternative setup button
-        self._btn_alternative = self.create_action_button(
-            label=get_text("main", "alternative_setup") or "Alternatif Kurulum",
-            callback=self._on_alternative_setup,
-            tooltip=get_text("tooltips", "alternative_install") or "Alternatif WireGuard kurulumu",
-        )
-        buttons_group.add(self._btn_alternative)
-
         # Disconnect button (initially hidden)
         self._btn_disconnect = self.create_action_button(
             label=get_text("buttons", "disconnect") or "Bağlantıyı Kes",
@@ -275,7 +267,6 @@ class MainPage(BasePage):
 
         # Update button visibility based on VPN state
         self._btn_standard.set_sensitive(not running)
-        self._btn_alternative.set_sensitive(not running)
         self._btn_disconnect.set_visible(running)
 
     def refresh(self):
@@ -285,7 +276,6 @@ class MainPage(BasePage):
     def refresh_translations(self):
         """Refresh UI translations."""
         self._btn_standard.set_label(get_text("main", "standard_setup") or "Standart Kurulum")
-        self._btn_alternative.set_label(get_text("main", "alternative_setup") or "Alternatif Kurulum")
         self._switch_browser.set_title(get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap")
         self._switch_refresh.set_title(get_text("main", "refresh_timer") or "WireSock yineleyici kur")
         self._btn_remove.set_label(get_text("main", "remove_service") or "Hizmeti Kaldır")
@@ -350,56 +340,6 @@ class MainPage(BasePage):
                 self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
             else:
                 self._logger.error(f"[UI:Main] Standard setup failed: {error}")
-                self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
-            self.set_status("")
-
-        self.run_async(do_setup, on_complete)
-
-    def _on_alternative_setup(self, button):
-        """Handle alternative setup button click."""
-        self._logger.info("[UI:Main] Starting alternative setup...")
-        self.set_status(get_text("status", "installing") or "Kuruluyor...")
-
-        def do_setup():
-            try:
-                # Register WGCF account if needed
-                if not self._wg_service.register_wgcf():
-                    return (False, get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız")
-
-                # Generate config with alternative endpoint
-                if not self._wg_service.generate_config(endpoint="alternative"):
-                    return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
-
-                # CRITICAL: Start WireGuard BEFORE changing DNS
-                if not self._wg_service.start():
-                    return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
-
-                # Verify VPN connection is working
-                import time
-                time.sleep(1)
-                if not self._wg_service.test_connection():
-                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
-
-                # NOW it's safe to change DNS (VPN is active)
-                self._dns_service.install(preset="cloudflare")
-
-                # Save settings
-                self._save_settings()
-
-                return (True, None)
-
-            except Exception as e:
-                self._logger.exception(f"Alternative setup failed: {e}")
-                return (False, str(e))
-
-        def on_complete(result):
-            self._update_status_indicator()
-            success, error = result if isinstance(result, tuple) else (result, None)
-            if success:
-                self._logger.info("[UI:Main] Alternative setup completed successfully")
-                self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
-            else:
-                self._logger.error(f"[UI:Main] Alternative setup failed: {error}")
                 self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
             self.set_status("")
 
