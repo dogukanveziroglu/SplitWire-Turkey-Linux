@@ -22,6 +22,7 @@ from splitwire.services import (
     KNOWN_APPS,
     BROWSER_APPS,
 )
+from splitwire.services.wireguard import TunnelMode
 from .base_page import BasePage
 
 if TYPE_CHECKING:
@@ -101,6 +102,15 @@ class MainPage(BasePage):
             callback=self._on_browser_tunneling_changed,
         )
         options_group.add(self._switch_browser)
+
+        # Full tunnel mode switch
+        self._switch_full_tunnel = self.create_switch_row(
+            title=get_text("main", "full_tunnel") or "Tüm Trafik VPN'den Geçsin",
+            subtitle=get_text("tooltips", "full_tunnel") or "Tüm internet trafiğini VPN üzerinden yönlendir (daha yavaş ama tüm engeller kalkar)",
+            active=False,
+            callback=self._on_full_tunnel_changed,
+        )
+        options_group.add(self._switch_full_tunnel)
 
         # Refresh timer switch
         self._switch_refresh = self.create_switch_row(
@@ -294,8 +304,11 @@ class MainPage(BasePage):
                 if not self._wg_service.register_wgcf():
                     return (False, get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız")
 
-                # Generate config
-                if not self._wg_service.generate_config():
+                # Determine tunnel mode based on switch state
+                tunnel_mode = TunnelMode.FULL if self._switch_full_tunnel.get_active() else TunnelMode.SPLIT
+
+                # Generate config with selected tunnel mode
+                if not self._wg_service.generate_config(tunnel_mode=tunnel_mode):
                     return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
 
                 # CRITICAL: Start WireGuard BEFORE changing DNS
@@ -423,6 +436,12 @@ class MainPage(BasePage):
         """Handle browser tunneling switch change."""
         active = row.get_active()
         self._logger.info(f"[UI:Main] Browser tunneling changed: {active}")
+        # Will be applied during setup
+
+    def _on_full_tunnel_changed(self, row, param):
+        """Handle full tunnel mode switch change."""
+        active = row.get_active()
+        self._logger.info(f"[UI:Main] Full tunnel mode changed: {active}")
         # Will be applied during setup
 
     def _on_refresh_timer_changed(self, row, param):
@@ -664,6 +683,7 @@ Yineleyici: Bağlantıyı 30 dakikada bir yeniler.""",
             # Save switch states
             config.wireguard.include_browsers = self._switch_browser.get_active()
             config.wireguard.refresh_timer_enabled = self._switch_refresh.get_active()
+            config.wireguard.full_tunnel_mode = self._switch_full_tunnel.get_active()
 
             # Persist to disk
             save_config()
@@ -687,6 +707,7 @@ Yineleyici: Bağlantıyı 30 dakikada bir yeniler.""",
             # Update switch states
             self._switch_browser.set_active(config.wireguard.include_browsers)
             self._switch_refresh.set_active(config.wireguard.refresh_timer_enabled)
+            self._switch_full_tunnel.set_active(config.wireguard.full_tunnel_mode)
 
             self._logger.debug("Settings loaded")
 

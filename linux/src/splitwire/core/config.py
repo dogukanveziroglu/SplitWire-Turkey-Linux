@@ -55,6 +55,7 @@ class WireGuardConfig:
     kill_switch: bool = False
     include_browsers: bool = False
     refresh_timer_enabled: bool = False
+    full_tunnel_mode: bool = False  # True = all traffic through VPN, False = split tunnel
 
 
 @dataclass
