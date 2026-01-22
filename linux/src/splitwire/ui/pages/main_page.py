@@ -298,17 +298,27 @@ class MainPage(BasePage):
                 if not self._wg_service.generate_config():
                     return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
 
-                # Setup split tunnel with selected apps
-                include_browsers = self._switch_browser.get_active()
-                apps = self._get_selected_apps()
-                self._st_service.configure(apps=apps, include_browsers=include_browsers)
-
-                # Apply Cloudflare DNS (required to bypass ISP DNS hijacking)
-                self._dns_service.install(preset="cloudflare")
-
-                # Start service
+                # CRITICAL: Start WireGuard BEFORE changing DNS
+                # DNS change before VPN can cause endpoint resolution failure
+                # if ISP blocks/throttles public DNS servers like 1.1.1.1
                 if not self._wg_service.start():
                     return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
+
+                # Verify VPN connection is working
+                import time
+                time.sleep(1)  # Give WireGuard a moment to establish connection
+                if not self._wg_service.test_connection():
+                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+
+                # NOW it's safe to change DNS (VPN is active, DNS queries can go through VPN)
+                self._dns_service.install(preset="cloudflare")
+
+                # Setup split tunnel with selected apps (optional, for app-based routing)
+                include_browsers = self._switch_browser.get_active()
+                apps = self._get_selected_apps()
+                # Note: cgproxy split tunneling is separate from WireGuard's IP-based routing
+                # WireGuard already routes Discord/Cloudflare IPs through VPN via AllowedIPs
+                # self._st_service.configure(apps=apps, include_browsers=include_browsers)
 
                 # Save settings
                 self._save_settings()
@@ -347,17 +357,18 @@ class MainPage(BasePage):
                 if not self._wg_service.generate_config(endpoint="alternative"):
                     return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
 
-                # Setup split tunnel with selected apps
-                include_browsers = self._switch_browser.get_active()
-                apps = self._get_selected_apps()
-                self._st_service.configure(apps=apps, include_browsers=include_browsers)
-
-                # Apply Cloudflare DNS (required to bypass ISP DNS hijacking)
-                self._dns_service.install(preset="cloudflare")
-
-                # Start service
+                # CRITICAL: Start WireGuard BEFORE changing DNS
                 if not self._wg_service.start():
                     return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
+
+                # Verify VPN connection is working
+                import time
+                time.sleep(1)
+                if not self._wg_service.test_connection():
+                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+
+                # NOW it's safe to change DNS (VPN is active)
+                self._dns_service.install(preset="cloudflare")
 
                 # Save settings
                 self._save_settings()
@@ -486,18 +497,18 @@ class MainPage(BasePage):
                 if not self._wg_service.generate_config():
                     return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
 
-                # Setup split tunnel with custom apps
-                self._st_service.configure(
-                    apps=self._custom_apps,
-                    include_browsers=self._switch_browser.get_active()
-                )
-
-                # Apply Cloudflare DNS (for consistency with other setups)
-                self._dns_service.install(preset="cloudflare")
-
-                # Start service
+                # CRITICAL: Start WireGuard BEFORE changing DNS
                 if not self._wg_service.start():
                     return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
+
+                # Verify VPN connection is working
+                import time
+                time.sleep(1)
+                if not self._wg_service.test_connection():
+                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+
+                # NOW it's safe to change DNS (VPN is active)
+                self._dns_service.install(preset="cloudflare")
 
                 # Save settings
                 self._save_settings()

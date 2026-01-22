@@ -71,14 +71,27 @@ DISCORD_CLOUDFLARE_IPS = [
     # Additional Cloudflare ranges
     "188.114.96.0/24",
     "188.114.97.0/24",
+    # DNS servers - route DNS through VPN to bypass ISP DNS hijacking/blocking
+    # Cloudflare DNS
+    "1.1.1.1/32",
+    "1.0.0.1/32",
+    # Google DNS (backup)
+    "8.8.8.8/32",
+    "8.8.4.4/32",
+    # Quad9 DNS (backup)
+    "9.9.9.9/32",
+    "149.112.112.112/32",
 ]
 
 # WARP endpoint alternatives
-# Standard: engage.cloudflareclient.com
+# Using static IPs to avoid DNS resolution dependency during VPN setup
+# This prevents internet outage if ISP blocks DNS servers before VPN is established
+# Standard: engage.cloudflareclient.com resolves to 162.159.192.1
 # Alternative: engage.nanocat.me (community endpoint)
 WARP_ENDPOINTS = {
-    "standard": "engage.cloudflareclient.com:2408",
-    "alternative": "engage.nanocat.me:2408",
+    "standard": "162.159.192.1:500",  # Static IP, port 500 (avoids ISP throttling on 2408)
+    "alternative": "162.159.193.1:500",  # Backup WARP endpoint
+    "hostname": "engage.cloudflareclient.com:2408",  # Original hostname (fallback)
 }
 
 # Refresh timer systemd unit names
@@ -482,9 +495,8 @@ class WireGuardService(BaseService):
         # Modify AllowedIPs for split tunnel (only route Discord/Cloudflare)
         config = self._modify_allowed_ips(config)
 
-        # Modify endpoint if alternative requested
-        if endpoint_type != "standard":
-            config = self._modify_endpoint(config, endpoint_type)
+        # Always modify endpoint to use static IP (avoid DNS dependency at startup)
+        config = self._modify_endpoint(config, endpoint_type)
 
         # Remove DNS line to prevent internet breakage
         config = self._add_dns_config(config)
@@ -543,6 +555,18 @@ class WireGuardService(BaseService):
         )
 
         self._logger.info(f"Using endpoint: {endpoint}")
+
+        # Add PersistentKeepalive to prevent NAT timeout issues
+        # This keeps the tunnel alive and prevents intermittent high latency
+        if 'PersistentKeepalive' not in config:
+            config = re.sub(
+                r'^(Endpoint\s*=.*)$',
+                r'\1\nPersistentKeepalive = 25',
+                config,
+                flags=re.MULTILINE
+            )
+            self._logger.info("Added PersistentKeepalive = 25")
+
         return config
 
     def _add_dns_config(self, config: str) -> str:
@@ -853,9 +877,8 @@ class WireGuardService(BaseService):
             # Modify AllowedIPs for split tunneling
             config_content = self._modify_allowed_ips(config_content)
 
-            # Modify endpoint if alternative requested
-            if endpoint_type != "standard":
-                config_content = self._modify_endpoint(config_content, endpoint_type)
+            # Always modify endpoint to use static IP (avoid DNS dependency at startup)
+            config_content = self._modify_endpoint(config_content, endpoint_type)
 
             # Remove DNS line to prevent internet breakage
             config_content = self._add_dns_config(config_content)
@@ -899,9 +922,8 @@ class WireGuardService(BaseService):
             # Apply modifications
             config = self._modify_allowed_ips(config)
 
-            # Modify endpoint if alternative requested
-            if endpoint_type != "standard":
-                config = self._modify_endpoint(config, endpoint_type)
+            # Always modify endpoint to use static IP (avoid DNS dependency at startup)
+            config = self._modify_endpoint(config, endpoint_type)
 
             config = self._add_dns_config(config)
             return config

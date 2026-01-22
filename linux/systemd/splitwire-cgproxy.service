@@ -2,9 +2,12 @@
 Description=SplitWire-Turkey cgproxy App Routing
 Documentation=https://github.com/cagritaskn/SplitWire-Turkey
 Documentation=https://github.com/springzfx/cgproxy
-After=network-online.target splitwire-byedpi.service
+# Run after network and optionally after WireGuard or ByeDPI
+After=network-online.target
 Wants=network-online.target
-BindsTo=splitwire-byedpi.service
+# Removed BindsTo=splitwire-byedpi.service - cgproxy can work with WireGuard too
+# Use Wants instead of BindsTo for optional dependency
+Wants=splitwire-wg.service
 
 [Service]
 Type=simple

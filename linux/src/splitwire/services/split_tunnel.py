@@ -19,9 +19,10 @@ from splitwire.core import get_logger, get_shell
 
 
 # cgproxy configuration
-CGPROXY_CONFIG_DIR = Path("/etc/cgproxy")
-CGPROXY_CONFIG_FILE = CGPROXY_CONFIG_DIR / "config.json"
-CGPROXY_SERVICE = "cgproxy.service"
+# Use SplitWire's own config directory and service
+CGPROXY_CONFIG_DIR = Path("/etc/splitwire")
+CGPROXY_CONFIG_FILE = CGPROXY_CONFIG_DIR / "cgproxy.json"
+CGPROXY_SERVICE = "splitwire-cgproxy.service"  # Use our own service, not system cgproxy
 
 # Local configuration
 LOCAL_CONFIG_DIR = Path.home() / ".config" / "splitwire"
