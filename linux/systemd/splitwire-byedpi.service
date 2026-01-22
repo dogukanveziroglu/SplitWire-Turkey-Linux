@@ -10,9 +10,11 @@ Before=splitwire-cgproxy.service
 Type=simple
 
 # Configuration
-Environment=BYEDPI_BIN=/opt/splitwire/ciadpi
+# Binary path - check /opt/byedpi first, fallback to /opt/splitwire
+Environment=BYEDPI_BIN=/opt/byedpi/ciadpi
 Environment=BYEDPI_PORT=1080
-Environment=BYEDPI_OPT=--disorder 1 --split 1 --oob 1 --fake -1
+# Working DPI bypass params for Turkish ISPs: split SNI + OOB data
+Environment=BYEDPI_OPT=--split 1+s --oob 1+s
 
 # Start ciadpi (ByeDPI Linux binary)
 ExecStart=/bin/bash -c '\
@@ -36,7 +38,7 @@ SystemCallFilter=@system-service
 SystemCallErrorNumber=EPERM
 
 # Required paths
-ReadOnlyPaths=/opt/splitwire
+ReadOnlyPaths=/opt/byedpi /opt/splitwire
 
 # Restart on failure
 Restart=on-failure
