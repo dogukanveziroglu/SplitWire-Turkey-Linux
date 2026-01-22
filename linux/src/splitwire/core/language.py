@@ -10,6 +10,10 @@ from pathlib import Path
 from typing import Optional, Any
 from functools import lru_cache
 
+from splitwire.core.logger import get_logger
+
+_logger = get_logger()
+
 
 class LanguageError(Exception):
     """Exception raised for language-related errors."""
@@ -86,17 +90,21 @@ class LanguageManager:
             True if language was changed successfully
         """
         if language not in self.LANGUAGES:
+            _logger.warning(f"[LANG] Unsupported language: {language}")
             return False
 
         if language == self._language:
             return True
 
+        _logger.info(f"[LANG] Changing language from {self._language} to {language}")
         self._language = language
         self._load_translations()
         return True
 
     def _load_translations(self) -> None:
         """Load translations for current language."""
+        _logger.info(f"[LANG] Loading language: {self._language}")
+
         # Always load fallback (English) first
         if self._language != self.DEFAULT_LANGUAGE:
             fallback_file = self._resources_dir / f"{self.DEFAULT_LANGUAGE}.json"
@@ -108,19 +116,34 @@ class LanguageManager:
         lang_file = self._resources_dir / f"{self._language}.json"
         self._translations = self._load_json_file(lang_file)
 
+        # Log loaded keys count
+        key_count = self._count_keys(self._translations)
+        _logger.debug(f"[LANG] Loaded {key_count} translation keys for {self._language}")
+
         # Clear the cache when translations change
         self.get_text.cache_clear()
+
+    def _count_keys(self, data: dict, prefix: str = "") -> int:
+        """Count total number of translation keys in a dictionary."""
+        count = 0
+        for key, value in data.items():
+            if isinstance(value, dict):
+                count += self._count_keys(value, f"{prefix}{key}.")
+            else:
+                count += 1
+        return count
 
     def _load_json_file(self, path: Path) -> dict[str, Any]:
         """Load a JSON translation file."""
         if not path.exists():
+            _logger.warning(f"[LANG] Language file not found: {path}")
             return {}
 
         try:
             with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
-            print(f"Warning: Failed to load language file {path}: {e}")
+            _logger.error(f"[LANG] Failed to load language file {path}: {e}")
             return {}
 
     @lru_cache(maxsize=512)
@@ -156,8 +179,12 @@ class LanguageManager:
         if result is not None:
             return result
 
+        # Log missing translation
+        key_str = ".".join(key_path)
+        _logger.warning(f"[LANG] Missing translation: {key_str}")
+
         # Return default or key path as fallback
-        return default if default else ".".join(key_path)
+        return default if default else key_str
 
     def _get_nested(self, data: dict, keys: list[str]) -> Optional[str]:
         """Get nested value from dictionary."""

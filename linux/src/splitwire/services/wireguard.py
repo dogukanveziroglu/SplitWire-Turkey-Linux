@@ -53,6 +53,13 @@ DEFAULT_EXCLUDED_NETWORKS = [
     "255.255.255.255/32",
 ]
 
+# Tunnel modes
+class TunnelMode:
+    """VPN tunnel routing modes."""
+    SPLIT = "split"  # Only route specific IPs through VPN (faster, less data)
+    FULL = "full"    # Route ALL traffic through VPN (bypasses all blocks)
+
+
 # Discord and Cloudflare service IP ranges for split tunneling
 # These are the IPs that should be routed through VPN
 # Note: WARP endpoint IPs (162.159.192-204.x) are NOT included to avoid routing loops
@@ -71,14 +78,50 @@ DISCORD_CLOUDFLARE_IPS = [
     # Additional Cloudflare ranges
     "188.114.96.0/24",
     "188.114.97.0/24",
+    # DNS servers - route DNS through VPN to bypass ISP DNS hijacking/blocking
+    # Cloudflare DNS
+    "1.1.1.1/32",
+    "1.0.0.1/32",
+    # Google DNS (backup)
+    "8.8.8.8/32",
+    "8.8.4.4/32",
+    # Quad9 DNS (backup)
+    "9.9.9.9/32",
+    "149.112.112.112/32",
 ]
 
-# WARP endpoint alternatives
-# Standard: engage.cloudflareclient.com
-# Alternative: engage.nanocat.me (community endpoint)
+# Roblox IP ranges
+ROBLOX_IPS = [
+    # Roblox main servers
+    "128.116.0.0/16",   # Roblox primary range
+    "128.116.13.0/24",  # roblox.com
+    # Roblox CDN (Akamai, Fastly)
+    "23.0.0.0/8",       # Akamai
+    "151.101.0.0/16",   # Fastly
+]
+
+# Combined IPs for split tunnel mode
+SPLIT_TUNNEL_IPS = DISCORD_CLOUDFLARE_IPS + ROBLOX_IPS
+
+# Full tunnel mode - route everything except local networks
+FULL_TUNNEL_IPS = ["0.0.0.0/0"]
+
+# Local/private networks to exclude from VPN (for full tunnel mode)
+EXCLUDED_NETWORKS = [
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "127.0.0.0/8",
+    "169.254.0.0/16",
+]
+
+# WARP endpoint configuration
+# Using static IP to avoid DNS resolution dependency during VPN setup
+# This prevents internet outage if ISP blocks DNS servers before VPN is established
+# engage.cloudflareclient.com resolves to 162.159.192.1
 WARP_ENDPOINTS = {
-    "standard": "engage.cloudflareclient.com:2408",
-    "alternative": "engage.nanocat.me:2408",
+    "standard": "162.159.192.1:500",  # Static IP, port 500 (avoids ISP throttling on 2408)
+    "hostname": "engage.cloudflareclient.com:2408",  # Original hostname (fallback)
 }
 
 # Refresh timer systemd unit names
@@ -157,7 +200,7 @@ class WireGuardService(BaseService):
             include_browsers: Include browsers in tunneling
             use_warp: Use Cloudflare WARP via wgcf
             custom_config: Path to custom WireGuard config
-            endpoint_type: "standard" or "alternative" WARP endpoint
+            endpoint_type: WARP endpoint type (default: "standard")
 
         Returns:
             True if installation successful
@@ -291,13 +334,17 @@ class WireGuardService(BaseService):
     def _check_config_exists(self) -> bool:
         """Check if config file exists (handles permission issues)."""
         try:
-            return self._config_file.exists()
+            exists = self._config_file.exists()
+            self._logger.debug(f"[WG] Config file check: {self._config_file} exists={exists}")
+            return exists
         except PermissionError:
             # Can't check directly, try via shell with sudo
+            self._logger.debug(f"[WG] Permission denied checking config, using sudo")
             result = self._shell.run(
                 ["sudo", "test", "-f", str(self._config_file)],
                 timeout=5
             )
+            self._logger.debug(f"[WG] Config file check via sudo: exists={result.success}")
             return result.success
 
     def is_installed(self) -> bool:
@@ -334,12 +381,15 @@ class WireGuardService(BaseService):
             WireGuardInterface with current state or None
         """
         if not self.is_running():
+            self._logger.debug(f"[WG] get_interface_info: interface not running")
             return None
 
         result = self._run_privileged(["wg", "show", self._interface_name])
         if not result.success:
+            self._logger.error(f"[WG] wg show failed: {result.stderr}")
             return None
 
+        self._logger.debug(f"[WG] Retrieved interface info for {self._interface_name}")
         return self._parse_wg_show(result.stdout)
 
     def test_connection(self, test_host: str = "1.1.1.1") -> bool:
@@ -353,12 +403,18 @@ class WireGuardService(BaseService):
             True if connection is working
         """
         if not self.is_running():
+            self._logger.debug(f"[WG] test_connection: interface not running")
             return False
 
+        self._logger.debug(f"[WG] Testing connection to {test_host} via {self._interface_name}")
         result = self._shell.run(
             ["ping", "-c", "1", "-W", "5", "-I", self._interface_name, test_host],
             timeout=10
         )
+        if result.success:
+            self._logger.info(f"[WG] Connection test successful: {test_host}")
+        else:
+            self._logger.warning(f"[WG] Connection test failed: {test_host}")
         return result.success
 
     def get_transfer_stats(self) -> tuple[int, int]:
@@ -448,12 +504,14 @@ class WireGuardService(BaseService):
             self._logger.error(f"Profile generation failed: {result.stderr}")
             return False
 
-    def _generate_warp_config(self, endpoint_type: str = "standard") -> Optional[str]:
+    def _generate_warp_config(self, endpoint_type: str = "standard",
+                              tunnel_mode: str = TunnelMode.SPLIT) -> Optional[str]:
         """
         Generate WireGuard config for WARP.
 
         Args:
-            endpoint_type: "standard" or "alternative" endpoint
+            endpoint_type: WARP endpoint type (default: "standard")
+            tunnel_mode: TunnelMode.SPLIT or TunnelMode.FULL
 
         Returns:
             Config content or None
@@ -466,12 +524,11 @@ class WireGuardService(BaseService):
         # Read and modify profile
         config = WGCF_PROFILE_FILE.read_text()
 
-        # Modify AllowedIPs for split tunnel (only route Discord/Cloudflare)
-        config = self._modify_allowed_ips(config)
+        # Modify AllowedIPs based on tunnel mode
+        config = self._modify_allowed_ips(config, tunnel_mode=tunnel_mode)
 
-        # Modify endpoint if alternative requested
-        if endpoint_type != "standard":
-            config = self._modify_endpoint(config, endpoint_type)
+        # Always modify endpoint to use static IP (avoid DNS dependency at startup)
+        config = self._modify_endpoint(config, endpoint_type)
 
         # Remove DNS line to prevent internet breakage
         config = self._add_dns_config(config)
@@ -479,23 +536,31 @@ class WireGuardService(BaseService):
         return config
 
     def _modify_allowed_ips(self, config: str,
-                            custom_ips: Optional[list[str]] = None) -> str:
+                            custom_ips: Optional[list[str]] = None,
+                            tunnel_mode: str = TunnelMode.SPLIT) -> str:
         """
-        Modify AllowedIPs in config for split tunneling.
-
-        Routes only Discord/Cloudflare service IPs through VPN by default.
-        This prevents complete internet outage if VPN fails and avoids
-        routing loops with WARP endpoint IPs.
+        Modify AllowedIPs in config based on tunnel mode.
 
         Args:
             config: Original config content
-            custom_ips: Custom IP ranges to route (if None, uses DISCORD_CLOUDFLARE_IPS)
+            custom_ips: Custom IP ranges to route (overrides tunnel_mode)
+            tunnel_mode: TunnelMode.SPLIT (specific IPs) or TunnelMode.FULL (all traffic)
 
         Returns:
             Modified config
         """
-        # Use custom IPs or default Discord/Cloudflare ranges
-        ips_to_route = custom_ips or DISCORD_CLOUDFLARE_IPS
+        # Determine IPs to route based on mode
+        if custom_ips:
+            ips_to_route = custom_ips
+        elif tunnel_mode == TunnelMode.FULL:
+            # Full tunnel - route all traffic through VPN
+            ips_to_route = FULL_TUNNEL_IPS
+            self._logger.info("Using FULL tunnel mode - all traffic through VPN")
+        else:
+            # Split tunnel - only route specific IPs (Discord, Roblox, etc.)
+            ips_to_route = SPLIT_TUNNEL_IPS
+            self._logger.info("Using SPLIT tunnel mode - only specific IPs through VPN")
+
         allowed_ips = ", ".join(ips_to_route)
 
         # Replace existing AllowedIPs
@@ -514,7 +579,7 @@ class WireGuardService(BaseService):
 
         Args:
             config: Original config content
-            endpoint_type: "standard" or "alternative"
+            endpoint_type: WARP endpoint type (default: "standard")
 
         Returns:
             Modified config with new endpoint
@@ -530,6 +595,18 @@ class WireGuardService(BaseService):
         )
 
         self._logger.info(f"Using endpoint: {endpoint}")
+
+        # Add PersistentKeepalive to prevent NAT timeout issues
+        # This keeps the tunnel alive and prevents intermittent high latency
+        if 'PersistentKeepalive' not in config:
+            config = re.sub(
+                r'^(Endpoint\s*=.*)$',
+                r'\1\nPersistentKeepalive = 25',
+                config,
+                flags=re.MULTILINE
+            )
+            self._logger.info("Added PersistentKeepalive = 25")
+
         return config
 
     def _add_dns_config(self, config: str) -> str:
@@ -805,26 +882,31 @@ class WireGuardService(BaseService):
         """
         try:
             systemd = get_systemd_manager()
-            return systemd.is_active(REFRESH_TIMER_UNIT)
-        except Exception:
+            is_active = systemd.is_active(REFRESH_TIMER_UNIT)
+            self._logger.debug(f"[WG] Refresh timer {REFRESH_TIMER_UNIT} active={is_active}")
+            return is_active
+        except Exception as e:
+            self._logger.warning(f"[WG] Failed to check refresh timer status: {e}")
             return False
 
     def generate_config(self, allowed_apps: Optional[list[str]] = None,
                        include_browsers: bool = False,
-                       endpoint: Optional[str] = None) -> Optional[str]:
+                       endpoint: Optional[str] = None,
+                       tunnel_mode: str = TunnelMode.SPLIT) -> Optional[str]:
         """
         Generate WireGuard configuration and install it.
 
         Args:
             allowed_apps: List of apps to tunnel
             include_browsers: Include browser apps
-            endpoint: Endpoint type ("standard" or "alternative")
+            endpoint: WARP endpoint type (default: "standard")
+            tunnel_mode: TunnelMode.SPLIT or TunnelMode.FULL
 
         Returns:
             Path to generated config file or None
         """
         endpoint_type = endpoint or "standard"
-        self._logger.info(f"Generating WireGuard config (endpoint={endpoint_type})...")
+        self._logger.info(f"Generating WireGuard config (endpoint={endpoint_type}, mode={tunnel_mode})...")
 
         # Generate WARP profile
         if not self.generate_warp_profile():
@@ -834,12 +916,11 @@ class WireGuardService(BaseService):
         try:
             config_content = WGCF_PROFILE_FILE.read_text()
 
-            # Modify AllowedIPs for split tunneling
-            config_content = self._modify_allowed_ips(config_content)
+            # Modify AllowedIPs based on tunnel mode
+            config_content = self._modify_allowed_ips(config_content, tunnel_mode=tunnel_mode)
 
-            # Modify endpoint if alternative requested
-            if endpoint_type != "standard":
-                config_content = self._modify_endpoint(config_content, endpoint_type)
+            # Always modify endpoint to use static IP (avoid DNS dependency at startup)
+            config_content = self._modify_endpoint(config_content, endpoint_type)
 
             # Remove DNS line to prevent internet breakage
             config_content = self._add_dns_config(config_content)
@@ -857,20 +938,22 @@ class WireGuardService(BaseService):
 
     def generate_config_content(self, allowed_apps: Optional[list[str]] = None,
                                 include_browsers: bool = False,
-                                endpoint: Optional[str] = None) -> str:
+                                endpoint: Optional[str] = None,
+                                tunnel_mode: str = TunnelMode.SPLIT) -> str:
         """
         Generate WireGuard configuration content as string.
 
         Args:
             allowed_apps: List of apps to tunnel
             include_browsers: Include browser apps
-            endpoint: Endpoint type ("standard" or "alternative")
+            endpoint: WARP endpoint type (default: "standard")
+            tunnel_mode: TunnelMode.SPLIT or TunnelMode.FULL
 
         Returns:
             Configuration file content as string
         """
         endpoint_type = endpoint or "standard"
-        self._logger.info(f"Generating WireGuard config content (endpoint={endpoint_type})...")
+        self._logger.info(f"Generating WireGuard config content (endpoint={endpoint_type}, mode={tunnel_mode})...")
 
         # Ensure profile exists
         if not WGCF_PROFILE_FILE.exists():
@@ -880,12 +963,11 @@ class WireGuardService(BaseService):
         # Read and return the config
         try:
             config = WGCF_PROFILE_FILE.read_text()
-            # Apply modifications
-            config = self._modify_allowed_ips(config)
+            # Apply modifications based on tunnel mode
+            config = self._modify_allowed_ips(config, tunnel_mode=tunnel_mode)
 
-            # Modify endpoint if alternative requested
-            if endpoint_type != "standard":
-                config = self._modify_endpoint(config, endpoint_type)
+            # Always modify endpoint to use static IP (avoid DNS dependency at startup)
+            config = self._modify_endpoint(config, endpoint_type)
 
             config = self._add_dns_config(config)
             return config

@@ -288,6 +288,7 @@ discordcdn.com"""
 
     def _on_save_blacklist(self, button):
         """Save blacklist to file."""
+        self._logger.info("[UI:GoodbyeDPI] Saving blacklist...")
         try:
             os.makedirs(os.path.dirname(self._blacklist_path), exist_ok=True)
 
@@ -298,9 +299,10 @@ discordcdn.com"""
             with open(self._blacklist_path, 'w') as f:
                 f.write(content)
 
+            self._logger.info(f"[UI:GoodbyeDPI] Blacklist saved to {self._blacklist_path}")
             self.show_toast("Blacklist kaydedildi")
         except Exception as e:
-            self._logger.error(f"Error saving blacklist: {e}")
+            self._logger.error(f"[UI:GoodbyeDPI] Error saving blacklist: {e}")
             self.show_toast(f"Hata: {e}")
 
     def _get_params(self) -> str:
@@ -316,6 +318,7 @@ discordcdn.com"""
 
     def _on_install_service(self, button):
         """Handle install service button."""
+        self._logger.info("[UI:GoodbyeDPI] Installing nfqws service...")
         self.set_status("Hizmet kuruluyor...")
 
         def do_install():
@@ -341,6 +344,7 @@ discordcdn.com"""
 
     def _on_run_once(self, button):
         """Handle run once button."""
+        self._logger.info("[UI:GoodbyeDPI] Running nfqws once...")
         self.set_status("Çalıştırılıyor...")
 
         def do_run():
@@ -372,6 +376,7 @@ discordcdn.com"""
     def _on_remove_confirmed(self, dialog, response):
         """Handle remove confirmation."""
         if response == "remove":
+            self._logger.info("[UI:GoodbyeDPI] Removing nfqws service...")
             self.set_status("Kaldırılıyor...")
 
             def do_remove():

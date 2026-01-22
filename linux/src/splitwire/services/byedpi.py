@@ -199,6 +199,7 @@ class ByeDPIService(BaseService):
 
     def _save_config(self) -> None:
         """Save configuration to file."""
+        self._logger.debug(f"[BYEDPI] Saving config to {CONFIG_FILE}")
         data = {
             "enabled": self._config.enabled,
             "preset_name": self._config.preset_name,
@@ -209,10 +210,12 @@ class ByeDPIService(BaseService):
             "tunneled_apps": self._config.tunneled_apps,
         }
         CONFIG_FILE.write_text(json.dumps(data, indent=2))
+        self._logger.debug(f"[BYEDPI] Config saved: preset={self._config.preset_name}, port={self._config.proxy_port}")
 
     def _load_custom_presets(self) -> None:
         """Load custom presets from file."""
         if PRESETS_FILE.exists():
+            self._logger.debug(f"[BYEDPI] Loading custom presets from {PRESETS_FILE}")
             try:
                 data = json.loads(PRESETS_FILE.read_text())
                 for name, preset_data in data.items():
@@ -223,8 +226,9 @@ class ByeDPIService(BaseService):
                         mode=ByeDPIMode(preset_data.get("mode", "disorder")),
                         is_custom=True,
                     )
+                self._logger.debug(f"[BYEDPI] Loaded {len(self._custom_presets)} custom presets")
             except Exception as e:
-                self._logger.warning(f"Failed to load custom presets: {e}")
+                self._logger.warning(f"[BYEDPI] Failed to load custom presets: {e}")
 
     def _save_custom_presets(self) -> None:
         """Save custom presets to file."""
@@ -393,8 +397,10 @@ class ByeDPIService(BaseService):
         return ServiceStatus.STOPPED
 
     def is_installed(self) -> bool:
-        """Check if ByeDPI is installed."""
-        return self._is_binary_installed() and self._config.enabled
+        """Check if ByeDPI is installed (binary exists and is executable)."""
+        installed = self._is_binary_installed()
+        self._logger.debug(f"[BYEDPI] Installation check: installed={installed}")
+        return installed
 
     # =========================================================================
     # ByeDPI specific methods
@@ -533,10 +539,15 @@ class ByeDPIService(BaseService):
 
     def _is_binary_installed(self) -> bool:
         """Check if ciadpi binary is installed."""
-        return BYEDPI_BINARY.exists() and os.access(BYEDPI_BINARY, os.X_OK)
+        exists = BYEDPI_BINARY.exists()
+        executable = os.access(BYEDPI_BINARY, os.X_OK) if exists else False
+        self._logger.debug(f"[BYEDPI] Binary check: exists={exists}, executable={executable}, path={BYEDPI_BINARY}")
+        return exists and executable
 
     def _download_binary(self) -> bool:
         """Download ciadpi binary from GitHub releases."""
+        import tarfile
+
         try:
             # Get latest release info
             self._logger.info("Fetching latest release info...")
@@ -547,24 +558,32 @@ class ByeDPIService(BaseService):
             with urllib.request.urlopen(req, timeout=30) as response:
                 release_data = json.loads(response.read().decode())
 
-            # Find Linux x86_64 asset
+            # Find Linux x86_64 asset (new naming: byedpi-VERSION-ARCH.tar.gz)
             arch = platform.machine()
             if arch == "x86_64":
-                asset_name = "ciadpi-x86_64-linux"
+                arch_suffix = "x86_64"
             elif arch == "aarch64":
-                asset_name = "ciadpi-aarch64-linux"
+                arch_suffix = "aarch64"
+            elif arch == "armv7l":
+                arch_suffix = "armv7l"
+            elif arch == "i686":
+                arch_suffix = "i686"
             else:
                 self._logger.error(f"Unsupported architecture: {arch}")
                 return False
 
             download_url = None
             for asset in release_data.get("assets", []):
-                if asset_name in asset.get("name", ""):
+                asset_name = asset.get("name", "")
+                # Match pattern: byedpi-VERSION-ARCH.tar.gz (not Windows)
+                if (arch_suffix in asset_name and
+                    asset_name.endswith(".tar.gz") and
+                    "w64" not in asset_name):
                     download_url = asset.get("browser_download_url")
                     break
 
             if not download_url:
-                self._logger.error(f"Could not find asset for {asset_name}")
+                self._logger.error(f"Could not find asset for architecture {arch_suffix}")
                 return False
 
             # Create installation directory
@@ -572,10 +591,10 @@ class ByeDPIService(BaseService):
             if not result.success:
                 return False
 
-            # Download binary
+            # Download archive
             self._logger.info(f"Downloading from {download_url}")
 
-            with tempfile.NamedTemporaryFile(delete=False) as tmp:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".tar.gz") as tmp:
                 tmp_path = tmp.name
 
             try:
@@ -587,10 +606,28 @@ class ByeDPIService(BaseService):
                     with open(tmp_path, 'wb') as f:
                         f.write(response.read())
 
-                # Move to installation directory
-                result = self._run_privileged(["cp", tmp_path, str(BYEDPI_BINARY)])
-                if not result.success:
-                    return False
+                # Extract from tar.gz archive
+                with tempfile.TemporaryDirectory() as extract_dir:
+                    with tarfile.open(tmp_path, "r:gz") as tar:
+                        tar.extractall(extract_dir)
+
+                    # Find the ciadpi binary in extracted files (name may include arch suffix)
+                    binary_found = False
+                    for root, dirs, files in os.walk(extract_dir):
+                        for filename in files:
+                            if filename.startswith("ciadpi"):
+                                src_binary = Path(root) / filename
+                                # Copy to installation directory
+                                result = self._run_privileged(["cp", str(src_binary), str(BYEDPI_BINARY)])
+                                if result.success:
+                                    binary_found = True
+                                break
+                        if binary_found:
+                            break
+
+                    if not binary_found:
+                        self._logger.error("ciadpi binary not found in archive")
+                        return False
 
                 # Make executable
                 result = self._run_privileged(["chmod", "+x", str(BYEDPI_BINARY)])
@@ -731,17 +768,20 @@ class ByeDPIService(BaseService):
         """Get PID from file."""
         if BYEDPI_PID_FILE.exists():
             try:
-                return int(BYEDPI_PID_FILE.read_text().strip())
-            except Exception:
-                pass
+                pid = int(BYEDPI_PID_FILE.read_text().strip())
+                self._logger.debug(f"[BYEDPI] Read PID from file: {pid}")
+                return pid
+            except Exception as e:
+                self._logger.warning(f"[BYEDPI] Failed to read PID file: {e}")
         return None
 
     def _remove_pid(self) -> None:
         """Remove PID file."""
         try:
+            self._logger.debug(f"[BYEDPI] Removing PID file: {BYEDPI_PID_FILE}")
             self._run_privileged(["rm", "-f", str(BYEDPI_PID_FILE)])
-        except Exception:
-            pass
+        except Exception as e:
+            self._logger.warning(f"[BYEDPI] Failed to remove PID file: {e}")
 
     def _is_service_installed(self) -> bool:
         """Check if systemd service is installed."""

@@ -221,29 +221,30 @@ class DNSService(BaseService):
 
     def _detect_dns_manager(self) -> None:
         """Detect which DNS manager is in use."""
+        self._logger.info("[DNS] Detecting DNS manager...")
         # Check for systemd-resolved (primary for Ubuntu)
         result = self._shell.run(["systemctl", "is-active", "systemd-resolved"], timeout=5)
         if result.success and result.stdout.strip() == "active":
             self._dns_manager = DNSManager.SYSTEMD_RESOLVED
-            self._logger.info("Detected DNS manager: systemd-resolved")
+            self._logger.info("[DNS] Detected DNS manager: systemd-resolved")
             return
 
         # Check for NetworkManager
         result = self._shell.run(["systemctl", "is-active", "NetworkManager"], timeout=5)
         if result.success and result.stdout.strip() == "active":
             self._dns_manager = DNSManager.NETWORK_MANAGER
-            self._logger.info("Detected DNS manager: NetworkManager")
+            self._logger.info("[DNS] Detected DNS manager: NetworkManager (fallback)")
             return
 
         # Check for resolvconf
         if self._shell.command_exists("resolvconf"):
             self._dns_manager = DNSManager.RESOLVCONF
-            self._logger.info("Detected DNS manager: resolvconf")
+            self._logger.info("[DNS] Detected DNS manager: resolvconf (fallback)")
             return
 
         # Fallback to manual
         self._dns_manager = DNSManager.MANUAL
-        self._logger.warning("No supported DNS manager found, using manual mode")
+        self._logger.warning("[DNS] No supported DNS manager found, using manual mode (fallback)")
 
     # =========================================================================
     # BaseService implementation
@@ -353,16 +354,20 @@ class DNSService(BaseService):
 
         # Verify DNS is actually configured
         current_dns = self._get_current_dns()
+        self._logger.debug(f"[DNS] Current DNS servers: {current_dns}")
         if current_dns:
             preset = self.get_current_preset()
             if preset:
                 if preset.primary in current_dns or preset.secondary in current_dns:
+                    self._logger.debug(f"[DNS] DNS verification successful: preset {self._config.preset_name} is active")
                     return ServiceStatus.RUNNING
 
             # Check custom DNS
             if self._config.custom_primary and self._config.custom_primary in current_dns:
+                self._logger.debug(f"[DNS] DNS verification successful: custom DNS {self._config.custom_primary} is active")
                 return ServiceStatus.RUNNING
 
+        self._logger.debug("[DNS] DNS verification failed: configured DNS not active")
         return ServiceStatus.STOPPED
 
     def is_installed(self) -> bool:

@@ -289,7 +289,11 @@ class ZapretService(BaseService):
 
     def is_installed(self) -> bool:
         """Check if Zapret is installed."""
-        return NFQWS_BINARY.exists() or TPWS_BINARY.exists()
+        nfqws_exists = NFQWS_BINARY.exists()
+        tpws_exists = TPWS_BINARY.exists()
+        installed = nfqws_exists or tpws_exists
+        self._logger.debug(f"[ZAPRET] Installation check: nfqws={nfqws_exists}, tpws={tpws_exists}, installed={installed}")
+        return installed
 
     # =========================================================================
     # Service Control
@@ -427,14 +431,16 @@ class ZapretService(BaseService):
 
     def _stop_nfqws(self) -> bool:
         """Stop nfqws process."""
+        self._logger.debug("[ZAPRET] Stopping nfqws process...")
         try:
             # Try to get PID from file
             pid = None
             if NFQWS_PID_FILE.exists():
                 try:
                     pid = int(NFQWS_PID_FILE.read_text().strip())
-                except (ValueError, OSError):
-                    pass
+                    self._logger.debug(f"[ZAPRET] Read nfqws PID from file: {pid}")
+                except (ValueError, OSError) as e:
+                    self._logger.warning(f"[ZAPRET] Failed to read nfqws PID file: {e}")
 
             # Also check our tracked process
             if self._nfqws_process and self._nfqws_process.poll() is None:
@@ -469,7 +475,9 @@ class ZapretService(BaseService):
     def _is_nfqws_running(self) -> bool:
         """Check if nfqws is running."""
         result = self._shell.run(["pgrep", "-x", "nfqws"], timeout=5)
-        return result.success
+        is_running = result.success
+        self._logger.debug(f"[ZAPRET] nfqws process running: {is_running}")
+        return is_running
 
     def _build_nfqws_args(self, preset: Optional[ZapretPreset]) -> list[str]:
         """Build nfqws command line arguments."""
@@ -544,14 +552,16 @@ class ZapretService(BaseService):
 
     def _stop_tpws(self) -> bool:
         """Stop tpws process."""
+        self._logger.debug("[ZAPRET] Stopping tpws process...")
         try:
             # Try to get PID from file
             pid = None
             if TPWS_PID_FILE.exists():
                 try:
                     pid = int(TPWS_PID_FILE.read_text().strip())
-                except (ValueError, OSError):
-                    pass
+                    self._logger.debug(f"[ZAPRET] Read tpws PID from file: {pid}")
+                except (ValueError, OSError) as e:
+                    self._logger.warning(f"[ZAPRET] Failed to read tpws PID file: {e}")
 
             # Also check our tracked process
             if self._tpws_process and self._tpws_process.poll() is None:
@@ -585,7 +595,9 @@ class ZapretService(BaseService):
     def _is_tpws_running(self) -> bool:
         """Check if tpws is running."""
         result = self._shell.run(["pgrep", "-x", "tpws"], timeout=5)
-        return result.success
+        is_running = result.success
+        self._logger.debug(f"[ZAPRET] tpws process running: {is_running}")
+        return is_running
 
     def _build_tpws_args(self, preset: Optional[ZapretPreset]) -> list[str]:
         """Build tpws command line arguments."""
@@ -635,6 +647,7 @@ class ZapretService(BaseService):
                 # NFQUEUE rules for nfqws
                 # HTTP
                 for port in http_ports:
+                    self._logger.debug(f"[ZAPRET] Adding NFQUEUE rule for HTTP port {port}")
                     result = self._run_privileged([
                         "iptables", "-t", "mangle", "-A", "POSTROUTING",
                         "-p", "tcp", "--dport", str(port),
@@ -642,9 +655,13 @@ class ZapretService(BaseService):
                     ])
                     if result.success:
                         rules_added.append(f"NFQUEUE HTTP {port}")
+                        self._logger.debug(f"[ZAPRET] Added NFQUEUE rule for HTTP port {port}")
+                    else:
+                        self._logger.warning(f"[ZAPRET] Failed to add NFQUEUE rule for HTTP port {port}: {result.stderr}")
 
                 # HTTPS
                 for port in https_ports:
+                    self._logger.debug(f"[ZAPRET] Adding NFQUEUE rule for HTTPS port {port}")
                     result = self._run_privileged([
                         "iptables", "-t", "mangle", "-A", "POSTROUTING",
                         "-p", "tcp", "--dport", str(port),
@@ -652,10 +669,14 @@ class ZapretService(BaseService):
                     ])
                     if result.success:
                         rules_added.append(f"NFQUEUE HTTPS {port}")
+                        self._logger.debug(f"[ZAPRET] Added NFQUEUE rule for HTTPS port {port}")
+                    else:
+                        self._logger.warning(f"[ZAPRET] Failed to add NFQUEUE rule for HTTPS port {port}: {result.stderr}")
 
             if mode in [ZapretMode.TPWS, ZapretMode.COMBINED]:
                 # REDIRECT rules for tpws
                 for port in https_ports:
+                    self._logger.debug(f"[ZAPRET] Adding REDIRECT rule for port {port} to {TPWS_PORT}")
                     result = self._run_privileged([
                         "iptables", "-t", "nat", "-A", "OUTPUT",
                         "-p", "tcp", "--dport", str(port),
@@ -663,6 +684,9 @@ class ZapretService(BaseService):
                     ])
                     if result.success:
                         rules_added.append(f"REDIRECT {port}")
+                        self._logger.debug(f"[ZAPRET] Added REDIRECT rule for port {port}")
+                    else:
+                        self._logger.warning(f"[ZAPRET] Failed to add REDIRECT rule for port {port}: {result.stderr}")
 
             self._logger.debug(f"Added iptables rules: {rules_added}")
             return len(rules_added) > 0
@@ -673,27 +697,34 @@ class ZapretService(BaseService):
 
     def _remove_iptables_rules(self) -> bool:
         """Remove all iptables rules added by zapret."""
+        self._logger.info("[ZAPRET] Removing iptables rules...")
         try:
             http_ports = self._config.http_ports or DEFAULT_HTTP_PORTS
             https_ports = self._config.https_ports or DEFAULT_HTTPS_PORTS
 
             # Remove NFQUEUE rules
             for port in http_ports + https_ports:
-                self._run_privileged([
+                self._logger.debug(f"[ZAPRET] Removing NFQUEUE rule for port {port}")
+                result = self._run_privileged([
                     "iptables", "-t", "mangle", "-D", "POSTROUTING",
                     "-p", "tcp", "--dport", str(port),
                     "-j", "NFQUEUE", "--queue-num", str(NFQUEUE_NUM)
                 ])
+                if not result.success:
+                    self._logger.debug(f"[ZAPRET] NFQUEUE rule for port {port} may not exist: {result.stderr}")
 
             # Remove REDIRECT rules
             for port in https_ports:
-                self._run_privileged([
+                self._logger.debug(f"[ZAPRET] Removing REDIRECT rule for port {port}")
+                result = self._run_privileged([
                     "iptables", "-t", "nat", "-D", "OUTPUT",
                     "-p", "tcp", "--dport", str(port),
                     "-j", "REDIRECT", "--to-port", str(TPWS_PORT)
                 ])
+                if not result.success:
+                    self._logger.debug(f"[ZAPRET] REDIRECT rule for port {port} may not exist: {result.stderr}")
 
-            self._logger.debug("Removed iptables rules")
+            self._logger.info("[ZAPRET] iptables rules removed")
             return True
 
         except Exception as e:
@@ -802,11 +833,15 @@ class ZapretService(BaseService):
     def get_blacklist(self) -> list[str]:
         """Get current blacklist domains."""
         if not BLACKLIST_FILE.exists():
+            self._logger.debug(f"[ZAPRET] Blacklist file does not exist: {BLACKLIST_FILE}")
             return []
         try:
             content = BLACKLIST_FILE.read_text()
-            return [line.strip() for line in content.splitlines() if line.strip() and not line.startswith("#")]
-        except Exception:
+            domains = [line.strip() for line in content.splitlines() if line.strip() and not line.startswith("#")]
+            self._logger.debug(f"[ZAPRET] Loaded {len(domains)} domains from blacklist")
+            return domains
+        except Exception as e:
+            self._logger.error(f"[ZAPRET] Failed to read blacklist: {e}")
             return []
 
     def set_blacklist(self, domains: list[str]) -> bool:

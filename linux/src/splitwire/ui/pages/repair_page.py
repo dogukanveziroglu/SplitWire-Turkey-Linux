@@ -207,6 +207,7 @@ class RepairPage(BasePage):
 
     def _refresh_status(self):
         """Refresh all status indicators."""
+        self._logger.debug("[UI:Repair] Refreshing Discord status...")
         def do_refresh():
             # Get Discord installations
             installations = self._discord_service.get_installations()
@@ -264,6 +265,7 @@ class RepairPage(BasePage):
 
     def _on_repair_discord(self, button):
         """Handle repair Discord button."""
+        self._logger.info("[UI:Repair] Repairing Discord...")
         self.set_status("Discord onarılıyor...")
 
         def do_repair():
@@ -283,6 +285,7 @@ class RepairPage(BasePage):
 
     def _on_install_ptb(self, button):
         """Handle install PTB button."""
+        self._logger.info("[UI:Repair] Installing Discord PTB...")
         clean_install = self._switch_clean_ptb.get_active()
 
         if clean_install:
@@ -332,6 +335,7 @@ class RepairPage(BasePage):
 
     def _on_install_webcord(self, button):
         """Handle install WebCord button."""
+        self._logger.info("[UI:Repair] Installing WebCord...")
         create_shortcut = self._switch_webcord_shortcut.get_active()
         self.set_status("WebCord kuruluyor...")
 

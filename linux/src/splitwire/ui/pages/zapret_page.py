@@ -228,6 +228,7 @@ class ZapretPage(BasePage):
         if self._scan_in_progress:
             return
 
+        self._logger.info("[UI:Zapret] Starting auto setup with blockcheck...")
         self._scan_in_progress = True
         self._progress_box.set_visible(True)
         self._btn_auto.set_sensitive(False)
@@ -236,6 +237,9 @@ class ZapretPage(BasePage):
         scan_idx = self._combo_scan.get_selected()
         scan_modes = [ScanMode.QUICK, ScanMode.STANDARD, ScanMode.FULL]
         scan_mode = scan_modes[scan_idx]
+
+        # Add progress callback before starting scan
+        self._blockcheck_service.add_progress_callback(self._on_scan_progress)
 
         def do_scan():
             # Install zapret first if needed
@@ -246,25 +250,33 @@ class ZapretPage(BasePage):
             # Run blockcheck
             GLib.idle_add(self._update_progress, 0.2, "Tarama başlatılıyor...")
 
-            result = self._blockcheck_service.start_scan(
+            # start_scan returns bool, get result via get_last_result()
+            success = self._blockcheck_service.start_scan(
                 mode=scan_mode,
-                progress_callback=self._on_scan_progress
+                async_mode=False  # Run synchronously in thread
             )
 
-            return result
+            if success:
+                return self._blockcheck_service.get_last_result()
+            return None
 
         def on_complete(result):
             self._scan_in_progress = False
             self._progress_box.set_visible(False)
             self._btn_auto.set_sensitive(True)
 
-            if result and result.best_strategy:
-                # Apply best strategy
-                self._zapret_service.configure(params=result.best_strategy.params)
+            # Remove progress callback when done
+            self._blockcheck_service.remove_progress_callback(self._on_scan_progress)
+
+            if result and result.success and result.recommended_args:
+                # Apply recommended strategy
+                self._logger.info(f"[UI:Zapret] Best strategy found: {result.recommended_mode}")
+                self._zapret_service.configure(params=result.recommended_args)
                 self._zapret_service.start()
                 self._update_status_indicator()
-                self.show_toast(f"En iyi strateji bulundu: {result.best_strategy.name}")
+                self.show_toast(f"En iyi strateji bulundu: {result.recommended_mode}")
             else:
+                self._logger.warning("[UI:Zapret] No suitable strategy found")
                 self.show_toast("Uygun strateji bulunamadı")
 
         self.run_async(do_scan, on_complete)
@@ -274,7 +286,7 @@ class ZapretPage(BasePage):
         GLib.idle_add(
             self._update_progress,
             progress.percent / 100.0,
-            f"Test ediliyor: {progress.current_strategy}"
+            f"Test ediliyor: {progress.current_test}"
         )
 
     def _update_progress(self, fraction, text):
@@ -290,6 +302,7 @@ class ZapretPage(BasePage):
 
         if selected < len(preset_names):
             preset_name = preset_names[selected]
+            self._logger.info(f"[UI:Zapret] Preset changed to: {preset_name}")
             preset = DEFAULT_PRESETS.get(preset_name)
             if preset:
                 buffer = self._txt_params.get_buffer()
@@ -298,6 +311,7 @@ class ZapretPage(BasePage):
 
     def _on_install_service(self, button):
         """Handle install service button."""
+        self._logger.info("[UI:Zapret] Installing zapret service...")
         self.set_status("Hizmet kuruluyor...")
 
         def do_install():
@@ -324,6 +338,7 @@ class ZapretPage(BasePage):
 
     def _on_run_once(self, button):
         """Handle run once button."""
+        self._logger.info("[UI:Zapret] Running zapret once...")
         self.set_status("Çalıştırılıyor...")
 
         def do_run():
@@ -358,6 +373,7 @@ class ZapretPage(BasePage):
     def _on_remove_confirmed(self, dialog, response):
         """Handle remove confirmation."""
         if response == "remove":
+            self._logger.info("[UI:Zapret] Removing zapret service...")
             self.set_status("Kaldırılıyor...")
 
             def do_remove():

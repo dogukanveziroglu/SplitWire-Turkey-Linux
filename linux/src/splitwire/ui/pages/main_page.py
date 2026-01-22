@@ -22,6 +22,7 @@ from splitwire.services import (
     KNOWN_APPS,
     BROWSER_APPS,
 )
+from splitwire.services.wireguard import TunnelMode
 from .base_page import BasePage
 
 if TYPE_CHECKING:
@@ -69,14 +70,6 @@ class MainPage(BasePage):
         )
         buttons_group.add(self._btn_standard)
 
-        # Alternative setup button
-        self._btn_alternative = self.create_action_button(
-            label=get_text("main", "alternative_setup") or "Alternatif Kurulum",
-            callback=self._on_alternative_setup,
-            tooltip=get_text("tooltips", "alternative_install") or "Alternatif WireGuard kurulumu",
-        )
-        buttons_group.add(self._btn_alternative)
-
         # Disconnect button (initially hidden)
         self._btn_disconnect = self.create_action_button(
             label=get_text("buttons", "disconnect") or "Bağlantıyı Kes",
@@ -101,6 +94,15 @@ class MainPage(BasePage):
             callback=self._on_browser_tunneling_changed,
         )
         options_group.add(self._switch_browser)
+
+        # Full tunnel mode switch (default: ON - all traffic through VPN)
+        self._switch_full_tunnel = self.create_switch_row(
+            title=get_text("main", "full_tunnel") or "Tüm Trafik VPN'den Geçsin",
+            subtitle=get_text("tooltips", "full_tunnel") or "Tüm internet trafiğini VPN üzerinden yönlendir (daha yavaş ama tüm engeller kalkar)",
+            active=True,
+            callback=self._on_full_tunnel_changed,
+        )
+        options_group.add(self._switch_full_tunnel)
 
         # Refresh timer switch
         self._switch_refresh = self.create_switch_row(
@@ -265,7 +267,6 @@ class MainPage(BasePage):
 
         # Update button visibility based on VPN state
         self._btn_standard.set_sensitive(not running)
-        self._btn_alternative.set_sensitive(not running)
         self._btn_disconnect.set_visible(running)
 
     def refresh(self):
@@ -275,7 +276,6 @@ class MainPage(BasePage):
     def refresh_translations(self):
         """Refresh UI translations."""
         self._btn_standard.set_label(get_text("main", "standard_setup") or "Standart Kurulum")
-        self._btn_alternative.set_label(get_text("main", "alternative_setup") or "Alternatif Kurulum")
         self._switch_browser.set_title(get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap")
         self._switch_refresh.set_title(get_text("main", "refresh_timer") or "WireSock yineleyici kur")
         self._btn_remove.set_label(get_text("main", "remove_service") or "Hizmeti Kaldır")
@@ -284,6 +284,7 @@ class MainPage(BasePage):
 
     def _on_standard_setup(self, button):
         """Handle standard setup button click."""
+        self._logger.info("[UI:Main] Starting standard setup...")
         self.set_status(get_text("status", "installing") or "Kuruluyor...")
 
         def do_setup():
@@ -293,21 +294,34 @@ class MainPage(BasePage):
                 if not self._wg_service.register_wgcf():
                     return (False, get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız")
 
-                # Generate config
-                if not self._wg_service.generate_config():
+                # Determine tunnel mode based on switch state
+                tunnel_mode = TunnelMode.FULL if self._switch_full_tunnel.get_active() else TunnelMode.SPLIT
+
+                # Generate config with selected tunnel mode
+                if not self._wg_service.generate_config(tunnel_mode=tunnel_mode):
                     return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
 
-                # Setup split tunnel with selected apps
-                include_browsers = self._switch_browser.get_active()
-                apps = self._get_selected_apps()
-                self._st_service.configure(apps=apps, include_browsers=include_browsers)
-
-                # Apply Cloudflare DNS (required to bypass ISP DNS hijacking)
-                self._dns_service.install(preset="cloudflare")
-
-                # Start service
+                # CRITICAL: Start WireGuard BEFORE changing DNS
+                # DNS change before VPN can cause endpoint resolution failure
+                # if ISP blocks/throttles public DNS servers like 1.1.1.1
                 if not self._wg_service.start():
                     return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
+
+                # Verify VPN connection is working
+                import time
+                time.sleep(1)  # Give WireGuard a moment to establish connection
+                if not self._wg_service.test_connection():
+                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+
+                # NOW it's safe to change DNS (VPN is active, DNS queries can go through VPN)
+                self._dns_service.install(preset="cloudflare")
+
+                # Setup split tunnel with selected apps (optional, for app-based routing)
+                include_browsers = self._switch_browser.get_active()
+                apps = self._get_selected_apps()
+                # Note: cgproxy split tunneling is separate from WireGuard's IP-based routing
+                # WireGuard already routes Discord/Cloudflare IPs through VPN via AllowedIPs
+                # self._st_service.configure(apps=apps, include_browsers=include_browsers)
 
                 # Save settings
                 self._save_settings()
@@ -322,54 +336,10 @@ class MainPage(BasePage):
             self._update_status_indicator()
             success, error = result if isinstance(result, tuple) else (result, None)
             if success:
+                self._logger.info("[UI:Main] Standard setup completed successfully")
                 self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
             else:
-                self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
-            self.set_status("")
-
-        self.run_async(do_setup, on_complete)
-
-    def _on_alternative_setup(self, button):
-        """Handle alternative setup button click."""
-        self.set_status(get_text("status", "installing") or "Kuruluyor...")
-
-        def do_setup():
-            try:
-                # Register WGCF account if needed
-                if not self._wg_service.register_wgcf():
-                    return (False, get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız")
-
-                # Generate config with alternative endpoint
-                if not self._wg_service.generate_config(endpoint="alternative"):
-                    return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
-
-                # Setup split tunnel with selected apps
-                include_browsers = self._switch_browser.get_active()
-                apps = self._get_selected_apps()
-                self._st_service.configure(apps=apps, include_browsers=include_browsers)
-
-                # Apply Cloudflare DNS (required to bypass ISP DNS hijacking)
-                self._dns_service.install(preset="cloudflare")
-
-                # Start service
-                if not self._wg_service.start():
-                    return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
-
-                # Save settings
-                self._save_settings()
-
-                return (True, None)
-
-            except Exception as e:
-                self._logger.exception(f"Alternative setup failed: {e}")
-                return (False, str(e))
-
-        def on_complete(result):
-            self._update_status_indicator()
-            success, error = result if isinstance(result, tuple) else (result, None)
-            if success:
-                self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
-            else:
+                self._logger.error(f"[UI:Main] Standard setup failed: {error}")
                 self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
             self.set_status("")
 
@@ -377,6 +347,7 @@ class MainPage(BasePage):
 
     def _on_disconnect(self, button):
         """Handle disconnect button click."""
+        self._logger.info("[UI:Main] Disconnecting VPN...")
         self.set_status(get_text("status", "disconnecting") or "Bağlantı kesiliyor...")
 
         def do_disconnect():
@@ -404,13 +375,19 @@ class MainPage(BasePage):
     def _on_browser_tunneling_changed(self, row, param):
         """Handle browser tunneling switch change."""
         active = row.get_active()
-        self._logger.info(f"Browser tunneling: {active}")
+        self._logger.info(f"[UI:Main] Browser tunneling changed: {active}")
+        # Will be applied during setup
+
+    def _on_full_tunnel_changed(self, row, param):
+        """Handle full tunnel mode switch change."""
+        active = row.get_active()
+        self._logger.info(f"[UI:Main] Full tunnel mode changed: {active}")
         # Will be applied during setup
 
     def _on_refresh_timer_changed(self, row, param):
         """Handle refresh timer switch change."""
         active = row.get_active()
-        self._logger.info(f"Refresh timer: {active}")
+        self._logger.info(f"[UI:Main] Refresh timer changed: {active}")
         # Enable/disable the refresh timer
         if active:
             self._wg_service.enable_refresh_timer()
@@ -422,7 +399,7 @@ class MainPage(BasePage):
         app_id = check.get_name()  # Retrieve app_id from widget name
         active = check.get_active()
         self._enabled_apps[app_id] = active
-        self._logger.info(f"App {app_id}: {'enabled' if active else 'disabled'}")
+        self._logger.info(f"[UI:Main] App toggled: {app_id} {'enabled' if active else 'disabled'}")
         # Save to config immediately
         self._save_settings()
 
@@ -461,7 +438,9 @@ class MainPage(BasePage):
 
     def _on_custom_setup(self, button):
         """Handle custom setup button click."""
+        self._logger.info("[UI:Main] Starting custom setup...")
         if not self._custom_apps:
+            self._logger.warning("[UI:Main] Custom setup cancelled: no custom apps")
             self.show_toast(get_text("messages", "no_custom_apps") or "Özel uygulama listesi boş")
             return
 
@@ -477,18 +456,18 @@ class MainPage(BasePage):
                 if not self._wg_service.generate_config():
                     return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
 
-                # Setup split tunnel with custom apps
-                self._st_service.configure(
-                    apps=self._custom_apps,
-                    include_browsers=self._switch_browser.get_active()
-                )
-
-                # Apply Cloudflare DNS (for consistency with other setups)
-                self._dns_service.install(preset="cloudflare")
-
-                # Start service
+                # CRITICAL: Start WireGuard BEFORE changing DNS
                 if not self._wg_service.start():
                     return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
+
+                # Verify VPN connection is working
+                import time
+                time.sleep(1)
+                if not self._wg_service.test_connection():
+                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+
+                # NOW it's safe to change DNS (VPN is active)
+                self._dns_service.install(preset="cloudflare")
 
                 # Save settings
                 self._save_settings()
@@ -555,6 +534,7 @@ class MainPage(BasePage):
     def _on_remove_confirmed(self, dialog, response):
         """Handle remove confirmation response."""
         if response == "remove":
+            self._logger.info("[UI:Main] Removing WireGuard service...")
             self.set_status(get_text("status", "removing") or "Kaldırılıyor...")
 
             def do_remove():
@@ -643,6 +623,7 @@ Yineleyici: Bağlantıyı 30 dakikada bir yeniler.""",
             # Save switch states
             config.wireguard.include_browsers = self._switch_browser.get_active()
             config.wireguard.refresh_timer_enabled = self._switch_refresh.get_active()
+            config.wireguard.full_tunnel_mode = self._switch_full_tunnel.get_active()
 
             # Persist to disk
             save_config()
@@ -666,6 +647,7 @@ Yineleyici: Bağlantıyı 30 dakikada bir yeniler.""",
             # Update switch states
             self._switch_browser.set_active(config.wireguard.include_browsers)
             self._switch_refresh.set_active(config.wireguard.refresh_timer_enabled)
+            self._switch_full_tunnel.set_active(config.wireguard.full_tunnel_mode)
 
             self._logger.debug("Settings loaded")
 

@@ -204,6 +204,7 @@ class SettingsPage(BasePage):
 
         if selected < len(languages):
             code, name, flag = languages[selected]
+            self._logger.info(f"[UI:Settings] Language changed to: {code}")
             app = self._window.get_application()
             if app:
                 app.set_language(code)
@@ -216,6 +217,7 @@ class SettingsPage(BasePage):
 
         if selected < len(themes):
             code, name = themes[selected]
+            self._logger.info(f"[UI:Settings] Theme changed to: {code}")
             app = self._window.get_application()
             if app:
                 app.set_theme(code)
@@ -224,13 +226,13 @@ class SettingsPage(BasePage):
     def _on_dns_changed(self, row, param):
         """Handle DNS selection change."""
         selected = row.get_selected()
-        self._logger.info(f"DNS changed to index: {selected}")
+        self._logger.info(f"[UI:Settings] DNS changed to index: {selected}")
         # DNS will be applied when a service is installed
 
     def _on_doh_changed(self, row, param):
         """Handle DoH switch change."""
         active = row.get_active()
-        self._logger.info(f"DoH enabled: {active}")
+        self._logger.info(f"[UI:Settings] DoH enabled: {active}")
 
     def _on_github_clicked(self, row):
         """Handle GitHub row click."""
@@ -248,6 +250,7 @@ class SettingsPage(BasePage):
 
     def _on_check_updates(self, row):
         """Handle check updates click."""
+        self._logger.info("[UI:Settings] Checking for updates...")
         self.set_status("Güncellemeler kontrol ediliyor...")
 
         def do_check():

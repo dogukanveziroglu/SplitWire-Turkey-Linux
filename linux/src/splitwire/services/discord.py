@@ -268,10 +268,18 @@ class DiscordService(BaseService):
         Returns:
             Dictionary of detected installations
         """
+        self._logger.info("[DISCORD] Detecting all Discord installations...")
         for version in DiscordVersion:
             self._installations[version] = self._detect_version(version)
+            if self._installations[version].method != InstallMethod.NOT_INSTALLED:
+                self._logger.debug(f"[DISCORD] Found {version.value}: method={self._installations[version].method.value}")
 
         self._webcord = self._detect_webcord()
+        if self._webcord.installed:
+            self._logger.debug(f"[DISCORD] Found WebCord: method={self._webcord.method.value}")
+
+        installed_count = sum(1 for i in self._installations.values() if i.method != InstallMethod.NOT_INSTALLED)
+        self._logger.info(f"[DISCORD] Detection complete: {installed_count} Discord versions found")
 
         return self._installations.copy()
 
@@ -285,6 +293,7 @@ class DiscordService(BaseService):
         Returns:
             DiscordInstallation with detection results
         """
+        self._logger.debug(f"[DISCORD] Detecting {version.value}...")
         installation = DiscordInstallation(
             version=version,
             method=InstallMethod.NOT_INSTALLED,
@@ -295,12 +304,14 @@ class DiscordService(BaseService):
         # Check for DEB installation
         deb_name = DEB_DISCORD_NAMES.get(version.value)
         if deb_name and self._is_deb_installed(deb_name):
+            self._logger.debug(f"[DISCORD] {version.value} detected as DEB package")
             installation.method = InstallMethod.DEB
             installation.path = f"/usr/share/{deb_name}"
             installation.binary_path = self._find_binary(version)
 
         # Check for Snap installation
         elif self._is_snap_installed(version):
+            self._logger.debug(f"[DISCORD] {version.value} detected as Snap package")
             installation.method = InstallMethod.SNAP
             snap_name = SNAP_DISCORD_NAMES.get(version.value)
             installation.path = f"/snap/{snap_name}/current"
@@ -308,6 +319,7 @@ class DiscordService(BaseService):
 
         # Check for Flatpak installation
         elif self._is_flatpak_installed(version):
+            self._logger.debug(f"[DISCORD] {version.value} detected as Flatpak")
             installation.method = InstallMethod.FLATPAK
             flatpak_id = FLATPAK_DISCORD_IDS.get(version.value)
             installation.path = f"flatpak:{flatpak_id}"
@@ -315,6 +327,7 @@ class DiscordService(BaseService):
 
         # Check for tarball/manual installation
         elif self._find_binary(version):
+            self._logger.debug(f"[DISCORD] {version.value} detected as tarball/manual install")
             installation.method = InstallMethod.TARBALL
             installation.binary_path = self._find_binary(version)
 
@@ -325,6 +338,7 @@ class DiscordService(BaseService):
         if installation.cache_dir and installation.cache_dir.exists():
             installation.has_cache = True
             installation.cache_size_mb = self._get_dir_size_mb(installation.cache_dir)
+            self._logger.debug(f"[DISCORD] {version.value} cache: {installation.cache_size_mb:.1f} MB")
 
         return installation
 
@@ -363,10 +377,13 @@ class DiscordService(BaseService):
     def _find_binary(self, version: DiscordVersion) -> Optional[str]:
         """Find Discord binary in PATH."""
         binaries = DISCORD_BINARIES.get(version.value, [])
+        self._logger.debug(f"[DISCORD] Searching for {version.value} binary in: {binaries}")
         for binary in binaries:
             path = self._shell.get_command_path(binary)
             if path:
+                self._logger.debug(f"[DISCORD] Found binary: {path}")
                 return path
+        self._logger.debug(f"[DISCORD] No binary found for {version.value}")
         return None
 
     def _is_discord_running(self, version: DiscordVersion) -> bool:

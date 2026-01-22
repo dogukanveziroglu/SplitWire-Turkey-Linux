@@ -19,9 +19,10 @@ from splitwire.core import get_logger, get_shell
 
 
 # cgproxy configuration
-CGPROXY_CONFIG_DIR = Path("/etc/cgproxy")
-CGPROXY_CONFIG_FILE = CGPROXY_CONFIG_DIR / "config.json"
-CGPROXY_SERVICE = "cgproxy.service"
+# Use SplitWire's own config directory and service
+CGPROXY_CONFIG_DIR = Path("/etc/splitwire")
+CGPROXY_CONFIG_FILE = CGPROXY_CONFIG_DIR / "cgproxy.json"
+CGPROXY_SERVICE = "splitwire-cgproxy.service"  # Use our own service, not system cgproxy
 
 # Local configuration
 LOCAL_CONFIG_DIR = Path.home() / ".config" / "splitwire"
@@ -161,6 +162,7 @@ class SplitTunnelService(BaseService):
     def _load_config(self) -> None:
         """Load tunneled apps configuration."""
         if APPS_CONFIG_FILE.exists():
+            self._logger.debug(f"[TUNNEL] Loading config from {APPS_CONFIG_FILE}")
             try:
                 data = json.loads(APPS_CONFIG_FILE.read_text())
                 self._config.enabled = data.get("enabled", False)
@@ -175,11 +177,13 @@ class SplitTunnelService(BaseService):
                         enabled=app_data.get("enabled", True),
                         is_custom=app_data.get("is_custom", False),
                     ))
+                self._logger.debug(f"[TUNNEL] Config loaded: {len(self._config.apps)} apps, include_browsers={self._config.include_browsers}")
             except Exception as e:
-                self._logger.warning(f"Failed to load config: {e}")
+                self._logger.warning(f"[TUNNEL] Failed to load config: {e}")
 
     def _save_config(self) -> None:
         """Save tunneled apps configuration."""
+        self._logger.debug(f"[TUNNEL] Saving config to {APPS_CONFIG_FILE}")
         data = {
             "enabled": self._config.enabled,
             "include_browsers": self._config.include_browsers,
@@ -195,6 +199,7 @@ class SplitTunnelService(BaseService):
             ]
         }
         APPS_CONFIG_FILE.write_text(json.dumps(data, indent=2))
+        self._logger.debug(f"[TUNNEL] Config saved: {len(self._config.apps)} apps")
 
     # =========================================================================
     # BaseService implementation
@@ -351,6 +356,7 @@ class SplitTunnelService(BaseService):
 
         Returns apps that are actually installed on the system.
         """
+        self._logger.debug("[TUNNEL] Discovering available apps on system...")
         available = []
 
         for app_name, paths in KNOWN_APPS.items():
@@ -362,8 +368,10 @@ class SplitTunnelService(BaseService):
                         enabled=False,
                         is_custom=False,
                     ))
+                    self._logger.debug(f"[TUNNEL] Found app: {app_name} at {path}")
                     break  # Only add first found path for each app
 
+        self._logger.info(f"[TUNNEL] Discovered {len(available)} available apps")
         return available
 
     def get_tunneled_apps(self) -> list[TunneledApp]:
@@ -381,14 +389,15 @@ class SplitTunnelService(BaseService):
         Returns:
             True if added successfully
         """
+        self._logger.debug(f"[TUNNEL] Adding custom app: {name} ({path})")
         if not Path(path).exists():
-            self._logger.error(f"Path does not exist: {path}")
+            self._logger.error(f"[TUNNEL] Path does not exist: {path}")
             return False
 
         # Check if already added
         for app in self._config.apps:
             if app.path == path:
-                self._logger.info(f"App already in list: {path}")
+                self._logger.info(f"[TUNNEL] App already in list: {path}")
                 return True
 
         self._config.apps.append(TunneledApp(
@@ -400,7 +409,7 @@ class SplitTunnelService(BaseService):
         self._config.custom_paths.append(path)
         self._save_config()
 
-        self._logger.info(f"Added custom app: {name} ({path})")
+        self._logger.info(f"[TUNNEL] Added custom app: {name} ({path})")
         return True
 
     def remove_custom_app(self, path: str) -> bool:

@@ -13,6 +13,10 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+from splitwire.core.logger import get_logger
+
+_logger = get_logger()
+
 
 class FirewallBackend(Enum):
     """Detected firewall backend."""
@@ -138,6 +142,7 @@ class SystemDetector:
 
     def detect(self) -> SystemInfo:
         """Run full system detection."""
+        _logger.info("[SYSTEM] Detecting system capabilities...")
         self._info = SystemInfo()
 
         self._detect_ubuntu_version()
@@ -151,6 +156,17 @@ class SystemDetector:
         self._detect_cgroups()
         self._detect_python()
         self._detect_user_privileges()
+
+        # Log detected information
+        _logger.debug(f"[SYSTEM] OS: {self._info.ubuntu}")
+        _logger.debug(f"[SYSTEM] Kernel: {self._info.kernel_version}")
+        _logger.debug(f"[SYSTEM] Init: {self._info.init_system.value}")
+        _logger.debug(f"[SYSTEM] Firewall: {self._info.firewall_backend.value}")
+        _logger.debug(f"[SYSTEM] WireGuard: tools={self._info.wireguard_tools_installed}, module={self._info.wireguard_module_loaded}")
+        _logger.debug(f"[SYSTEM] NFQUEUE: {self._info.nfqueue_available}")
+        _logger.debug(f"[SYSTEM] Cgroups v2: {self._info.cgroups_v2}")
+        _logger.debug(f"[SYSTEM] DNS Manager: {self._info.dns_manager.value}")
+        _logger.info("[SYSTEM] System detection completed")
 
         return self._info
 
@@ -207,7 +223,7 @@ class SystemDetector:
                         self._info.ubuntu.minor = int(parts[1])
 
                 # Check if supported (22.04+)
-                if self._info.ubuntu.major >= 22:
+                if self._info.ubuntu.major > 22:
                     self._info.ubuntu.is_supported = True
                 elif self._info.ubuntu.major == 22 and self._info.ubuntu.minor >= 4:
                     self._info.ubuntu.is_supported = True
