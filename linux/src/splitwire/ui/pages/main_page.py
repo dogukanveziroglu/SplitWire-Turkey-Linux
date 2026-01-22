@@ -103,11 +103,11 @@ class MainPage(BasePage):
         )
         options_group.add(self._switch_browser)
 
-        # Full tunnel mode switch
+        # Full tunnel mode switch (default: ON - all traffic through VPN)
         self._switch_full_tunnel = self.create_switch_row(
             title=get_text("main", "full_tunnel") or "Tüm Trafik VPN'den Geçsin",
             subtitle=get_text("tooltips", "full_tunnel") or "Tüm internet trafiğini VPN üzerinden yönlendir (daha yavaş ama tüm engeller kalkar)",
-            active=False,
+            active=True,
             callback=self._on_full_tunnel_changed,
         )
         options_group.add(self._switch_full_tunnel)
