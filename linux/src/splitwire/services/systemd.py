@@ -22,6 +22,7 @@ from splitwire.core import get_logger, get_shell, CommandResult
 
 class SystemdUnitType(Enum):
     """Type of systemd unit."""
+
     SERVICE = "service"
     TIMER = "timer"
     SOCKET = "socket"
@@ -30,6 +31,7 @@ class SystemdUnitType(Enum):
 
 class SystemdActiveState(Enum):
     """Active state of a systemd unit."""
+
     ACTIVE = "active"
     INACTIVE = "inactive"
     FAILED = "failed"
@@ -41,6 +43,7 @@ class SystemdActiveState(Enum):
 
 class SystemdEnabledState(Enum):
     """Enabled state of a systemd unit."""
+
     ENABLED = "enabled"
     DISABLED = "disabled"
     STATIC = "static"
@@ -52,6 +55,7 @@ class SystemdEnabledState(Enum):
 @dataclass
 class SystemdUnitStatus:
     """Status information for a systemd unit."""
+
     name: str
     unit_type: SystemdUnitType
     active_state: SystemdActiveState
@@ -86,6 +90,7 @@ class SystemdUnitStatus:
 @dataclass
 class JournalEntry:
     """A journal log entry."""
+
     timestamp: str
     unit: str
     priority: int
@@ -128,8 +133,13 @@ class SystemdManager:
     # Unit File Management
     # =========================================================================
 
-    def install_unit(self, unit_name: str, content: Optional[str] = None,
-                     enable: bool = True, start: bool = False) -> bool:
+    def install_unit(
+        self,
+        unit_name: str,
+        content: Optional[str] = None,
+        enable: bool = True,
+        start: bool = False,
+    ) -> bool:
         """
         Install a systemd unit file.
 
@@ -153,17 +163,13 @@ class SystemdManager:
 
         # Write to temp file first
         try:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.service',
-                                             delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".service", delete=False) as f:
                 f.write(content)
                 temp_path = f.name
 
             # Copy to system directory
             target_path = self.SYSTEM_UNIT_DIR / unit_name
-            result = self._shell.run(
-                ["sudo", "cp", temp_path, str(target_path)],
-                timeout=30
-            )
+            result = self._shell.run(["sudo", "cp", temp_path, str(target_path)], timeout=30)
 
             # Clean up temp file
             os.unlink(temp_path)
@@ -173,10 +179,7 @@ class SystemdManager:
                 return False
 
             # Set permissions
-            self._shell.run(
-                ["sudo", "chmod", "644", str(target_path)],
-                timeout=10
-            )
+            self._shell.run(["sudo", "chmod", "644", str(target_path)], timeout=10)
 
             # Reload systemd
             self.daemon_reload()
@@ -217,10 +220,7 @@ class SystemdManager:
         # Remove unit file
         target_path = self.SYSTEM_UNIT_DIR / unit_name
         if target_path.exists():
-            result = self._shell.run(
-                ["sudo", "rm", "-f", str(target_path)],
-                timeout=30
-            )
+            result = self._shell.run(["sudo", "rm", "-f", str(target_path)], timeout=30)
             if not result.success:
                 self._logger.error(f"Failed to remove unit file: {result.stderr}")
                 return False
@@ -229,10 +229,7 @@ class SystemdManager:
         self.daemon_reload()
 
         # Reset failed state if any
-        self._shell.run(
-            ["sudo", "systemctl", "reset-failed", unit_name],
-            timeout=10
-        )
+        self._shell.run(["sudo", "systemctl", "reset-failed", unit_name], timeout=10)
 
         self._logger.info(f"Successfully removed: {unit_name}")
         return True
@@ -258,10 +255,7 @@ class SystemdManager:
             True if successful
         """
         self._logger.debug("[SYSTEMD] Running daemon-reload...")
-        result = self._shell.run(
-            ["sudo", "systemctl", "daemon-reload"],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "daemon-reload"], timeout=30)
         if result.success:
             self._logger.debug("[SYSTEMD] daemon-reload completed successfully")
         else:
@@ -290,10 +284,7 @@ class SystemdManager:
             True if started successfully
         """
         self._logger.info(f"Starting: {unit_name}")
-        result = self._shell.run(
-            ["sudo", "systemctl", "start", unit_name],
-            timeout=60
-        )
+        result = self._shell.run(["sudo", "systemctl", "start", unit_name], timeout=60)
         if not result.success:
             self._logger.error(f"Failed to start {unit_name}: {result.stderr}")
         return result.success
@@ -309,10 +300,7 @@ class SystemdManager:
             True if stopped successfully
         """
         self._logger.info(f"Stopping: {unit_name}")
-        result = self._shell.run(
-            ["sudo", "systemctl", "stop", unit_name],
-            timeout=60
-        )
+        result = self._shell.run(["sudo", "systemctl", "stop", unit_name], timeout=60)
         if not result.success:
             # Don't log error if service wasn't running
             if "not loaded" not in result.stderr.lower():
@@ -330,10 +318,7 @@ class SystemdManager:
             True if restarted successfully
         """
         self._logger.info(f"Restarting: {unit_name}")
-        result = self._shell.run(
-            ["sudo", "systemctl", "restart", unit_name],
-            timeout=60
-        )
+        result = self._shell.run(["sudo", "systemctl", "restart", unit_name], timeout=60)
         if not result.success:
             self._logger.error(f"Failed to restart {unit_name}: {result.stderr}")
         return result.success
@@ -349,10 +334,7 @@ class SystemdManager:
             True if reloaded successfully
         """
         self._logger.info(f"Reloading: {unit_name}")
-        result = self._shell.run(
-            ["sudo", "systemctl", "reload", unit_name],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "reload", unit_name], timeout=30)
         if not result.success:
             self._logger.error(f"Failed to reload {unit_name}: {result.stderr}")
         return result.success
@@ -368,10 +350,7 @@ class SystemdManager:
             True if enabled successfully
         """
         self._logger.info(f"Enabling: {unit_name}")
-        result = self._shell.run(
-            ["sudo", "systemctl", "enable", unit_name],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "enable", unit_name], timeout=30)
         if not result.success:
             self._logger.error(f"Failed to enable {unit_name}: {result.stderr}")
         return result.success
@@ -387,10 +366,7 @@ class SystemdManager:
             True if disabled successfully
         """
         self._logger.info(f"Disabling: {unit_name}")
-        result = self._shell.run(
-            ["sudo", "systemctl", "disable", unit_name],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "disable", unit_name], timeout=30)
         if not result.success:
             # Don't log error if already disabled
             if "does not exist" not in result.stderr.lower():
@@ -407,10 +383,7 @@ class SystemdManager:
         Returns:
             True if masked successfully
         """
-        result = self._shell.run(
-            ["sudo", "systemctl", "mask", unit_name],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "mask", unit_name], timeout=30)
         return result.success
 
     def unmask(self, unit_name: str) -> bool:
@@ -423,10 +396,7 @@ class SystemdManager:
         Returns:
             True if unmasked successfully
         """
-        result = self._shell.run(
-            ["sudo", "systemctl", "unmask", unit_name],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "unmask", unit_name], timeout=30)
         return result.success
 
     # =========================================================================
@@ -444,20 +414,17 @@ class SystemdManager:
             SystemdUnitStatus with current state
         """
         # Determine unit type
-        if unit_name.endswith('.timer'):
+        if unit_name.endswith(".timer"):
             unit_type = SystemdUnitType.TIMER
-        elif unit_name.endswith('.socket'):
+        elif unit_name.endswith(".socket"):
             unit_type = SystemdUnitType.SOCKET
-        elif unit_name.endswith('.path'):
+        elif unit_name.endswith(".path"):
             unit_type = SystemdUnitType.PATH
         else:
             unit_type = SystemdUnitType.SERVICE
 
         # Get active state
-        active_result = self._shell.run(
-            ["systemctl", "is-active", unit_name],
-            timeout=10
-        )
+        active_result = self._shell.run(["systemctl", "is-active", unit_name], timeout=10)
         active_str = active_result.stdout.strip().lower()
         try:
             active_state = SystemdActiveState(active_str)
@@ -465,10 +432,7 @@ class SystemdManager:
             active_state = SystemdActiveState.UNKNOWN
 
         # Get enabled state
-        enabled_result = self._shell.run(
-            ["systemctl", "is-enabled", unit_name],
-            timeout=10
-        )
+        enabled_result = self._shell.run(["systemctl", "is-enabled", unit_name], timeout=10)
         enabled_str = enabled_result.stdout.strip().lower()
         try:
             enabled_state = SystemdEnabledState(enabled_str)
@@ -485,17 +449,21 @@ class SystemdManager:
 
         # Parse detailed status
         show_result = self._shell.run(
-            ["systemctl", "show", unit_name,
-             "--property=Description,LoadState,SubState,MainPID,"
-             "MemoryCurrent,TasksCurrent,CPUUsageNSec,InvocationID,"
-             "ActiveEnterTimestamp,InactiveEnterTimestamp"],
-            timeout=10
+            [
+                "systemctl",
+                "show",
+                unit_name,
+                "--property=Description,LoadState,SubState,MainPID,"
+                "MemoryCurrent,TasksCurrent,CPUUsageNSec,InvocationID,"
+                "ActiveEnterTimestamp,InactiveEnterTimestamp",
+            ],
+            timeout=10,
         )
 
         if show_result.success:
-            for line in show_result.stdout.strip().split('\n'):
-                if '=' in line:
-                    key, value = line.split('=', 1)
+            for line in show_result.stdout.strip().split("\n"):
+                if "=" in line:
+                    key, value = line.split("=", 1)
                     if key == "Description":
                         status.description = value
                     elif key == "LoadState":
@@ -529,10 +497,7 @@ class SystemdManager:
         Returns:
             True if active
         """
-        result = self._shell.run(
-            ["systemctl", "is-active", "--quiet", unit_name],
-            timeout=10
-        )
+        result = self._shell.run(["systemctl", "is-active", "--quiet", unit_name], timeout=10)
         return result.returncode == 0
 
     def is_enabled(self, unit_name: str) -> bool:
@@ -545,10 +510,7 @@ class SystemdManager:
         Returns:
             True if enabled
         """
-        result = self._shell.run(
-            ["systemctl", "is-enabled", "--quiet", unit_name],
-            timeout=10
-        )
+        result = self._shell.run(["systemctl", "is-enabled", "--quiet", unit_name], timeout=10)
         return result.returncode == 0
 
     def is_failed(self, unit_name: str) -> bool:
@@ -561,19 +523,21 @@ class SystemdManager:
         Returns:
             True if failed
         """
-        result = self._shell.run(
-            ["systemctl", "is-failed", "--quiet", unit_name],
-            timeout=10
-        )
+        result = self._shell.run(["systemctl", "is-failed", "--quiet", unit_name], timeout=10)
         return result.returncode == 0
 
     # =========================================================================
     # Journal Logs
     # =========================================================================
 
-    def get_logs(self, unit_name: str, lines: int = 100,
-                 since: Optional[str] = None, until: Optional[str] = None,
-                 priority: Optional[int] = None) -> List[str]:
+    def get_logs(
+        self,
+        unit_name: str,
+        lines: int = 100,
+        since: Optional[str] = None,
+        until: Optional[str] = None,
+        priority: Optional[int] = None,
+    ) -> List[str]:
         """
         Get journal logs for a unit.
 
@@ -599,7 +563,7 @@ class SystemdManager:
         result = self._shell.run(cmd, timeout=30)
 
         if result.success:
-            return result.stdout.strip().split('\n')
+            return result.stdout.strip().split("\n")
         return []
 
     def get_logs_json(self, unit_name: str, lines: int = 100) -> List[JournalEntry]:
@@ -616,26 +580,27 @@ class SystemdManager:
         import json
 
         result = self._shell.run(
-            ["journalctl", "-u", unit_name, "-n", str(lines),
-             "--no-pager", "-o", "json"],
-            timeout=30
+            ["journalctl", "-u", unit_name, "-n", str(lines), "--no-pager", "-o", "json"],
+            timeout=30,
         )
 
         entries = []
         if result.success:
-            for line in result.stdout.strip().split('\n'):
+            for line in result.stdout.strip().split("\n"):
                 if not line:
                     continue
                 try:
                     data = json.loads(line)
-                    entries.append(JournalEntry(
-                        timestamp=data.get("__REALTIME_TIMESTAMP", ""),
-                        unit=data.get("_SYSTEMD_UNIT", unit_name),
-                        priority=int(data.get("PRIORITY", 6)),
-                        message=data.get("MESSAGE", ""),
-                        pid=int(data.get("_PID", 0)) or None,
-                        hostname=data.get("_HOSTNAME"),
-                    ))
+                    entries.append(
+                        JournalEntry(
+                            timestamp=data.get("__REALTIME_TIMESTAMP", ""),
+                            unit=data.get("_SYSTEMD_UNIT", unit_name),
+                            priority=int(data.get("PRIORITY", 6)),
+                            message=data.get("MESSAGE", ""),
+                            pid=int(data.get("_PID", 0)) or None,
+                            hostname=data.get("_HOSTNAME"),
+                        )
+                    )
                 except (json.JSONDecodeError, KeyError, ValueError) as e:
                     self._logger.debug(f"[SYSTEMD] Failed to parse journal JSON line: {e}")
                     continue
@@ -658,7 +623,7 @@ class SystemdManager:
             ["journalctl", "-u", unit_name, "-f", "--no-pager"],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
 
         try:
@@ -678,10 +643,7 @@ class SystemdManager:
             True if successful
         """
         # journalctl doesn't support clearing per-unit, so we rotate and vacuum
-        result = self._shell.run(
-            ["sudo", "journalctl", "--rotate"],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "journalctl", "--rotate"], timeout=30)
         return result.success
 
     # =========================================================================
@@ -699,11 +661,12 @@ class SystemdManager:
         status_dict = {}
         for key, unit_name in self.SPLITWIRE_SERVICES.items():
             status_dict[key] = self.get_status(unit_name)
-            self._logger.debug(f"[SYSTEMD] {key}: active={status_dict[key].active_state.value}, enabled={status_dict[key].enabled_state.value}")
+            self._logger.debug(
+                f"[SYSTEMD] {key}: active={status_dict[key].active_state.value}, enabled={status_dict[key].enabled_state.value}"
+            )
         return status_dict
 
-    def install_splitwire_service(self, service_key: str,
-                                   config: Optional[Dict] = None) -> bool:
+    def install_splitwire_service(self, service_key: str, config: Optional[Dict] = None) -> bool:
         """
         Install a SplitWire service.
 

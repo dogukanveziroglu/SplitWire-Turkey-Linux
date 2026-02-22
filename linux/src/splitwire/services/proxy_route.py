@@ -43,14 +43,16 @@ DEFAULT_PROXY_PORT = 1080
 
 class ProxyMethod(Enum):
     """Method for routing apps through proxy."""
-    CGPROXY = "cgproxy"      # cgroup-based (recommended)
-    REDSOCKS = "redsocks"    # iptables-based redirect
-    ENV = "env"              # Environment variables (per-app only)
+
+    CGPROXY = "cgproxy"  # cgroup-based (recommended)
+    REDSOCKS = "redsocks"  # iptables-based redirect
+    ENV = "env"  # Environment variables (per-app only)
 
 
 @dataclass
 class ProxiedApp:
     """Information about an app configured for proxy routing."""
+
     name: str
     path: str
     enabled: bool = True
@@ -60,6 +62,7 @@ class ProxiedApp:
 @dataclass
 class ProxyRouteConfig:
     """Proxy routing configuration."""
+
     enabled: bool = False
     method: ProxyMethod = ProxyMethod.CGPROXY
     proxy_host: str = DEFAULT_PROXY_HOST
@@ -115,13 +118,17 @@ class ProxyRouteService(BaseService):
                     custom_paths=data.get("custom_paths", []),
                 )
                 for app_data in data.get("apps", []):
-                    self._config.apps.append(ProxiedApp(
-                        name=app_data.get("name", ""),
-                        path=app_data.get("path", ""),
-                        enabled=app_data.get("enabled", True),
-                        is_custom=app_data.get("is_custom", False),
-                    ))
-                self._logger.debug(f"[PROXY] Config loaded: proxy={self._config.proxy_host}:{self._config.proxy_port}, method={self._config.method.value}")
+                    self._config.apps.append(
+                        ProxiedApp(
+                            name=app_data.get("name", ""),
+                            path=app_data.get("path", ""),
+                            enabled=app_data.get("enabled", True),
+                            is_custom=app_data.get("is_custom", False),
+                        )
+                    )
+                self._logger.debug(
+                    f"[PROXY] Config loaded: proxy={self._config.proxy_host}:{self._config.proxy_port}, method={self._config.method.value}"
+                )
             except Exception as e:
                 self._logger.warning(f"[PROXY] Failed to load config: {e}")
 
@@ -143,7 +150,7 @@ class ProxyRouteService(BaseService):
                     "is_custom": app.is_custom,
                 }
                 for app in self._config.apps
-            ]
+            ],
         }
         PROXY_ROUTE_CONFIG_FILE.write_text(json.dumps(data, indent=2))
         self._logger.debug(f"[PROXY] Config saved: {len(self._config.apps)} apps")
@@ -152,12 +159,15 @@ class ProxyRouteService(BaseService):
     # BaseService implementation
     # =========================================================================
 
-    def install(self, apps: Optional[list[str]] = None,
-                include_browsers: bool = False,
-                proxy_host: str = DEFAULT_PROXY_HOST,
-                proxy_port: int = DEFAULT_PROXY_PORT,
-                method: ProxyMethod = ProxyMethod.CGPROXY,
-                **kwargs) -> bool:
+    def install(
+        self,
+        apps: Optional[list[str]] = None,
+        include_browsers: bool = False,
+        proxy_host: str = DEFAULT_PROXY_HOST,
+        proxy_port: int = DEFAULT_PROXY_PORT,
+        method: ProxyMethod = ProxyMethod.CGPROXY,
+        **kwargs,
+    ) -> bool:
         """
         Install and configure proxy routing.
 
@@ -243,10 +253,7 @@ class ProxyRouteService(BaseService):
 
         if self._config.method == ProxyMethod.REDSOCKS:
             # Start redsocks service
-            result = self._run_privileged(
-                ["systemctl", "start", REDSOCKS_SERVICE],
-                timeout=30
-            )
+            result = self._run_privileged(["systemctl", "start", REDSOCKS_SERVICE], timeout=30)
             if result.success:
                 # Add iptables rules
                 self._add_iptables_rules()
@@ -266,10 +273,7 @@ class ProxyRouteService(BaseService):
             self._remove_iptables_rules()
 
             # Stop redsocks service
-            self._run_privileged(
-                ["systemctl", "stop", REDSOCKS_SERVICE],
-                timeout=30
-            )
+            self._run_privileged(["systemctl", "stop", REDSOCKS_SERVICE], timeout=30)
 
         self._notify_status_change(ServiceStatus.STOPPED)
         return True
@@ -280,10 +284,7 @@ class ProxyRouteService(BaseService):
             return ServiceStatus.NOT_INSTALLED
 
         if self._config.method == ProxyMethod.REDSOCKS:
-            result = self._shell.run(
-                ["systemctl", "is-active", REDSOCKS_SERVICE],
-                timeout=10
-            )
+            result = self._shell.run(["systemctl", "is-active", REDSOCKS_SERVICE], timeout=10)
             if result.stdout.strip().lower() == "active":
                 return ServiceStatus.RUNNING
             return ServiceStatus.STOPPED
@@ -312,12 +313,14 @@ class ProxyRouteService(BaseService):
         for app_name, paths in KNOWN_APPS.items():
             for path in paths:
                 if Path(path).exists():
-                    available.append(ProxiedApp(
-                        name=app_name,
-                        path=path,
-                        enabled=False,
-                        is_custom=False,
-                    ))
+                    available.append(
+                        ProxiedApp(
+                            name=app_name,
+                            path=path,
+                            enabled=False,
+                            is_custom=False,
+                        )
+                    )
                     break
         return available
 
@@ -336,12 +339,14 @@ class ProxyRouteService(BaseService):
                 self._logger.info(f"App already in list: {path}")
                 return True
 
-        self._config.apps.append(ProxiedApp(
-            name=name,
-            path=path,
-            enabled=True,
-            is_custom=True,
-        ))
+        self._config.apps.append(
+            ProxiedApp(
+                name=name,
+                path=path,
+                enabled=True,
+                is_custom=True,
+            )
+        )
         self._config.custom_paths.append(path)
         self._save_config()
         return True
@@ -361,10 +366,13 @@ class ProxyRouteService(BaseService):
         self._config.proxy_port = port
         self._save_config()
 
-    def configure(self, apps: Optional[list[str]] = None,
-                  include_browsers: bool = False,
-                  proxy_host: Optional[str] = None,
-                  proxy_port: Optional[int] = None) -> bool:
+    def configure(
+        self,
+        apps: Optional[list[str]] = None,
+        include_browsers: bool = False,
+        proxy_host: Optional[str] = None,
+        proxy_port: Optional[int] = None,
+    ) -> bool:
         """
         Configure proxy routing (wrapper for install).
 
@@ -382,7 +390,7 @@ class ProxyRouteService(BaseService):
             include_browsers=include_browsers,
             proxy_host=proxy_host or self._config.proxy_host,
             proxy_port=proxy_port or self._config.proxy_port,
-            method=self._config.method
+            method=self._config.method,
         )
 
     def run_app_through_proxy(self, app_path: str, args: Optional[list[str]] = None) -> bool:
@@ -622,8 +630,9 @@ redsocks {{
 
         return True
 
-    def _build_app_list(self, apps: Optional[list[str]],
-                        include_browsers: bool) -> list[ProxiedApp]:
+    def _build_app_list(
+        self, apps: Optional[list[str]], include_browsers: bool
+    ) -> list[ProxiedApp]:
         """Build list of apps to route through proxy."""
         result = []
         added_paths = set()
@@ -634,21 +643,25 @@ redsocks {{
                 if app in KNOWN_APPS:
                     for path in KNOWN_APPS[app]:
                         if Path(path).exists() and path not in added_paths:
-                            result.append(ProxiedApp(
-                                name=app,
-                                path=path,
-                                enabled=True,
-                                is_custom=False,
-                            ))
+                            result.append(
+                                ProxiedApp(
+                                    name=app,
+                                    path=path,
+                                    enabled=True,
+                                    is_custom=False,
+                                )
+                            )
                             added_paths.add(path)
                             break
                 elif Path(app).exists() and app not in added_paths:
-                    result.append(ProxiedApp(
-                        name=Path(app).stem,
-                        path=app,
-                        enabled=True,
-                        is_custom=True,
-                    ))
+                    result.append(
+                        ProxiedApp(
+                            name=Path(app).stem,
+                            path=app,
+                            enabled=True,
+                            is_custom=True,
+                        )
+                    )
                     added_paths.add(app)
 
         # Add browsers if requested
@@ -657,12 +670,14 @@ redsocks {{
                 if browser in KNOWN_APPS:
                     for path in KNOWN_APPS[browser]:
                         if Path(path).exists() and path not in added_paths:
-                            result.append(ProxiedApp(
-                                name=browser,
-                                path=path,
-                                enabled=True,
-                                is_custom=False,
-                            ))
+                            result.append(
+                                ProxiedApp(
+                                    name=browser,
+                                    path=path,
+                                    enabled=True,
+                                    is_custom=False,
+                                )
+                            )
                             added_paths.add(path)
                             break
 
@@ -670,12 +685,14 @@ redsocks {{
         if "discord" not in [app.name for app in result]:
             for path in KNOWN_APPS.get("discord", []):
                 if Path(path).exists() and path not in added_paths:
-                    result.append(ProxiedApp(
-                        name="discord",
-                        path=path,
-                        enabled=True,
-                        is_custom=False,
-                    ))
+                    result.append(
+                        ProxiedApp(
+                            name="discord",
+                            path=path,
+                            enabled=True,
+                            is_custom=False,
+                        )
+                    )
                     break
 
         return result

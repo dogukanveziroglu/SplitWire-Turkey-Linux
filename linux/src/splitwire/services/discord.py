@@ -82,6 +82,7 @@ WEBCORD_APPIMAGE_URL = "https://github.com/nickvision/webcord/releases/latest"
 
 class DiscordVersion(Enum):
     """Discord version/channel."""
+
     STABLE = "stable"
     PTB = "ptb"
     CANARY = "canary"
@@ -89,6 +90,7 @@ class DiscordVersion(Enum):
 
 class InstallMethod(Enum):
     """Discord installation method."""
+
     DEB = "deb"
     SNAP = "snap"
     FLATPAK = "flatpak"
@@ -101,6 +103,7 @@ class InstallMethod(Enum):
 @dataclass
 class DiscordInstallation:
     """Information about a Discord installation."""
+
     version: DiscordVersion
     method: InstallMethod
     path: Optional[str] = None
@@ -115,6 +118,7 @@ class DiscordInstallation:
 @dataclass
 class WebCordInstallation:
     """Information about WebCord installation."""
+
     installed: bool = False
     method: InstallMethod = InstallMethod.NOT_INSTALLED
     path: Optional[str] = None
@@ -124,6 +128,7 @@ class WebCordInstallation:
 @dataclass
 class DiscordConfig:
     """Discord service configuration."""
+
     last_repair_date: Optional[str] = None
     auto_clear_cache: bool = False
     preferred_version: str = "stable"
@@ -132,6 +137,7 @@ class DiscordConfig:
 @dataclass
 class RepairResult:
     """Result of a repair operation."""
+
     success: bool
     message: str
     cache_cleared_mb: float = 0.0
@@ -231,18 +237,14 @@ class DiscordService(BaseService):
 
         # Check if any Discord is installed
         has_installed = any(
-            inst.method != InstallMethod.NOT_INSTALLED
-            for inst in self._installations.values()
+            inst.method != InstallMethod.NOT_INSTALLED for inst in self._installations.values()
         )
 
         if not has_installed:
             return ServiceStatus.NOT_INSTALLED
 
         # Check if any is running
-        has_running = any(
-            inst.is_running
-            for inst in self._installations.values()
-        )
+        has_running = any(inst.is_running for inst in self._installations.values())
 
         if has_running:
             return ServiceStatus.RUNNING
@@ -253,8 +255,7 @@ class DiscordService(BaseService):
         """Check if any Discord version is installed."""
         self.detect_all()
         return any(
-            inst.method != InstallMethod.NOT_INSTALLED
-            for inst in self._installations.values()
+            inst.method != InstallMethod.NOT_INSTALLED for inst in self._installations.values()
         )
 
     # =========================================================================
@@ -272,13 +273,17 @@ class DiscordService(BaseService):
         for version in DiscordVersion:
             self._installations[version] = self._detect_version(version)
             if self._installations[version].method != InstallMethod.NOT_INSTALLED:
-                self._logger.debug(f"[DISCORD] Found {version.value}: method={self._installations[version].method.value}")
+                self._logger.debug(
+                    f"[DISCORD] Found {version.value}: method={self._installations[version].method.value}"
+                )
 
         self._webcord = self._detect_webcord()
         if self._webcord.installed:
             self._logger.debug(f"[DISCORD] Found WebCord: method={self._webcord.method.value}")
 
-        installed_count = sum(1 for i in self._installations.values() if i.method != InstallMethod.NOT_INSTALLED)
+        installed_count = sum(
+            1 for i in self._installations.values() if i.method != InstallMethod.NOT_INSTALLED
+        )
         self._logger.info(f"[DISCORD] Detection complete: {installed_count} Discord versions found")
 
         return self._installations.copy()
@@ -338,16 +343,15 @@ class DiscordService(BaseService):
         if installation.cache_dir and installation.cache_dir.exists():
             installation.has_cache = True
             installation.cache_size_mb = self._get_dir_size_mb(installation.cache_dir)
-            self._logger.debug(f"[DISCORD] {version.value} cache: {installation.cache_size_mb:.1f} MB")
+            self._logger.debug(
+                f"[DISCORD] {version.value} cache: {installation.cache_size_mb:.1f} MB"
+            )
 
         return installation
 
     def _is_deb_installed(self, package_name: str) -> bool:
         """Check if a DEB package is installed."""
-        result = self._shell.run(
-            ["dpkg", "-s", package_name],
-            timeout=10
-        )
+        result = self._shell.run(["dpkg", "-s", package_name], timeout=10)
         return result.success and "Status: install ok installed" in result.stdout
 
     def _is_snap_installed(self, version: DiscordVersion) -> bool:
@@ -356,10 +360,7 @@ class DiscordService(BaseService):
         if not snap_name:
             return False
 
-        result = self._shell.run(
-            ["snap", "list", snap_name],
-            timeout=10
-        )
+        result = self._shell.run(["snap", "list", snap_name], timeout=10)
         return result.success
 
     def _is_flatpak_installed(self, version: DiscordVersion) -> bool:
@@ -368,10 +369,7 @@ class DiscordService(BaseService):
         if not flatpak_id:
             return False
 
-        result = self._shell.run(
-            ["flatpak", "info", flatpak_id],
-            timeout=10
-        )
+        result = self._shell.run(["flatpak", "info", flatpak_id], timeout=10)
         return result.success
 
     def _find_binary(self, version: DiscordVersion) -> Optional[str]:
@@ -390,10 +388,7 @@ class DiscordService(BaseService):
         """Check if Discord version is running."""
         binaries = DISCORD_BINARIES.get(version.value, [])
         for binary in binaries:
-            result = self._shell.run(
-                ["pgrep", "-f", binary],
-                timeout=5
-            )
+            result = self._shell.run(["pgrep", "-f", binary], timeout=5)
             if result.success and result.stdout.strip():
                 return True
         return False
@@ -403,10 +398,7 @@ class DiscordService(BaseService):
         webcord = WebCordInstallation()
 
         # Check Flatpak
-        result = self._shell.run(
-            ["flatpak", "info", "io.github.nickvision.webcord"],
-            timeout=10
-        )
+        result = self._shell.run(["flatpak", "info", "io.github.nickvision.webcord"], timeout=10)
         if result.success:
             webcord.installed = True
             webcord.method = InstallMethod.FLATPAK
@@ -423,7 +415,9 @@ class DiscordService(BaseService):
         for path in webcord_paths:
             if path.exists():
                 webcord.installed = True
-                webcord.method = InstallMethod.APPIMAGE if "AppImage" in str(path) else InstallMethod.UNKNOWN
+                webcord.method = (
+                    InstallMethod.APPIMAGE if "AppImage" in str(path) else InstallMethod.UNKNOWN
+                )
                 webcord.path = str(path)
                 break
 
@@ -448,9 +442,12 @@ class DiscordService(BaseService):
     # Repair methods
     # =========================================================================
 
-    def repair_discord(self, version: DiscordVersion = DiscordVersion.STABLE,
-                       clear_cache: bool = True,
-                       reinstall: bool = False) -> RepairResult:
+    def repair_discord(
+        self,
+        version: DiscordVersion = DiscordVersion.STABLE,
+        clear_cache: bool = True,
+        reinstall: bool = False,
+    ) -> RepairResult:
         """
         Repair Discord installation.
 
@@ -517,7 +514,11 @@ class DiscordService(BaseService):
         self._save_config()
 
         success = len(errors) == 0
-        message = "Repair completed successfully" if success else f"Repair completed with {len(errors)} error(s)"
+        message = (
+            "Repair completed successfully"
+            if success
+            else f"Repair completed with {len(errors)} error(s)"
+        )
 
         return RepairResult(
             success=success,
@@ -568,7 +569,9 @@ class DiscordService(BaseService):
                         errors.append(f"Failed to clear {subdir}: {e}")
 
         success = len(errors) == 0
-        message = f"Cleared {total_cleared:.1f} MB of cache" if success else "Cache clearing had errors"
+        message = (
+            f"Cleared {total_cleared:.1f} MB of cache" if success else "Cache clearing had errors"
+        )
 
         return RepairResult(
             success=success,
@@ -599,8 +602,11 @@ class DiscordService(BaseService):
     # Installation methods
     # =========================================================================
 
-    def install_discord(self, version: DiscordVersion = DiscordVersion.STABLE,
-                        method: InstallMethod = InstallMethod.DEB) -> bool:
+    def install_discord(
+        self,
+        version: DiscordVersion = DiscordVersion.STABLE,
+        method: InstallMethod = InstallMethod.DEB,
+    ) -> bool:
         """
         Install Discord.
 
@@ -631,33 +637,25 @@ class DiscordService(BaseService):
 
         try:
             import tempfile
+
             with tempfile.TemporaryDirectory() as tmpdir:
                 deb_path = Path(tmpdir) / f"discord-{version.value}.deb"
 
                 # Download DEB
                 self._logger.info(f"Downloading Discord {version.value}...")
-                result = self._shell.run(
-                    ["wget", "-q", "-O", str(deb_path), url],
-                    timeout=120
-                )
+                result = self._shell.run(["wget", "-q", "-O", str(deb_path), url], timeout=120)
                 if not result.success:
                     self._logger.error(f"Download failed: {result.stderr}")
                     return False
 
                 # Install DEB
                 self._logger.info("Installing DEB package...")
-                result = self._run_privileged(
-                    ["dpkg", "-i", str(deb_path)],
-                    timeout=60
-                )
+                result = self._run_privileged(["dpkg", "-i", str(deb_path)], timeout=60)
 
                 # Fix dependencies if needed
                 if not result.success:
                     self._logger.info("Fixing dependencies...")
-                    self._run_privileged(
-                        ["apt-get", "install", "-f", "-y"],
-                        timeout=120
-                    )
+                    self._run_privileged(["apt-get", "install", "-f", "-y"], timeout=120)
 
                 self._logger.info(f"Discord {version.value} installed successfully")
                 return True
@@ -679,16 +677,18 @@ class DiscordService(BaseService):
 
         # Add Flathub if not present
         self._shell.run(
-            ["flatpak", "remote-add", "--if-not-exists", "flathub",
-             "https://flathub.org/repo/flathub.flatpakrepo"],
-            timeout=30
+            [
+                "flatpak",
+                "remote-add",
+                "--if-not-exists",
+                "flathub",
+                "https://flathub.org/repo/flathub.flatpakrepo",
+            ],
+            timeout=30,
         )
 
         # Install Discord
-        result = self._shell.run(
-            ["flatpak", "install", "-y", "flathub", flatpak_id],
-            timeout=300
-        )
+        result = self._shell.run(["flatpak", "install", "-y", "flathub", flatpak_id], timeout=300)
 
         if result.success:
             self._logger.info(f"Discord {version.value} installed via Flatpak")
@@ -708,10 +708,7 @@ class DiscordService(BaseService):
             self._logger.error("Snap is not installed")
             return False
 
-        result = self._run_privileged(
-            ["snap", "install", snap_name],
-            timeout=300
-        )
+        result = self._run_privileged(["snap", "install", snap_name], timeout=300)
 
         if result.success:
             self._logger.info(f"Discord {version.value} installed via Snap")
@@ -797,8 +794,9 @@ class DiscordService(BaseService):
     # WebCord methods
     # =========================================================================
 
-    def install_webcord(self, method: InstallMethod = InstallMethod.FLATPAK,
-                        create_shortcut: bool = True) -> bool:
+    def install_webcord(
+        self, method: InstallMethod = InstallMethod.FLATPAK, create_shortcut: bool = True
+    ) -> bool:
         """
         Install WebCord.
 
@@ -819,9 +817,14 @@ class DiscordService(BaseService):
 
             # Add Flathub
             self._shell.run(
-                ["flatpak", "remote-add", "--if-not-exists", "flathub",
-                 "https://flathub.org/repo/flathub.flatpakrepo"],
-                timeout=30
+                [
+                    "flatpak",
+                    "remote-add",
+                    "--if-not-exists",
+                    "flathub",
+                    "https://flathub.org/repo/flathub.flatpakrepo",
+                ],
+                timeout=30,
             )
 
             # Try different WebCord Flatpak IDs
@@ -833,8 +836,7 @@ class DiscordService(BaseService):
 
             for flatpak_id in webcord_ids:
                 result = self._shell.run(
-                    ["flatpak", "install", "-y", "flathub", flatpak_id],
-                    timeout=300
+                    ["flatpak", "install", "-y", "flathub", flatpak_id], timeout=300
                 )
                 if result.success:
                     self._logger.info("WebCord installed via Flatpak")
@@ -856,8 +858,7 @@ class DiscordService(BaseService):
 
         if webcord.method == InstallMethod.FLATPAK:
             result = self._shell.run(
-                ["flatpak", "uninstall", "-y", "io.github.nickvision.webcord"],
-                timeout=60
+                ["flatpak", "uninstall", "-y", "io.github.nickvision.webcord"], timeout=60
             )
             return result.success
         elif webcord.method == InstallMethod.APPIMAGE and webcord.path:
@@ -979,6 +980,7 @@ class DiscordService(BaseService):
 
         # Give it time to close
         import time
+
         time.sleep(1)
 
         return not self._is_discord_running(version)

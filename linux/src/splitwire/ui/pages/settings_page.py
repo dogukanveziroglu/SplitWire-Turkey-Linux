@@ -6,8 +6,9 @@ Equivalent to Windows "Ayarlar" tab.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib, Gio
 from typing import TYPE_CHECKING
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
 class SettingsPage(BasePage):
     """Application settings page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow"):
         super().__init__(window)
 
     def _build_ui(self):
@@ -158,9 +159,7 @@ class SettingsPage(BasePage):
         about_group.add(support_row)
 
         # Logs group
-        logs_group = self.create_preferences_group(
-            title=get_text("settings", "logs") or "Loglar"
-        )
+        logs_group = self.create_preferences_group(title=get_text("settings", "logs") or "Loglar")
         self.append(logs_group)
 
         # Open logs row
@@ -259,7 +258,7 @@ class SettingsPage(BasePage):
             try:
                 response = httpx.get(
                     "https://api.github.com/repos/dogukanveziroglu/SplitWire-Turkey/releases/latest",
-                    timeout=10.0
+                    timeout=10.0,
                 )
                 if response.status_code == 200:
                     data = response.json()
@@ -275,7 +274,9 @@ class SettingsPage(BasePage):
                 if result != current:
                     self.show_toast(f"Yeni sürüm mevcut: {result}")
                     # Optionally open release page
-                    self._open_url(f"https://github.com/dogukanveziroglu/SplitWire-Turkey/releases/tag/{result}")
+                    self._open_url(
+                        f"https://github.com/dogukanveziroglu/SplitWire-Turkey/releases/tag/{result}"
+                    )
                 else:
                     self.show_toast("En güncel sürümü kullanıyorsunuz")
             else:

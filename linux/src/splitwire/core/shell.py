@@ -25,6 +25,7 @@ _logger = get_logger()
 
 class CommandStatus(Enum):
     """Status of command execution."""
+
     SUCCESS = "success"
     FAILED = "failed"
     TIMEOUT = "timeout"
@@ -35,6 +36,7 @@ class CommandStatus(Enum):
 @dataclass
 class CommandResult:
     """Result of a shell command execution."""
+
     status: CommandStatus
     returncode: int
     stdout: str
@@ -76,7 +78,7 @@ class ShellExecutor:
         self,
         timeout: int = DEFAULT_TIMEOUT,
         env: Optional[dict[str, str]] = None,
-        cwd: Optional[Path] = None
+        cwd: Optional[Path] = None,
     ):
         """
         Initialize shell executor.
@@ -117,7 +119,7 @@ class ShellExecutor:
         cwd: Optional[Path] = None,
         env: Optional[dict[str, str]] = None,
         shell: bool = False,
-        input_data: Optional[str] = None
+        input_data: Optional[str] = None,
     ) -> CommandResult:
         """
         Run a command synchronously.
@@ -136,6 +138,7 @@ class ShellExecutor:
             CommandResult with execution details
         """
         import time
+
         start_time = time.time()
 
         # Parse command
@@ -174,7 +177,7 @@ class ShellExecutor:
                     cwd=run_cwd,
                     env=run_env,
                     shell=shell,
-                    input=input_data
+                    input=input_data,
                 )
                 stdout = result.stdout
                 stderr = result.stderr
@@ -186,7 +189,7 @@ class ShellExecutor:
                     env=run_env,
                     shell=shell,
                     input=input_data,
-                    text=True if input_data else False
+                    text=True if input_data else False,
                 )
                 stdout = ""
                 stderr = ""
@@ -201,7 +204,7 @@ class ShellExecutor:
                 stdout=stdout.strip() if stdout else "",
                 stderr=stderr.strip() if stderr else "",
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
             # Log result
@@ -214,9 +217,7 @@ class ShellExecutor:
                     _logger.error(f"[SHELL] stderr: {stderr_preview}")
 
             if check and result.returncode != 0:
-                raise subprocess.CalledProcessError(
-                    result.returncode, cmd_str, stdout, stderr
-                )
+                raise subprocess.CalledProcessError(result.returncode, cmd_str, stdout, stderr)
 
             return cmd_result
 
@@ -229,7 +230,7 @@ class ShellExecutor:
                 stdout="",
                 stderr=f"Command timed out after {run_timeout} seconds",
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
         except FileNotFoundError:
@@ -242,7 +243,7 @@ class ShellExecutor:
                 stdout="",
                 stderr=f"Command not found: {not_found_cmd}",
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
         except Exception as e:
@@ -254,7 +255,7 @@ class ShellExecutor:
                 stdout="",
                 stderr=str(e),
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
     async def run_async(
@@ -263,7 +264,7 @@ class ShellExecutor:
         timeout: Optional[int] = None,
         capture_output: bool = True,
         cwd: Optional[Path] = None,
-        env: Optional[dict[str, str]] = None
+        env: Optional[dict[str, str]] = None,
     ) -> CommandResult:
         """
         Run a command asynchronously.
@@ -279,6 +280,7 @@ class ShellExecutor:
             CommandResult with execution details
         """
         import time
+
         start_time = time.time()
 
         # Parse command
@@ -311,20 +313,15 @@ class ShellExecutor:
                     stdout=asyncio.subprocess.PIPE,
                     stderr=asyncio.subprocess.PIPE,
                     cwd=run_cwd,
-                    env=run_env
+                    env=run_env,
                 )
             else:
-                process = await asyncio.create_subprocess_exec(
-                    *cmd,
-                    cwd=run_cwd,
-                    env=run_env
-                )
+                process = await asyncio.create_subprocess_exec(*cmd, cwd=run_cwd, env=run_env)
 
             try:
                 if capture_output:
                     stdout_bytes, stderr_bytes = await asyncio.wait_for(
-                        process.communicate(),
-                        timeout=run_timeout
+                        process.communicate(), timeout=run_timeout
                     )
                     stdout = stdout_bytes.decode("utf-8", errors="replace")
                     stderr = stderr_bytes.decode("utf-8", errors="replace")
@@ -344,7 +341,7 @@ class ShellExecutor:
                     stdout="",
                     stderr=f"Command timed out after {run_timeout} seconds",
                     command=cmd_str,
-                    duration=duration
+                    duration=duration,
                 )
 
             duration = time.time() - start_time
@@ -365,7 +362,7 @@ class ShellExecutor:
                 stdout=stdout.strip() if stdout else "",
                 stderr=stderr.strip() if stderr else "",
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
         except FileNotFoundError:
@@ -377,7 +374,7 @@ class ShellExecutor:
                 stdout="",
                 stderr=f"Command not found: {cmd[0]}",
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
         except Exception as e:
@@ -389,7 +386,7 @@ class ShellExecutor:
                 stdout="",
                 stderr=str(e),
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
     def run_with_output(
@@ -398,7 +395,7 @@ class ShellExecutor:
         callback: Callable[[str], None],
         timeout: Optional[int] = None,
         cwd: Optional[Path] = None,
-        env: Optional[dict[str, str]] = None
+        env: Optional[dict[str, str]] = None,
     ) -> CommandResult:
         """
         Run a command with real-time output streaming.
@@ -414,6 +411,7 @@ class ShellExecutor:
             CommandResult with execution details
         """
         import time
+
         start_time = time.time()
 
         # Parse command
@@ -450,7 +448,7 @@ class ShellExecutor:
                 text=True,
                 cwd=run_cwd,
                 env=run_env,
-                bufsize=1
+                bufsize=1,
             )
 
             # Read output with timeout
@@ -491,7 +489,7 @@ class ShellExecutor:
                     stdout="\n".join(stdout_lines),
                     stderr=f"Command timed out after {run_timeout} seconds",
                     command=cmd_str,
-                    duration=duration
+                    duration=duration,
                 )
 
             returncode = process.wait()
@@ -511,7 +509,7 @@ class ShellExecutor:
                 stdout="\n".join(stdout_lines),
                 stderr="\n".join(stderr_lines),
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
         except FileNotFoundError:
@@ -523,7 +521,7 @@ class ShellExecutor:
                 stdout="",
                 stderr=f"Command not found: {cmd[0]}",
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
         except Exception as e:
@@ -535,7 +533,7 @@ class ShellExecutor:
                 stdout="\n".join(stdout_lines),
                 stderr=str(e),
                 command=cmd_str,
-                duration=duration
+                duration=duration,
             )
 
     def command_exists(self, command: str) -> bool:
@@ -633,23 +631,20 @@ if __name__ == "__main__":
 
     # Test streaming output
     print("\n--- Streaming output ---")
+
     def output_callback(line):
         print(f"  > {line}")
 
     result = shell.run_with_output(
-        "for i in 1 2 3; do echo Line $i; sleep 0.1; done",
-        output_callback,
-        shell=False
+        "for i in 1 2 3; do echo Line $i; sleep 0.1; done", output_callback, shell=False
     )
     # Need to use shell=True for this
-    result = shell.run(
-        "for i in 1 2 3; do echo Line $i; sleep 0.1; done",
-        shell=True
-    )
+    result = shell.run("for i in 1 2 3; do echo Line $i; sleep 0.1; done", shell=True)
     print(f"Final output:\n{result.stdout}")
 
     # Test async
     print("\n--- Async test ---")
+
     async def test_async():
         result = await shell.run_async("uname -a")
         print(f"Async result: {result.stdout}")

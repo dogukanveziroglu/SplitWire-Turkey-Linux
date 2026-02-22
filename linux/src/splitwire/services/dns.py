@@ -38,23 +38,26 @@ NM_CONF_DIR = Path("/etc/NetworkManager/conf.d")
 
 class DNSManager(Enum):
     """DNS management backend."""
+
     SYSTEMD_RESOLVED = "systemd-resolved"  # Primary for Ubuntu
-    NETWORK_MANAGER = "networkmanager"      # Alternative
-    RESOLVCONF = "resolvconf"               # Legacy
-    MANUAL = "manual"                        # Direct /etc/resolv.conf edit
+    NETWORK_MANAGER = "networkmanager"  # Alternative
+    RESOLVCONF = "resolvconf"  # Legacy
+    MANUAL = "manual"  # Direct /etc/resolv.conf edit
     UNKNOWN = "unknown"
 
 
 class DoHMode(Enum):
     """DNS over HTTPS mode."""
-    OFF = "off"                    # No DoH
+
+    OFF = "off"  # No DoH
     OPPORTUNISTIC = "opportunistic"  # Use DoH if available
-    STRICT = "strict"              # Require DoH, fail if unavailable
+    STRICT = "strict"  # Require DoH, fail if unavailable
 
 
 @dataclass
 class DNSServer:
     """DNS server configuration."""
+
     name: str
     primary: str
     secondary: str
@@ -65,6 +68,7 @@ class DNSServer:
 @dataclass
 class DNSBackup:
     """Backup of original DNS settings."""
+
     timestamp: str
     dns_servers: list[str]
     search_domains: list[str]
@@ -76,6 +80,7 @@ class DNSBackup:
 @dataclass
 class DNSConfig:
     """DNS service configuration."""
+
     enabled: bool = False
     preset_name: str = "cloudflare"
     custom_primary: str = ""
@@ -250,11 +255,14 @@ class DNSService(BaseService):
     # BaseService implementation
     # =========================================================================
 
-    def install(self, preset: Optional[str] = None,
-                primary: Optional[str] = None,
-                secondary: Optional[str] = None,
-                doh_mode: DoHMode = DoHMode.OPPORTUNISTIC,
-                **kwargs) -> bool:
+    def install(
+        self,
+        preset: Optional[str] = None,
+        primary: Optional[str] = None,
+        secondary: Optional[str] = None,
+        doh_mode: DoHMode = DoHMode.OPPORTUNISTIC,
+        **kwargs,
+    ) -> bool:
         """
         Install DNS configuration.
 
@@ -359,12 +367,16 @@ class DNSService(BaseService):
             preset = self.get_current_preset()
             if preset:
                 if preset.primary in current_dns or preset.secondary in current_dns:
-                    self._logger.debug(f"[DNS] DNS verification successful: preset {self._config.preset_name} is active")
+                    self._logger.debug(
+                        f"[DNS] DNS verification successful: preset {self._config.preset_name} is active"
+                    )
                     return ServiceStatus.RUNNING
 
             # Check custom DNS
             if self._config.custom_primary and self._config.custom_primary in current_dns:
-                self._logger.debug(f"[DNS] DNS verification successful: custom DNS {self._config.custom_primary} is active")
+                self._logger.debug(
+                    f"[DNS] DNS verification successful: custom DNS {self._config.custom_primary} is active"
+                )
                 return ServiceStatus.RUNNING
 
         self._logger.debug("[DNS] DNS verification failed: configured DNS not active")
@@ -433,10 +445,7 @@ class DNSService(BaseService):
     def is_doh_enabled(self) -> bool:
         """Check if DoH is currently enabled."""
         if self._dns_manager == DNSManager.SYSTEMD_RESOLVED:
-            result = self._shell.run(
-                ["resolvectl", "status"],
-                timeout=10
-            )
+            result = self._shell.run(["resolvectl", "status"], timeout=10)
             if result.success:
                 return "DNSOverTLS" in result.stdout and "yes" in result.stdout.lower()
         return False
@@ -463,8 +472,7 @@ class DNSService(BaseService):
     # systemd-resolved methods
     # =========================================================================
 
-    def _apply_systemd_resolved(self, primary: str, secondary: str,
-                                 doh_mode: DoHMode) -> bool:
+    def _apply_systemd_resolved(self, primary: str, secondary: str, doh_mode: DoHMode) -> bool:
         """Apply DNS using systemd-resolved."""
         self._logger.info("Applying DNS via systemd-resolved")
 
@@ -502,7 +510,8 @@ class DNSService(BaseService):
 
             # Write config file
             import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.conf', delete=False) as f:
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as f:
                 f.write(config_content)
                 tmp_path = f.name
 
@@ -555,16 +564,16 @@ class DNSService(BaseService):
             # Get active connection
             result = self._shell.run(
                 ["nmcli", "-t", "-f", "NAME,TYPE,DEVICE", "connection", "show", "--active"],
-                timeout=10
+                timeout=10,
             )
             if not result.success:
                 self._logger.error("Failed to get active connections")
                 return False
 
             connections = []
-            for line in result.stdout.strip().split('\n'):
+            for line in result.stdout.strip().split("\n"):
                 if line:
-                    parts = line.split(':')
+                    parts = line.split(":")
                     if len(parts) >= 3:
                         connections.append(parts[0])
 
@@ -574,11 +583,18 @@ class DNSService(BaseService):
 
             # Apply DNS to each connection
             for conn in connections:
-                result = self._run_privileged([
-                    "nmcli", "connection", "modify", conn,
-                    "ipv4.dns", f"{primary} {secondary}",
-                    "ipv4.ignore-auto-dns", "yes"
-                ])
+                result = self._run_privileged(
+                    [
+                        "nmcli",
+                        "connection",
+                        "modify",
+                        conn,
+                        "ipv4.dns",
+                        f"{primary} {secondary}",
+                        "ipv4.ignore-auto-dns",
+                        "yes",
+                    ]
+                )
                 if not result.success:
                     self._logger.warning(f"Failed to modify connection {conn}")
 
@@ -606,7 +622,8 @@ nameserver {primary}
 nameserver {secondary}
 """
             import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+
+            with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
                 f.write(resolv_content)
                 tmp_path = f.name
 
@@ -650,25 +667,25 @@ nameserver {secondary}
                     raw_config = result.stdout
 
                     # Parse DNS servers
-                    for line in result.stdout.split('\n'):
-                        if 'DNS Servers:' in line or 'Current DNS Server:' in line:
+                    for line in result.stdout.split("\n"):
+                        if "DNS Servers:" in line or "Current DNS Server:" in line:
                             # Extract IP addresses
-                            ips = re.findall(r'\d+\.\d+\.\d+\.\d+', line)
+                            ips = re.findall(r"\d+\.\d+\.\d+\.\d+", line)
                             dns_servers.extend(ips)
-                        if 'DNS Domain:' in line:
-                            domains = line.split(':')[1].strip().split()
+                        if "DNS Domain:" in line:
+                            domains = line.split(":")[1].strip().split()
                             search_domains.extend(domains)
-                        if 'DNSOverTLS' in line and 'yes' in line.lower():
+                        if "DNSOverTLS" in line and "yes" in line.lower():
                             doh_enabled = True
 
             elif self._dns_manager == DNSManager.MANUAL:
                 # Read /etc/resolv.conf
                 if Path("/etc/resolv.conf").exists():
                     raw_config = Path("/etc/resolv.conf").read_text()
-                    for line in raw_config.split('\n'):
-                        if line.startswith('nameserver'):
+                    for line in raw_config.split("\n"):
+                        if line.startswith("nameserver"):
                             dns_servers.append(line.split()[1])
-                        if line.startswith('search'):
+                        if line.startswith("search"):
                             search_domains.extend(line.split()[1:])
 
             # Remove duplicates
@@ -720,17 +737,23 @@ nameserver {secondary}
             elif self._dns_manager == DNSManager.NETWORK_MANAGER:
                 # Reset to auto DNS
                 result = self._shell.run(
-                    ["nmcli", "-t", "-f", "NAME", "connection", "show", "--active"],
-                    timeout=10
+                    ["nmcli", "-t", "-f", "NAME", "connection", "show", "--active"], timeout=10
                 )
                 if result.success:
-                    for conn in result.stdout.strip().split('\n'):
+                    for conn in result.stdout.strip().split("\n"):
                         if conn:
-                            self._run_privileged([
-                                "nmcli", "connection", "modify", conn,
-                                "ipv4.dns", "",
-                                "ipv4.ignore-auto-dns", "no"
-                            ])
+                            self._run_privileged(
+                                [
+                                    "nmcli",
+                                    "connection",
+                                    "modify",
+                                    conn,
+                                    "ipv4.dns",
+                                    "",
+                                    "ipv4.ignore-auto-dns",
+                                    "no",
+                                ]
+                            )
                     self._run_privileged(["systemctl", "restart", "NetworkManager"])
 
             elif self._dns_manager == DNSManager.MANUAL:
@@ -746,7 +769,8 @@ nameserver {secondary}
                         content += f"search {domain}\n"
 
                     import tempfile
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+
+                    with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
                         f.write(content)
                         tmp_path = f.name
 
@@ -771,16 +795,16 @@ nameserver {secondary}
             if self._dns_manager == DNSManager.SYSTEMD_RESOLVED:
                 result = self._shell.run(["resolvectl", "status"], timeout=10)
                 if result.success:
-                    for line in result.stdout.split('\n'):
-                        if 'DNS Servers:' in line or 'Current DNS Server:' in line:
-                            ips = re.findall(r'\d+\.\d+\.\d+\.\d+', line)
+                    for line in result.stdout.split("\n"):
+                        if "DNS Servers:" in line or "Current DNS Server:" in line:
+                            ips = re.findall(r"\d+\.\d+\.\d+\.\d+", line)
                             dns_servers.extend(ips)
 
             elif self._dns_manager == DNSManager.MANUAL:
                 if Path("/etc/resolv.conf").exists():
                     content = Path("/etc/resolv.conf").read_text()
-                    for line in content.split('\n'):
-                        if line.startswith('nameserver'):
+                    for line in content.split("\n"):
+                        if line.startswith("nameserver"):
                             dns_servers.append(line.split()[1])
 
         except Exception as e:

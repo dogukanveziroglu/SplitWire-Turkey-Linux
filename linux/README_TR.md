@@ -1,17 +1,29 @@
 # SplitWire-Turkey Linux
 
-Linux icin kapsamli bir ag kisitlamasi asim araci. DPI asimi ve ayrik tunelleme ozellikleri saglar.
+Linux icin acik kaynakli bir ag gizliligi ve trafik yonetimi araci. VPN ayrik tunelleme, DNS-over-HTTPS yapilandirmasi, trafik analiz araclari ve uygulamaya ozel yonlendirme ozellikleri saglar.
+
+## Kullanim Amaci
+
+Bu yazilim asagidaki mesru amaclar icin tasarlanmis **genel amacli, cift kullanimli (dual-use) bir ag aracidir**:
+
+- **Gizlilik korumasi** - Kullanici gizliligini korumak icin ag trafigini sifreleme ve yonlendirme
+- **Ag guvenlik arastirmasi** - DPI (Derin Paket Incelemesi) davranisini analiz etme ve ag dayanikliligini test etme
+- **DNS guvenligi** - DNS sahteciligi ve gozetlemeyi onlemek icin sifreli DNS (DoH) yapilandirmasi
+- **Ayrik tunelleme** - Bant genisligi optimizasyonu icin yalnizca belirli uygulama trafigini VPN uzerinden yonlendirme
+- **Uygulamaya ozel yonlendirme** - Bireysel uygulama trafigini SOCKS5 proxy'ler uzerinden yonlendirme
+- **Ag teshisi** - Discord ve diger uygulamalarla baglanti sorunlarini giderme
+- **Egitim amacli kullanim** - Ag protokolleri, VPN tunelleme, paket analizi ve Linux sistem yonetimi hakkinda ogrenme
 
 ## Ozellikler
 
 - **WireGuard VPN** - Cloudflare WARP ile ayrik tunelleme destegi
-- **DPI Asimi** - Zapret/nfqws kullanarak (Linux icin GoodbyeDPI karsiligi)
+- **Trafik analiz araclari** - DPI incelemesi ve paket yonetimi icin Zapret/nfqws
 - **ByeDPI Proxy** - cgroups ile uygulamaya ozel yonlendirme
 - **DNS Yonetimi** - DoH (DNS over HTTPS) destegi
-- **Discord Onarim** - Alternatif istemci kurulumu
+- **Discord teshis araclari** ve alternatif istemci kurulumu
 - **Modern GTK4/Libadwaita** arayuzu
 - **Coklu dil** destegi (Turkce, Ingilizce, Rusca, Ispanyolca)
-- **systemd Entegrasyonu** - Kalici hizmetler
+- **systemd entegrasyonu** - Kalici hizmetler
 
 ## Ekran Goruntuleri
 
@@ -34,7 +46,7 @@ curl -sSL https://raw.githubusercontent.com/cagritaskn/SplitWire-Turkey/main/lin
 
 ### Manuel Kurulum
 
-1. **Bagimlikari yukleyin:**
+1. **Bagimliliklari yukleyin:**
    ```bash
    sudo ./scripts/setup-deps.sh
    ```
@@ -67,7 +79,7 @@ splitwire
 # "SplitWire" arayin
 ```
 
-### Asim Yontemleri
+### Ag Araclari
 
 #### 1. WireGuard (Ayrik Tunelleme)
 
@@ -78,23 +90,21 @@ Cloudflare WARP'i WireGuard ile kullanarak yalnizca belirli uygulamalari VPN uze
 3. "WireGuard Kur" butonuna tiklayin
 4. Ayrik tunelleme icin uygulamalari secin
 
-#### 2. Zapret (Sistem Geneli DPI Asimi)
+#### 2. Zapret (Trafik Analizi ve Yonetimi)
 
-DPI incelemesini asmak icin paket manipulasyonu yapan nfqws kullanir.
+Ag paketi analizi ve trafik yonetimi icin nfqws kullanir.
 
 1. "Zapret" sayfasina gidin
 2. Hazir ayar secin veya "Otomatik Tarama" calistirin
 3. "Hizmet Kur" butonuna tiklayin
 
 **Hazir Ayarlar:**
-- `turkey_discord` - Discord icin optimize
-- `turkey_general` - Genel amacli
-- `turkey_youtube` - YouTube icin optimize
-- `preset_split` - Split modu
-- `preset_fake` - Sahte paket modu
-- `preset_disorder` - Disorder modu
+- `general` - Genel amacli yapilandirma
+- `split` - Split modu
+- `fake` - Sahte paket modu
+- `disorder` - Disorder modu
 
-#### 3. ByeDPI (Uygulamaya Ozel)
+#### 3. ByeDPI (Uygulamaya Ozel Yonlendirme)
 
 Belirli uygulamalari yerel SOCKS5 proxy uzerinden yonlendirir.
 
@@ -109,7 +119,7 @@ Belirli uygulamalari yerel SOCKS5 proxy uzerinden yonlendirir.
 3. DoH'u (DNS over HTTPS) etkinlestirin/devre disi birakin
 4. "DNS Uygula" butonuna tiklayin
 
-### Discord Onarim
+### Discord Teshis Araclari
 
 Discord "Checking for updates" ekraninda takiliyorsa:
 
@@ -125,7 +135,7 @@ SplitWire asagidaki systemd hizmetlerini olusturur:
 |--------|----------|
 | `splitwire-wg.service` | WireGuard VPN tuneli |
 | `splitwire-wg-refresh.timer` | Periyodik baglanti yenileme |
-| `splitwire-zapret.service` | Zapret DPI asimi |
+| `splitwire-zapret.service` | Zapret trafik yonetimi |
 | `splitwire-byedpi.service` | ByeDPI proxy |
 | `splitwire-cgproxy.service` | Uygulama yonlendirme |
 
@@ -176,15 +186,15 @@ sudo apt purge splitwire-turkey
 
 ### "Register failed" Hatasi
 
-Cloudflare API bolgenizde engellenebilir. Deneyin:
-1. Kayit olmak icin gecici olarak VPN kullanin
-2. Alternatif asim yontemlerini kullanin (Zapret, ByeDPI)
+Cloudflare API bolgenizden erisilemeyebilir. Deneyin:
+1. Ag baglantinizi kontrol edin
+2. Alternatif ag araclarini kullanin (Zapret, ByeDPI)
 
 ### Discord "Checking for updates" Ekraninda Takili Kalma
 
 1. Modeminizi yeniden baslatin (15-30 saniye bekleyin)
 2. Bilgisayarinizi yeniden baslatin
-3. SplitWire'daki Discord Onarim'i kullanin
+3. SplitWire'daki Discord teshis araclarini kullanin
 4. Discord PTB veya WebCord kurmayi deneyin
 
 ### Hizmetler Baslamiyor
@@ -227,9 +237,9 @@ Yapilandirma dosyalari:
 }
 ```
 
-### Blacklist (`blacklist.txt`)
+### Domain Listesi (`blacklist.txt`)
 
-DPI asimi icin domainler (satirda bir tane):
+Trafik yonetimi icin domainler (satirda bir tane):
 ```
 discord.com
 discord.gg
@@ -264,7 +274,7 @@ python -m splitwire
 ## Katki
 
 1. Repoyu forklayim
-2. Ozellik dalı olusturun
+2. Ozellik dali olusturun
 3. Degisikliklerinizi yapin
 4. Pull request gonderin
 
@@ -284,12 +294,47 @@ Detaylar icin LICENSE dosyasina bakin.
 - **[ciadpi](https://github.com/hufrea/byedpi)** - hufrea
 - **[cgproxy](https://github.com/springzfx/cgproxy)** konsepti
 
-## Sorumluluk Reddi
+## Yasal Bildirim ve Sorumluluk Reddi
 
-**Bu yazilim egitim amaciyla olusturulmustur.**
+### Yazilimin Niteligiu
 
-- Bu arac yalnizca kodlama egitimi ve kisisel kullanim amacidir
-- Ticari kullanim icin uygun degildir
-- Gelistirici, bu yazilimin kullanimindan dogabilecek herhangi bir zarardan sorumlu degildir
-- Kullanicilar bu yazilimi kendi sorumluluklarinda kullanirlar
-- Yasal duzenlemelere uygun kullanim kullanicinin sorumluluğundadir
+Bu yazilim **genel amacli, cift kullanimli (dual-use) bir ag aracidir**. Gizlilik korumasi, ag
+guvenlik arastirmasi, DNS guvenlik yapilandirmasi ve trafik analizi gibi mesru amaclarla yaygin
+olarak kullanilan acik kaynakli ag bilesenlerini (WireGuard, Zapret, ByeDPI) entegre eder.
+
+Bu proje tarafindan kullanilan bireysel bilesenler bagimsiz olarak gelistirilmis, acik
+platformlarda (GitHub) serbestce erisime acik, acik kaynakli projelerdir ve kurumsal,
+akademik ve kisisel ortamlarda dunya capinda kullanilmaktadir.
+
+### Amac
+
+Bu yazilim asagidaki amaclarla gelistirilmis ve dagitilmistir:
+
+1. **Ag gizliligi ve guvenlik arastirmasi** - DPI sistemlerini anlama ve analiz etme,
+   sifreli DNS yapilandirmasi ve VPN ayrik tunelleme
+2. **Egitim amacli kullanim** - Ag protokolleri, Linux sistem yonetimi, paket analizi
+   ve acik kaynak yazilim gelistirme hakkinda ogrenme
+3. **Kisisel gizlilik korumasi** - DNS sorgularini sifreleme, trafigi VPN tunelleri
+   uzerinden yonlendirme ve uygulamaya ozel ag yapilandirmalarini yonetme
+
+### Kullanici Sorumlulugu
+
+- Kullanicilar, bu yazilimin kullaniminin yururlukteki tum yerel, ulusal ve uluslararasi
+  yasa ve yonetmeliklere uygunlugunu saglamaktan yalnizca kendileri sorumludur
+- Gelistiriciler, bu yazilimin yururlukteki yasalari ihlal edecek sekilde kullanimini
+  desteklememekte, tesvik etmemekte ve hosgorememektedir
+- Bu yazilim, MIT Lisansinda ayrintili olarak belirtildigi uzere, hicbir turde garanti
+  olmaksizin "OLDUGU GIBI" saglammaktadir
+
+### Acik Kaynak ve Seffaflik
+
+Bu proje MIT Lisansi altinda tamamen acik kaynaklidir. Tum kaynak kodu inceleme, denetim
+ve gozden gecirme icin kamuya aciktir. Bu projenin seffaf yapisi, mesru ve yasal amaclarla
+gelistirildigini ortaya koymaktadir.
+
+### Sorumluluk Reddi
+
+YAZILIM, ACIK VEYA ZIMNI HICBIR TURDE GARANTI OLMAKSIZIN "OLDUGU GIBI" SAGLAMMAKTADIR.
+YAZARLAR VEYA TELIF HAKKI SAHIPLERI, BU YAZILIMIN KULLANIMINDAN KAYNAKLANAN HICBIR TALEP,
+HASAR VEYA DIGER SORUMLULUKTAN SORUMLU TUTULAMAZ. Tam kosullar icin [LICENSE](../LICENSE)
+dosyasina bakin.

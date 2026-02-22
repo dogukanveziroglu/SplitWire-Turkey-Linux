@@ -223,8 +223,8 @@ Linux sürümü aktif olarak geliştirilmektedir. Detaylı bilgi için [linux/RE
 
 ### Linux Özellikleri
 - **WireGuard VPN** - Cloudflare WARP ile ayrık tünelleme
-- **Zapret** - nfqws ile DPI aşımı (GoodbyeDPI Linux karşılığı)
-- **ByeDPI** - ciadpi ile uygulama bazlı proxy
+- **Zapret** - nfqws ile trafik analizi ve yönetimi
+- **ByeDPI** - ciadpi ile uygulama bazlı proxy yönlendirme
 - **Modern GTK4/Libadwaita** arayüzü
 - **systemd** entegrasyonu
 

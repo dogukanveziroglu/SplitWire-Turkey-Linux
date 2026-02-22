@@ -20,6 +20,7 @@ _logger = get_logger()
 
 class FirewallBackend(Enum):
     """Detected firewall backend."""
+
     IPTABLES = "iptables"
     NFTABLES = "nftables"
     FIREWALLD = "firewalld"
@@ -28,6 +29,7 @@ class FirewallBackend(Enum):
 
 class InitSystem(Enum):
     """Detected init system."""
+
     SYSTEMD = "systemd"
     OPENRC = "openrc"
     SYSVINIT = "sysvinit"
@@ -36,6 +38,7 @@ class InitSystem(Enum):
 
 class DNSManager(Enum):
     """Detected DNS manager."""
+
     SYSTEMD_RESOLVED = "systemd-resolved"
     NETWORK_MANAGER = "NetworkManager"
     RESOLVCONF = "resolvconf"
@@ -46,6 +49,7 @@ class DNSManager(Enum):
 @dataclass
 class UbuntuVersion:
     """Ubuntu version information."""
+
     version: str = ""
     codename: str = ""
     major: int = 0
@@ -62,6 +66,7 @@ class UbuntuVersion:
 @dataclass
 class SystemInfo:
     """Complete system information."""
+
     # OS info
     ubuntu: UbuntuVersion = field(default_factory=UbuntuVersion)
     kernel_version: str = ""
@@ -104,10 +109,10 @@ class SystemInfo:
     def is_compatible(self) -> bool:
         """Check if system is compatible with SplitWire-Turkey."""
         return (
-            self.ubuntu.is_supported and
-            self.init_system == InitSystem.SYSTEMD and
-            self.python_major >= 3 and
-            self.python_minor >= 10
+            self.ubuntu.is_supported
+            and self.init_system == InitSystem.SYSTEMD
+            and self.python_major >= 3
+            and self.python_minor >= 10
         )
 
     def get_compatibility_issues(self) -> list[str]:
@@ -162,7 +167,9 @@ class SystemDetector:
         _logger.debug(f"[SYSTEM] Kernel: {self._info.kernel_version}")
         _logger.debug(f"[SYSTEM] Init: {self._info.init_system.value}")
         _logger.debug(f"[SYSTEM] Firewall: {self._info.firewall_backend.value}")
-        _logger.debug(f"[SYSTEM] WireGuard: tools={self._info.wireguard_tools_installed}, module={self._info.wireguard_module_loaded}")
+        _logger.debug(
+            f"[SYSTEM] WireGuard: tools={self._info.wireguard_tools_installed}, module={self._info.wireguard_module_loaded}"
+        )
         _logger.debug(f"[SYSTEM] NFQUEUE: {self._info.nfqueue_available}")
         _logger.debug(f"[SYSTEM] Cgroups v2: {self._info.cgroups_v2}")
         _logger.debug(f"[SYSTEM] DNS Manager: {self._info.dns_manager.value}")
@@ -173,12 +180,7 @@ class SystemDetector:
     def _run_command(self, cmd: list[str], timeout: int = 5) -> tuple[int, str, str]:
         """Run a command and return (returncode, stdout, stderr)."""
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             return result.returncode, result.stdout.strip(), result.stderr.strip()
         except subprocess.TimeoutExpired:
             return -1, "", "Command timed out"
@@ -310,10 +312,7 @@ class SystemDetector:
         """Detect NFQUEUE support for Zapret."""
         # Check if NFQUEUE target is available
         # Try to list iptables extensions
-        code, stdout, _ = self._run_command(
-            ["iptables", "-m", "nfqueue", "--help"],
-            timeout=3
-        )
+        code, stdout, _ = self._run_command(["iptables", "-m", "nfqueue", "--help"], timeout=3)
         # If help text is shown, NFQUEUE is available
         self._info.nfqueue_available = code == 0 or "NFQUEUE" in stdout
 
@@ -325,8 +324,7 @@ class SystemDetector:
             "/lib/x86_64-linux-gnu/libnetfilter_queue.so",
         ]
         self._info.libnetfilter_queue_installed = any(
-            Path(p).exists() or Path(p + ".1").exists()
-            for p in lib_paths
+            Path(p).exists() or Path(p + ".1").exists() for p in lib_paths
         )
 
     def _detect_dns_manager(self) -> None:
@@ -365,7 +363,10 @@ class SystemDetector:
     def _detect_python(self) -> None:
         """Detect Python version."""
         import sys
-        self._info.python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+        self._info.python_version = (
+            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
         self._info.python_major = sys.version_info.major
         self._info.python_minor = sys.version_info.minor
 

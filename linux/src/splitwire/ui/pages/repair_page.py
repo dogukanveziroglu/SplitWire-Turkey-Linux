@@ -6,8 +6,9 @@ Equivalent to Windows "Onarım" tab.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
 from typing import TYPE_CHECKING, Optional
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 class RepairPage(BasePage):
     """Discord repair and installation page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow"):
         self._discord_service = get_discord_service()
         super().__init__(window)
 
@@ -52,7 +53,8 @@ class RepairPage(BasePage):
         self._btn_ptb = self.create_action_button(
             label=get_text("repair", "install_ptb") or "Discord PTB Yükle",
             callback=self._on_install_ptb,
-            tooltip=get_text("tooltips", "discord_ptb_install") or "Discord Public Test Build'i yükle",
+            tooltip=get_text("tooltips", "discord_ptb_install")
+            or "Discord Public Test Build'i yükle",
         )
         actions_group.add(self._btn_ptb)
 
@@ -73,7 +75,8 @@ class RepairPage(BasePage):
         # Clean install for PTB switch
         self._switch_clean_ptb = self.create_switch_row(
             title=get_text("repair", "clean_install_ptb") or "Discord PTB için temiz kurulum yap",
-            subtitle=get_text("tooltips", "clean_install_ptb") or "Mevcut Discord'u kaldırıp PTB'yi yükle",
+            subtitle=get_text("tooltips", "clean_install_ptb")
+            or "Mevcut Discord'u kaldırıp PTB'yi yükle",
             active=False,
         )
         options_group.add(self._switch_clean_ptb)
@@ -87,9 +90,7 @@ class RepairPage(BasePage):
         options_group.add(self._switch_webcord_shortcut)
 
         # Status group
-        status_group = self.create_preferences_group(
-            title=get_text("repair", "status") or "Durum"
-        )
+        status_group = self.create_preferences_group(title=get_text("repair", "status") or "Durum")
         self.append(status_group)
 
         # Discord status row
@@ -201,13 +202,16 @@ class RepairPage(BasePage):
             status_dict["remove_btn"].set_visible(True)
         else:
             status_dict["status_dot"].set_css_classes(["status-stopped"])
-            status_dict["status_label"].set_label(get_text("status", "not_installed") or "Yüklü Değil")
+            status_dict["status_label"].set_label(
+                get_text("status", "not_installed") or "Yüklü Değil"
+            )
             status_dict["action_btn"].set_label(get_text("buttons", "install") or "Yükle")
             status_dict["remove_btn"].set_visible(False)
 
     def _refresh_status(self):
         """Refresh all status indicators."""
         self._logger.debug("[UI:Repair] Refreshing Discord status...")
+
         def do_refresh():
             # Get Discord installations
             installations = self._discord_service.get_installations()
@@ -230,7 +234,7 @@ class RepairPage(BasePage):
                 self._update_status_row(
                     self._discord_status,
                     installed=discord_inst is not None,
-                    running=discord_inst.is_running if discord_inst else False
+                    running=discord_inst.is_running if discord_inst else False,
                 )
 
                 # Update PTB status
@@ -238,7 +242,7 @@ class RepairPage(BasePage):
                 self._update_status_row(
                     self._ptb_status,
                     installed=ptb_inst is not None,
-                    running=ptb_inst.is_running if ptb_inst else False
+                    running=ptb_inst.is_running if ptb_inst else False,
                 )
 
                 # Update WebCord status
@@ -246,7 +250,7 @@ class RepairPage(BasePage):
                 self._update_status_row(
                     self._webcord_status,
                     installed=webcord_inst is not None,
-                    running=webcord_inst.is_running if webcord_inst else False
+                    running=webcord_inst.is_running if webcord_inst else False,
                 )
 
         self.run_async(do_refresh, on_complete)

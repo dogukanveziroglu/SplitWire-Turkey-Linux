@@ -20,17 +20,19 @@ _logger = get_logger()
 
 class ElevationMethod(Enum):
     """Method for privilege elevation."""
-    PKEXEC = "pkexec"       # Polkit (GUI dialog)
-    SUDO = "sudo"           # sudo (terminal)
-    GKSUDO = "gksudo"       # Legacy GTK sudo
-    KDESUDO = "kdesudo"     # KDE sudo
-    ROOT = "root"           # Already root
-    NONE = "none"           # No elevation available
+
+    PKEXEC = "pkexec"  # Polkit (GUI dialog)
+    SUDO = "sudo"  # sudo (terminal)
+    GKSUDO = "gksudo"  # Legacy GTK sudo
+    KDESUDO = "kdesudo"  # KDE sudo
+    ROOT = "root"  # Already root
+    NONE = "none"  # No elevation available
 
 
 @dataclass
 class ElevationResult:
     """Result of an elevated command execution."""
+
     success: bool
     returncode: int
     stdout: str
@@ -41,6 +43,7 @@ class ElevationResult:
 
 class PolkitError(Exception):
     """Exception raised for polkit-related errors."""
+
     pass
 
 
@@ -117,7 +120,7 @@ class PolkitHelper:
         command: list[str],
         action_id: Optional[str] = None,
         timeout: int = 60,
-        capture_output: bool = True
+        capture_output: bool = True,
     ) -> ElevationResult:
         """
         Run a command with elevated privileges.
@@ -152,7 +155,7 @@ class PolkitHelper:
                 returncode=-1,
                 stdout="",
                 stderr="No elevation method available",
-                method=ElevationMethod.NONE
+                method=ElevationMethod.NONE,
             )
 
         # Log result
@@ -163,32 +166,26 @@ class PolkitHelper:
         else:
             _logger.error(f"[POLKIT] Elevation failed (exit={result.returncode}): {cmd_preview}")
             if result.stderr:
-                stderr_preview = result.stderr[:200] + "..." if len(result.stderr) > 200 else result.stderr
+                stderr_preview = (
+                    result.stderr[:200] + "..." if len(result.stderr) > 200 else result.stderr
+                )
                 _logger.error(f"[POLKIT] stderr: {stderr_preview}")
 
         return result
 
     def _run_direct(
-        self,
-        command: list[str],
-        timeout: int,
-        capture_output: bool
+        self, command: list[str], timeout: int, capture_output: bool
     ) -> ElevationResult:
         """Run command directly (when already root)."""
         try:
             if capture_output:
-                result = subprocess.run(
-                    command,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout
-                )
+                result = subprocess.run(command, capture_output=True, text=True, timeout=timeout)
                 return ElevationResult(
                     success=result.returncode == 0,
                     returncode=result.returncode,
                     stdout=result.stdout,
                     stderr=result.stderr,
-                    method=ElevationMethod.ROOT
+                    method=ElevationMethod.ROOT,
                 )
             else:
                 result = subprocess.run(command, timeout=timeout)
@@ -197,7 +194,7 @@ class PolkitHelper:
                     returncode=result.returncode,
                     stdout="",
                     stderr="",
-                    method=ElevationMethod.ROOT
+                    method=ElevationMethod.ROOT,
                 )
         except subprocess.TimeoutExpired:
             return ElevationResult(
@@ -205,23 +202,15 @@ class PolkitHelper:
                 returncode=-1,
                 stdout="",
                 stderr="Command timed out",
-                method=ElevationMethod.ROOT
+                method=ElevationMethod.ROOT,
             )
         except Exception as e:
             return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr=str(e),
-                method=ElevationMethod.ROOT
+                success=False, returncode=-1, stdout="", stderr=str(e), method=ElevationMethod.ROOT
             )
 
     def _run_pkexec(
-        self,
-        command: list[str],
-        action_id: Optional[str],
-        timeout: int,
-        capture_output: bool
+        self, command: list[str], action_id: Optional[str], timeout: int, capture_output: bool
     ) -> ElevationResult:
         """Run command with pkexec."""
         # Build pkexec command
@@ -238,20 +227,16 @@ class PolkitHelper:
                     capture_output=True,
                     text=True,
                     timeout=timeout,
-                    env=self._get_pkexec_env()
+                    env=self._get_pkexec_env(),
                 )
             else:
-                result = subprocess.run(
-                    pkexec_cmd,
-                    timeout=timeout,
-                    env=self._get_pkexec_env()
-                )
+                result = subprocess.run(pkexec_cmd, timeout=timeout, env=self._get_pkexec_env())
                 return ElevationResult(
                     success=result.returncode == 0,
                     returncode=result.returncode,
                     stdout="",
                     stderr="",
-                    method=ElevationMethod.PKEXEC
+                    method=ElevationMethod.PKEXEC,
                 )
 
             # Check for user cancellation (pkexec returns 126 when cancelled)
@@ -263,7 +248,7 @@ class PolkitHelper:
                 stdout=result.stdout if capture_output else "",
                 stderr=result.stderr if capture_output else "",
                 cancelled=cancelled,
-                method=ElevationMethod.PKEXEC
+                method=ElevationMethod.PKEXEC,
             )
 
         except subprocess.TimeoutExpired:
@@ -272,7 +257,7 @@ class PolkitHelper:
                 returncode=-1,
                 stdout="",
                 stderr="Command timed out",
-                method=ElevationMethod.PKEXEC
+                method=ElevationMethod.PKEXEC,
             )
         except Exception as e:
             return ElevationResult(
@@ -280,26 +265,16 @@ class PolkitHelper:
                 returncode=-1,
                 stdout="",
                 stderr=str(e),
-                method=ElevationMethod.PKEXEC
+                method=ElevationMethod.PKEXEC,
             )
 
-    def _run_sudo(
-        self,
-        command: list[str],
-        timeout: int,
-        capture_output: bool
-    ) -> ElevationResult:
+    def _run_sudo(self, command: list[str], timeout: int, capture_output: bool) -> ElevationResult:
         """Run command with sudo."""
         sudo_cmd = ["sudo"] + command
 
         try:
             if capture_output:
-                result = subprocess.run(
-                    sudo_cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout
-                )
+                result = subprocess.run(sudo_cmd, capture_output=True, text=True, timeout=timeout)
             else:
                 result = subprocess.run(sudo_cmd, timeout=timeout)
                 return ElevationResult(
@@ -307,7 +282,7 @@ class PolkitHelper:
                     returncode=result.returncode,
                     stdout="",
                     stderr="",
-                    method=ElevationMethod.SUDO
+                    method=ElevationMethod.SUDO,
                 )
 
             return ElevationResult(
@@ -315,7 +290,7 @@ class PolkitHelper:
                 returncode=result.returncode,
                 stdout=result.stdout if capture_output else "",
                 stderr=result.stderr if capture_output else "",
-                method=ElevationMethod.SUDO
+                method=ElevationMethod.SUDO,
             )
 
         except subprocess.TimeoutExpired:
@@ -324,23 +299,15 @@ class PolkitHelper:
                 returncode=-1,
                 stdout="",
                 stderr="Command timed out",
-                method=ElevationMethod.SUDO
+                method=ElevationMethod.SUDO,
             )
         except Exception as e:
             return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr=str(e),
-                method=ElevationMethod.SUDO
+                success=False, returncode=-1, stdout="", stderr=str(e), method=ElevationMethod.SUDO
             )
 
     def _run_legacy_sudo(
-        self,
-        command: list[str],
-        method: ElevationMethod,
-        timeout: int,
-        capture_output: bool
+        self, command: list[str], method: ElevationMethod, timeout: int, capture_output: bool
     ) -> ElevationResult:
         """Run command with gksudo or kdesudo."""
         if method == ElevationMethod.GKSUDO:
@@ -350,12 +317,7 @@ class PolkitHelper:
 
         try:
             if capture_output:
-                result = subprocess.run(
-                    sudo_cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout
-                )
+                result = subprocess.run(sudo_cmd, capture_output=True, text=True, timeout=timeout)
             else:
                 result = subprocess.run(sudo_cmd, timeout=timeout)
                 return ElevationResult(
@@ -363,7 +325,7 @@ class PolkitHelper:
                     returncode=result.returncode,
                     stdout="",
                     stderr="",
-                    method=method
+                    method=method,
                 )
 
             return ElevationResult(
@@ -371,24 +333,16 @@ class PolkitHelper:
                 returncode=result.returncode,
                 stdout=result.stdout if capture_output else "",
                 stderr=result.stderr if capture_output else "",
-                method=method
+                method=method,
             )
 
         except subprocess.TimeoutExpired:
             return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr="Command timed out",
-                method=method
+                success=False, returncode=-1, stdout="", stderr="Command timed out", method=method
             )
         except Exception as e:
             return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr=str(e),
-                method=method
+                success=False, returncode=-1, stdout="", stderr=str(e), method=method
             )
 
     def _get_pkexec_env(self) -> dict:
@@ -404,34 +358,22 @@ class PolkitHelper:
     def run_wg_quick(self, action: str, interface: str) -> ElevationResult:
         """Run wg-quick up/down."""
         return self.run_elevated(
-            ["wg-quick", action, interface],
-            action_id=self.ACTION_WIREGUARD,
-            timeout=30
+            ["wg-quick", action, interface], action_id=self.ACTION_WIREGUARD, timeout=30
         )
 
     def run_systemctl(self, action: str, service: str) -> ElevationResult:
         """Run systemctl action on a service."""
         return self.run_elevated(
-            ["systemctl", action, service],
-            action_id=self.ACTION_SYSTEM,
-            timeout=30
+            ["systemctl", action, service], action_id=self.ACTION_SYSTEM, timeout=30
         )
 
     def run_iptables(self, args: list[str]) -> ElevationResult:
         """Run iptables command."""
-        return self.run_elevated(
-            ["iptables"] + args,
-            action_id=self.ACTION_ZAPRET,
-            timeout=10
-        )
+        return self.run_elevated(["iptables"] + args, action_id=self.ACTION_ZAPRET, timeout=10)
 
     def copy_file_as_root(self, src: str, dst: str) -> ElevationResult:
         """Copy a file to a root-owned location."""
-        return self.run_elevated(
-            ["cp", src, dst],
-            action_id=self.ACTION_SYSTEM,
-            timeout=10
-        )
+        return self.run_elevated(["cp", src, dst], action_id=self.ACTION_SYSTEM, timeout=10)
 
     def write_file_as_root(self, content: str, path: str) -> ElevationResult:
         """Write content to a root-owned file using tee."""
@@ -444,7 +386,7 @@ class PolkitHelper:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                env=self._get_pkexec_env()
+                env=self._get_pkexec_env(),
             )
             stdout, stderr = proc.communicate(input=content, timeout=30)
 
@@ -454,7 +396,7 @@ class PolkitHelper:
                 stdout=stdout,
                 stderr=stderr,
                 cancelled=proc.returncode == 126,
-                method=ElevationMethod.PKEXEC
+                method=ElevationMethod.PKEXEC,
             )
         except subprocess.TimeoutExpired:
             if proc:
@@ -465,7 +407,7 @@ class PolkitHelper:
                 returncode=-1,
                 stdout="",
                 stderr="Command timed out",
-                method=ElevationMethod.PKEXEC
+                method=ElevationMethod.PKEXEC,
             )
         except Exception as e:
             if proc and proc.poll() is None:
@@ -475,7 +417,7 @@ class PolkitHelper:
                 returncode=-1,
                 stdout="",
                 stderr=str(e),
-                method=ElevationMethod.PKEXEC
+                method=ElevationMethod.PKEXEC,
             )
 
 

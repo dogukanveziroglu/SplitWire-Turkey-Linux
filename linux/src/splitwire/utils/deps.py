@@ -19,6 +19,7 @@ _logger = get_logger()
 
 class DependencyStatus(Enum):
     """Status of a dependency."""
+
     INSTALLED = "installed"
     MISSING = "missing"
     OUTDATED = "outdated"
@@ -27,6 +28,7 @@ class DependencyStatus(Enum):
 
 class PackageManager(Enum):
     """Available package managers."""
+
     APT = "apt"
     SNAP = "snap"
     FLATPAK = "flatpak"
@@ -36,6 +38,7 @@ class PackageManager(Enum):
 @dataclass
 class Dependency:
     """Represents a system or Python dependency."""
+
     name: str
     package_name: str  # apt package name
     description: str
@@ -78,16 +81,23 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         package_name="gir1.2-gtk-4.0",
         description="GTK4 GObject introspection",
         required=True,
-        check_command=["python3", "-c", "import gi; gi.require_version('Gtk', '4.0'); from gi.repository import Gtk"],
+        check_command=[
+            "python3",
+            "-c",
+            "import gi; gi.require_version('Gtk', '4.0'); from gi.repository import Gtk",
+        ],
     ),
     Dependency(
         name="Libadwaita",
         package_name="gir1.2-adw-1",
         description="Libadwaita for GNOME styling",
         required=True,
-        check_command=["python3", "-c", "import gi; gi.require_version('Adw', '1'); from gi.repository import Adw"],
+        check_command=[
+            "python3",
+            "-c",
+            "import gi; gi.require_version('Adw', '1'); from gi.repository import Adw",
+        ],
     ),
-
     # WireGuard
     Dependency(
         name="wireguard-tools",
@@ -96,7 +106,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=True,
         check_command=["which", "wg-quick"],
     ),
-
     # Zapret dependencies
     Dependency(
         name="libnetfilter-queue-dev",
@@ -112,7 +121,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=True,
         check_command=["which", "iptables"],
     ),
-
     # cgroups for app-based routing
     Dependency(
         name="cgroup-tools",
@@ -121,7 +129,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=False,  # Optional, for advanced features
         check_command=["which", "cgcreate"],
     ),
-
     # General utilities
     Dependency(
         name="curl",
@@ -144,7 +151,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=True,
         check_command=["which", "git"],
     ),
-
     # Polkit for GUI privilege elevation
     Dependency(
         name="policykit-1",
@@ -186,12 +192,7 @@ class DependencyChecker:
     def _run_command(self, cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
         """Run a command and return (returncode, stdout, stderr)."""
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             return result.returncode, result.stdout.strip(), result.stderr.strip()
         except subprocess.TimeoutExpired:
             return -1, "", "Command timed out"
@@ -224,10 +225,7 @@ class DependencyChecker:
         for dep in self.system_deps:
             if dep.check_command:
                 code, _, _ = self._run_command(dep.check_command)
-                dep.status = (
-                    DependencyStatus.INSTALLED if code == 0
-                    else DependencyStatus.MISSING
-                )
+                dep.status = DependencyStatus.INSTALLED if code == 0 else DependencyStatus.MISSING
                 status_str = "installed" if dep.status == DependencyStatus.INSTALLED else "missing"
                 _logger.debug(f"[DEPS] {dep.name}: {status_str}")
             else:
@@ -246,10 +244,7 @@ class DependencyChecker:
         for dep in self.python_deps:
             if dep.check_command:
                 code, _, _ = self._run_command(dep.check_command)
-                dep.status = (
-                    DependencyStatus.INSTALLED if code == 0
-                    else DependencyStatus.MISSING
-                )
+                dep.status = DependencyStatus.INSTALLED if code == 0 else DependencyStatus.MISSING
                 status_str = "installed" if dep.status == DependencyStatus.INSTALLED else "missing"
                 _logger.debug(f"[DEPS] {dep.name}: {status_str}")
             else:
@@ -273,8 +268,12 @@ class DependencyChecker:
     def get_missing_required_deps(self) -> list[Dependency]:
         """Get list of missing required dependencies (both system and Python)."""
         missing = []
-        missing.extend([d for d in self.system_deps if d.status == DependencyStatus.MISSING and d.required])
-        missing.extend([d for d in self.python_deps if d.status == DependencyStatus.MISSING and d.required])
+        missing.extend(
+            [d for d in self.system_deps if d.status == DependencyStatus.MISSING and d.required]
+        )
+        missing.extend(
+            [d for d in self.python_deps if d.status == DependencyStatus.MISSING and d.required]
+        )
         return missing
 
     def get_apt_install_command(self) -> list[str]:
@@ -321,7 +320,7 @@ class DependencyChecker:
 
         if interactive:
             response = input("Install missing packages? [Y/n]: ").strip().lower()
-            if response and response != 'y':
+            if response and response != "y":
                 _logger.info("[DEPS] User cancelled installation")
                 return False
 
@@ -369,7 +368,7 @@ class DependencyChecker:
 
         if interactive:
             response = input("Install missing packages? [Y/n]: ").strip().lower()
-            if response and response != 'y':
+            if response and response != "y":
                 return False
 
         cmd = [sys.executable, "-m", "pip", "install"] + packages
@@ -429,7 +428,9 @@ def print_dependency_status(system_deps: list[Dependency], python_deps: list[Dep
     else:
         if missing_sys:
             print(f"Missing system packages: {len(missing_sys)}")
-            print(f"  Install with: sudo apt install {' '.join(d.package_name for d in missing_sys)}")
+            print(
+                f"  Install with: sudo apt install {' '.join(d.package_name for d in missing_sys)}"
+            )
         if missing_py:
             print(f"Missing Python packages: {len(missing_py)}")
             print(f"  Install with: pip install {' '.join(d.package_name for d in missing_py)}")

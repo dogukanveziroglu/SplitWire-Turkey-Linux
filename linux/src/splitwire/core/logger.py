@@ -18,10 +18,10 @@ class ColoredFormatter(logging.Formatter):
 
     # ANSI color codes
     COLORS = {
-        "DEBUG": "\033[36m",     # Cyan
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta
     }
     RESET = "\033[0m"
@@ -64,7 +64,7 @@ class SplitWireLogger:
         name: str = APP_NAME,
         log_dir: Optional[Path] = None,
         debug: bool = False,
-        console: bool = True
+        console: bool = True,
     ):
         """
         Initialize logger.
@@ -106,10 +106,7 @@ class SplitWireLogger:
         log_file = self._log_dir / f"{self._name}.log"
 
         handler = RotatingFileHandler(
-            log_file,
-            maxBytes=self.MAX_LOG_SIZE,
-            backupCount=self.BACKUP_COUNT,
-            encoding="utf-8"
+            log_file, maxBytes=self.MAX_LOG_SIZE, backupCount=self.BACKUP_COUNT, encoding="utf-8"
         )
         handler.setLevel(logging.DEBUG)
         handler.setFormatter(logging.Formatter(self.FILE_FORMAT, self.DATE_FORMAT))
@@ -146,7 +143,9 @@ class SplitWireLogger:
         self._logger.setLevel(level)
 
         for handler in self._logger.handlers:
-            if isinstance(handler, logging.StreamHandler) and not isinstance(handler, RotatingFileHandler):
+            if isinstance(handler, logging.StreamHandler) and not isinstance(
+                handler, RotatingFileHandler
+            ):
                 handler.setLevel(level)
 
     # Logging methods
@@ -191,7 +190,7 @@ class SplitWireLogger:
             name=f"{self._name}.{component}",
             log_dir=self._log_dir,
             debug=self._debug,
-            console=self._console_enabled
+            console=self._console_enabled,
         )
 
     # Utility methods

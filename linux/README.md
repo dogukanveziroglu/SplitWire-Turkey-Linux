@@ -1,17 +1,29 @@
 # SplitWire-Turkey Linux
 
-A comprehensive network restriction bypass tool for Linux, providing DPI bypass and split tunneling capabilities.
+An open-source network privacy and traffic management toolkit for Linux. Provides VPN split tunneling, DNS-over-HTTPS configuration, traffic analysis tools, and application-specific routing capabilities.
+
+## Intended Use Cases
+
+This software is a **general-purpose, dual-use network toolkit** designed for the following legitimate purposes:
+
+- **Privacy protection** - Encrypt and route network traffic to protect user privacy
+- **Network security research** - Analyze DPI (Deep Packet Inspection) behavior and test network resilience
+- **DNS security** - Configure encrypted DNS (DoH) to prevent DNS spoofing and surveillance
+- **Split tunneling** - Route only specific application traffic through VPN for bandwidth optimization
+- **Application-specific routing** - Direct individual application traffic through SOCKS5 proxies
+- **Network diagnostics** - Troubleshoot connectivity issues with Discord and other applications
+- **Educational use** - Learn about networking protocols, VPN tunneling, packet analysis, and Linux system administration
 
 ## Features
 
 - **WireGuard VPN** with split tunneling support via Cloudflare WARP
-- **DPI Bypass** using Zapret/nfqws (GoodbyeDPI equivalent for Linux)
+- **Traffic analysis tools** using Zapret/nfqws for DPI inspection and packet management
 - **ByeDPI Proxy** for application-specific routing via cgroups
 - **DNS Management** with DoH (DNS over HTTPS) support
-- **Discord Repair** and alternative client installation
+- **Discord diagnostics** and alternative client installation
 - **Modern GTK4/Libadwaita** interface
 - **Multi-language** support (Turkish, English, Russian, Spanish)
-- **systemd Integration** for persistent services
+- **systemd integration** for persistent services
 
 ## Screenshots
 
@@ -67,7 +79,7 @@ splitwire
 # Search for "SplitWire"
 ```
 
-### Bypass Methods
+### Network Tools
 
 #### 1. WireGuard (Split Tunneling)
 
@@ -78,42 +90,40 @@ Uses Cloudflare WARP via WireGuard with split tunneling to route only specific a
 3. Click "WireGuard Kur" (Install WireGuard)
 4. Select applications for split tunneling
 
-#### 2. Zapret (System-wide DPI Bypass)
+#### 2. Zapret (Traffic Analysis & Management)
 
-Uses nfqws for packet manipulation to bypass DPI inspection.
+Uses nfqws for network packet analysis and traffic management.
 
 1. Go to "Zapret" page
 2. Choose a preset or run "Otomatik Tarama" (Auto Scan)
 3. Click "Hizmet Kur" (Install Service)
 
 **Presets:**
-- `turkey_discord` - Optimized for Discord
-- `turkey_general` - General purpose
-- `turkey_youtube` - Optimized for YouTube
-- `preset_split` - Split mode
-- `preset_fake` - Fake packet mode
-- `preset_disorder` - Disorder mode
+- `general` - General purpose configuration
+- `split` - Split mode
+- `fake` - Fake packet mode
+- `disorder` - Disorder mode
 
-#### 3. ByeDPI (Application-specific)
+#### 3. ByeDPI (Application-specific Routing)
 
 Routes specific applications through a local SOCKS5 proxy.
 
 1. Go to "ByeDPI" page
 2. Select applications to route
-3. Click "Başlat" (Start)
+3. Click "Baslat" (Start)
 
 ### DNS Configuration
 
-1. Go to "Gelişmiş" (Advanced) page
+1. Go to "Gelismis" (Advanced) page
 2. Select DNS provider (Cloudflare, Google, Quad9)
 3. Enable/disable DoH (DNS over HTTPS)
 4. Click "DNS Uygula" (Apply DNS)
 
-### Discord Repair
+### Discord Diagnostics
 
 If Discord is stuck on "Checking for updates":
 
-1. Go to "Onarım" (Repair) page
+1. Go to "Onarim" (Repair) page
 2. Try "Discord Onar" (Repair Discord)
 3. If unsuccessful, try installing alternative clients
 
@@ -125,7 +135,7 @@ SplitWire creates the following systemd services:
 |---------|-------------|
 | `splitwire-wg.service` | WireGuard VPN tunnel |
 | `splitwire-wg-refresh.timer` | Periodic connection refresh |
-| `splitwire-zapret.service` | Zapret DPI bypass |
+| `splitwire-zapret.service` | Zapret traffic management |
 | `splitwire-byedpi.service` | ByeDPI proxy |
 | `splitwire-cgproxy.service` | Application routing |
 
@@ -176,15 +186,15 @@ sudo apt purge splitwire-turkey
 
 ### "Register failed" Error
 
-Cloudflare API may be blocked in your region. Try:
-1. Use a VPN temporarily to register
-2. Use alternative bypass methods (Zapret, ByeDPI)
+Cloudflare API may be unreachable in your region. Try:
+1. Check your network connectivity
+2. Use alternative network tools (Zapret, ByeDPI)
 
 ### Discord Stuck on "Checking for updates"
 
 1. Restart your router (wait 15-30 seconds)
 2. Restart your computer
-3. Use Discord Repair in SplitWire
+3. Use Discord Diagnostics in SplitWire
 4. Try installing Discord PTB or WebCord
 
 ### Services Not Starting
@@ -227,9 +237,9 @@ Configuration files are stored in:
 }
 ```
 
-### Blacklist (`blacklist.txt`)
+### Domain List (`blacklist.txt`)
 
-Domains for DPI bypass (one per line):
+Domains for traffic management (one per line):
 ```
 discord.com
 discord.gg
@@ -284,12 +294,45 @@ See LICENSE file for details.
 - **[ciadpi](https://github.com/hufrea/byedpi)** by hufrea
 - **[cgproxy](https://github.com/springzfx/cgproxy)** concept
 
-## Disclaimer
+## Legal Notice & Disclaimer
 
-**This software is for educational purposes only.**
+### Nature of This Software
 
-- This tool is for coding education and personal use only
-- Not intended for commercial use
-- The developer is not responsible for any damage from using this software
-- Users use this software at their own risk
-- Compliance with legal regulations is the user's responsibility
+This software is a **general-purpose, dual-use network toolkit**. It integrates open-source networking
+components (WireGuard, Zapret, ByeDPI) that are widely used for legitimate purposes including privacy
+protection, network security research, DNS security configuration, and traffic analysis.
+
+The individual components used by this project are independently developed, openly available
+open-source projects hosted on public platforms (GitHub), and are used in corporate, academic,
+and personal environments worldwide.
+
+### Intended Purpose
+
+This software is developed and distributed for the following purposes:
+
+1. **Network privacy and security research** - Understanding and analyzing DPI systems, encrypted
+   DNS configuration, and VPN split tunneling
+2. **Educational use** - Learning about networking protocols, Linux system administration,
+   packet analysis, and open-source software development
+3. **Personal privacy protection** - Encrypting DNS queries, routing traffic through VPN tunnels,
+   and managing application-specific network configurations
+
+### User Responsibility
+
+- Users are solely responsible for ensuring their use of this software complies with all
+  applicable local, national, and international laws and regulations
+- The developers do not endorse, encourage, or condone any use of this software that violates
+  applicable laws
+- This software is provided "AS IS" without warranty of any kind, as detailed in the MIT License
+
+### Open Source & Transparency
+
+This project is fully open-source under the MIT License. All source code is publicly available
+for inspection, audit, and review. The transparent nature of this project demonstrates that it
+is developed for legitimate, lawful purposes.
+
+### No Liability
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY
+ARISING FROM THE USE OF THIS SOFTWARE. See the [LICENSE](../LICENSE) file for complete terms.

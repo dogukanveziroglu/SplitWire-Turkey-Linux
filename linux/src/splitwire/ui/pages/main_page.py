@@ -6,8 +6,9 @@ Equivalent to Windows "Ana Sayfa" tab.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
 from typing import Optional, List, TYPE_CHECKING
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 class MainPage(BasePage):
     """WireGuard/WireSock setup page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow"):
         self._wg_service = get_wireguard_service()
         self._st_service = get_split_tunnel_service()
         self._dns_service = get_dns_service()
@@ -56,16 +57,15 @@ class MainPage(BasePage):
         # Note: _update_status_indicator() called at end of _build_ui after buttons exist
 
         # Main buttons group
-        buttons_group = self.create_preferences_group(
-            title=get_text("main", "setup") or "Kurulum"
-        )
+        buttons_group = self.create_preferences_group(title=get_text("main", "setup") or "Kurulum")
         self.append(buttons_group)
 
         # Standard setup button
         self._btn_standard = self.create_action_button(
             label=get_text("main", "standard_setup") or "Standart Kurulum",
             callback=self._on_standard_setup,
-            tooltip=get_text("tooltips", "standard_install") or "WireGuard/WGCF ile standart kurulum",
+            tooltip=get_text("tooltips", "standard_install")
+            or "WireGuard/WGCF ile standart kurulum",
             suggested=True,
         )
         buttons_group.add(self._btn_standard)
@@ -89,7 +89,8 @@ class MainPage(BasePage):
         # Browser tunneling switch
         self._switch_browser = self.create_switch_row(
             title=get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap",
-            subtitle=get_text("tooltips", "browser_tunneling") or "Chrome, Firefox, Edge vb. tarayıcıları dahil et",
+            subtitle=get_text("tooltips", "browser_tunneling")
+            or "Chrome, Firefox, Edge vb. tarayıcıları dahil et",
             active=False,
             callback=self._on_browser_tunneling_changed,
         )
@@ -98,7 +99,8 @@ class MainPage(BasePage):
         # Full tunnel mode switch (default: ON - all traffic through VPN)
         self._switch_full_tunnel = self.create_switch_row(
             title=get_text("main", "full_tunnel") or "Tüm Trafik VPN'den Geçsin",
-            subtitle=get_text("tooltips", "full_tunnel") or "Tüm internet trafiğini VPN üzerinden yönlendir (daha yavaş ama tüm engeller kalkar)",
+            subtitle=get_text("tooltips", "full_tunnel")
+            or "Tüm internet trafiğini VPN üzerinden yönlendir (daha yavaş ama tüm engeller kalkar)",
             active=True,
             callback=self._on_full_tunnel_changed,
         )
@@ -107,7 +109,8 @@ class MainPage(BasePage):
         # Refresh timer switch
         self._switch_refresh = self.create_switch_row(
             title=get_text("main", "refresh_timer") or "WireSock yineleyici kur",
-            subtitle=get_text("tooltips", "wiresock_repeater") or "Bağlantıyı periyodik olarak yenile (30 dakika)",
+            subtitle=get_text("tooltips", "wiresock_repeater")
+            or "Bağlantıyı periyodik olarak yenile (30 dakika)",
             active=False,
             callback=self._on_refresh_timer_changed,
         )
@@ -116,7 +119,8 @@ class MainPage(BasePage):
         # Advanced settings expander
         self._advanced_expander = Adw.ExpanderRow(
             title=get_text("main", "folder_customization") or "Klasör listesini özelleştir",
-            subtitle=get_text("tooltips", "folder_customization") or "Tünelleme yapılacak uygulamaları özelleştir",
+            subtitle=get_text("tooltips", "folder_customization")
+            or "Tünelleme yapılacak uygulamaları özelleştir",
         )
         options_group.add(self._advanced_expander)
 
@@ -169,7 +173,8 @@ class MainPage(BasePage):
         # Generate config button
         self._btn_generate = Gtk.Button(
             label=get_text("main", "generate_config") or "Özel Config Oluştur",
-            tooltip_text=get_text("tooltips", "generate_config") or "Özel WireGuard config dosyası oluştur",
+            tooltip_text=get_text("tooltips", "generate_config")
+            or "Özel WireGuard config dosyası oluştur",
         )
         self._btn_generate.connect("clicked", self._on_generate_config)
         advanced_buttons_box.append(self._btn_generate)
@@ -276,8 +281,12 @@ class MainPage(BasePage):
     def refresh_translations(self):
         """Refresh UI translations."""
         self._btn_standard.set_label(get_text("main", "standard_setup") or "Standart Kurulum")
-        self._switch_browser.set_title(get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap")
-        self._switch_refresh.set_title(get_text("main", "refresh_timer") or "WireSock yineleyici kur")
+        self._switch_browser.set_title(
+            get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap"
+        )
+        self._switch_refresh.set_title(
+            get_text("main", "refresh_timer") or "WireSock yineleyici kur"
+        )
         self._btn_remove.set_label(get_text("main", "remove_service") or "Hizmeti Kaldır")
 
     # Event handlers
@@ -292,26 +301,40 @@ class MainPage(BasePage):
             try:
                 # Register WGCF account if needed
                 if not self._wg_service.register_wgcf():
-                    return (False, get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız")
+                    return (
+                        False,
+                        get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız",
+                    )
 
                 # Determine tunnel mode based on switch state
-                tunnel_mode = TunnelMode.FULL if self._switch_full_tunnel.get_active() else TunnelMode.SPLIT
+                tunnel_mode = (
+                    TunnelMode.FULL if self._switch_full_tunnel.get_active() else TunnelMode.SPLIT
+                )
 
                 # Generate config with selected tunnel mode
                 if not self._wg_service.generate_config(tunnel_mode=tunnel_mode):
-                    return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
+                    return (
+                        False,
+                        get_text("errors", "config_generate_failed") or "Config oluşturulamadı",
+                    )
 
                 # CRITICAL: Start WireGuard BEFORE changing DNS
                 # DNS change before VPN can cause endpoint resolution failure
                 # if ISP blocks/throttles public DNS servers like 1.1.1.1
                 if not self._wg_service.start():
-                    return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
+                    return (
+                        False,
+                        get_text("errors", "service_start_failed") or "Servis başlatılamadı",
+                    )
 
                 # Verify VPN connection is working
                 import time
+
                 time.sleep(1)  # Give WireGuard a moment to establish connection
                 if not self._wg_service.test_connection():
-                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+                    self._logger.warning(
+                        "[UI:Main] VPN connection test failed, continuing anyway..."
+                    )
 
                 # NOW it's safe to change DNS (VPN is active, DNS queries can go through VPN)
                 self._dns_service.install(preset="cloudflare")
@@ -450,21 +473,33 @@ class MainPage(BasePage):
             try:
                 # Register WGCF account if needed
                 if not self._wg_service.register_wgcf():
-                    return (False, get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız")
+                    return (
+                        False,
+                        get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız",
+                    )
 
                 # Generate config
                 if not self._wg_service.generate_config():
-                    return (False, get_text("errors", "config_generate_failed") or "Config oluşturulamadı")
+                    return (
+                        False,
+                        get_text("errors", "config_generate_failed") or "Config oluşturulamadı",
+                    )
 
                 # CRITICAL: Start WireGuard BEFORE changing DNS
                 if not self._wg_service.start():
-                    return (False, get_text("errors", "service_start_failed") or "Servis başlatılamadı")
+                    return (
+                        False,
+                        get_text("errors", "service_start_failed") or "Servis başlatılamadı",
+                    )
 
                 # Verify VPN connection is working
                 import time
+
                 time.sleep(1)
                 if not self._wg_service.test_connection():
-                    self._logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+                    self._logger.warning(
+                        "[UI:Main] VPN connection test failed, continuing anyway..."
+                    )
 
                 # NOW it's safe to change DNS (VPN is active)
                 self._dns_service.install(preset="cloudflare")
@@ -510,7 +545,7 @@ class MainPage(BasePage):
                 config_content = self._wg_service.generate_config_content(
                     include_browsers=self._switch_browser.get_active()
                 )
-                with open(path, 'w') as f:
+                with open(path, "w") as f:
                     f.write(config_content)
                 self.show_toast(f"Config kaydedildi: {path}")
         except GLib.Error as e:
@@ -523,7 +558,8 @@ class MainPage(BasePage):
         dialog = Adw.MessageDialog(
             transient_for=self._window,
             heading=get_text("dialogs", "confirm_remove") or "Hizmeti Kaldır",
-            body=get_text("dialogs", "remove_wireguard_body") or "WireGuard hizmeti kaldırılacak. Devam etmek istiyor musunuz?",
+            body=get_text("dialogs", "remove_wireguard_body")
+            or "WireGuard hizmeti kaldırılacak. Devam etmek istiyor musunuz?",
         )
         dialog.add_response("cancel", get_text("buttons", "cancel") or "İptal")
         dialog.add_response("remove", get_text("buttons", "remove") or "Kaldır")
@@ -565,7 +601,8 @@ class MainPage(BasePage):
         dialog = Adw.MessageDialog(
             transient_for=self._window,
             heading=get_text("help", "wireguard_title") or "WireGuard Yardım",
-            body=get_text("help", "wireguard_body") or """WireGuard, Cloudflare WARP üzerinden VPN bağlantısı sağlar.
+            body=get_text("help", "wireguard_body")
+            or """WireGuard, Cloudflare WARP üzerinden VPN bağlantısı sağlar.
 
 Standart Kurulum: Discord ve seçilen uygulamalar VPN üzerinden geçer.
 

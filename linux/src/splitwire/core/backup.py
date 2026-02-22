@@ -24,17 +24,19 @@ _logger = get_logger()
 
 class BackupType(Enum):
     """Type of backup."""
-    CONFIG = "config"           # Application configuration
-    DNS = "dns"                 # DNS settings
-    WIREGUARD = "wireguard"     # WireGuard configs
-    ZAPRET = "zapret"           # Zapret settings
-    SERVICES = "services"       # Service states
-    FULL = "full"               # Everything
+
+    CONFIG = "config"  # Application configuration
+    DNS = "dns"  # DNS settings
+    WIREGUARD = "wireguard"  # WireGuard configs
+    ZAPRET = "zapret"  # Zapret settings
+    SERVICES = "services"  # Service states
+    FULL = "full"  # Everything
 
 
 @dataclass
 class BackupMetadata:
     """Metadata for a backup."""
+
     id: str
     type: BackupType
     timestamp: str
@@ -52,7 +54,7 @@ class BackupMetadata:
             "description": self.description,
             "version": self.version,
             "files": self.files,
-            "size": self.size
+            "size": self.size,
         }
 
     @classmethod
@@ -65,12 +67,13 @@ class BackupMetadata:
             description=data["description"],
             version=data["version"],
             files=data.get("files", []),
-            size=data.get("size", 0)
+            size=data.get("size", 0),
         )
 
 
 class BackupError(Exception):
     """Exception raised for backup-related errors."""
+
     pass
 
 
@@ -133,9 +136,7 @@ class BackupManager:
         return self._backup_dir / f"{backup_id}.json"
 
     def create_backup(
-        self,
-        backup_type: BackupType = BackupType.CONFIG,
-        description: str = ""
+        self, backup_type: BackupType = BackupType.CONFIG, description: str = ""
     ) -> BackupMetadata:
         """
         Create a new backup.
@@ -176,7 +177,7 @@ class BackupManager:
                         home_str = str(Path.home())
                         path_str = str(path)
                         if path_str.startswith(home_str):
-                            arcname = "__USER_HOME__" + path_str[len(home_str):]
+                            arcname = "__USER_HOME__" + path_str[len(home_str) :]
                         else:
                             arcname = path_str
                         tar.add(str(path), arcname=arcname)
@@ -198,7 +199,7 @@ class BackupManager:
             description=description or f"{backup_type.value} backup",
             version=self.APP_VERSION,
             files=[str(f) for f in files_to_backup],
-            size=backup_size
+            size=backup_size,
         )
 
         # Save metadata
@@ -288,7 +289,7 @@ class BackupManager:
                     # Convert archive path back to real path
                     # Handle both old "HOME" marker and new "__USER_HOME__" marker
                     if member.name.startswith("__USER_HOME__"):
-                        real_path = str(Path.home()) + member.name[len("__USER_HOME__"):]
+                        real_path = str(Path.home()) + member.name[len("__USER_HOME__") :]
                     elif member.name.startswith("HOME"):
                         # Legacy support for old backups
                         real_path = str(Path.home()) + member.name[4:]
@@ -387,7 +388,9 @@ class BackupManager:
         except (json.JSONDecodeError, KeyError):
             return None
 
-    def get_latest_backup(self, backup_type: Optional[BackupType] = None) -> Optional[BackupMetadata]:
+    def get_latest_backup(
+        self, backup_type: Optional[BackupType] = None
+    ) -> Optional[BackupMetadata]:
         """
         Get the most recent backup.
 
@@ -414,7 +417,7 @@ class BackupManager:
 
         # Remove oldest backups
         removed = 0
-        for backup in backups[self.MAX_BACKUPS:]:
+        for backup in backups[self.MAX_BACKUPS :]:
             if self.delete_backup(backup.id):
                 removed += 1
 
@@ -435,9 +438,11 @@ class BackupManager:
 
 # Snapshot system for atomic operations
 
+
 @dataclass
 class SystemSnapshot:
     """Snapshot of system state before an operation."""
+
     id: str
     timestamp: str
     operation: str
@@ -510,7 +515,7 @@ class SnapshotManager:
             operation=operation,
             files_backed_up=backed_up,
             services_state=services_state,
-            dns_state=dns_state
+            dns_state=dns_state,
         )
 
         # Save snapshot metadata
@@ -609,10 +614,7 @@ class SnapshotManager:
         for service in services:
             try:
                 result = subprocess.run(
-                    ["systemctl", "is-active", service],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
+                    ["systemctl", "is-active", service], capture_output=True, text=True, timeout=5
                 )
                 states[service] = result.stdout.strip()
             except Exception as e:
@@ -656,7 +658,9 @@ def get_snapshot_manager() -> SnapshotManager:
 
 
 # Convenience functions
-def create_backup(backup_type: BackupType = BackupType.CONFIG, description: str = "") -> BackupMetadata:
+def create_backup(
+    backup_type: BackupType = BackupType.CONFIG, description: str = ""
+) -> BackupMetadata:
     """Create a backup (convenience function)."""
     return get_backup_manager().create_backup(backup_type, description)
 
@@ -698,10 +702,7 @@ if __name__ == "__main__":
         # Create backup
         print("\n--- Creating backup ---")
         try:
-            metadata = manager.create_backup(
-                BackupType.CONFIG,
-                "Test backup before changes"
-            )
+            metadata = manager.create_backup(BackupType.CONFIG, "Test backup before changes")
             print(f"Backup created: {metadata.id}")
             print(f"Type: {metadata.type.value}")
             print(f"Files: {metadata.files}")
@@ -733,10 +734,7 @@ if __name__ == "__main__":
         snap_manager = SnapshotManager(snapshot_dir)
 
         # Create snapshot
-        snapshot = snap_manager.create_snapshot(
-            "test_operation",
-            [str(test_config)]
-        )
+        snapshot = snap_manager.create_snapshot("test_operation", [str(test_config)])
         print(f"Snapshot created: {snapshot.id}")
 
         # Modify file

@@ -3,8 +3,9 @@ Base page class for SplitWire-Turkey pages.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
 from typing import Optional, Callable, TYPE_CHECKING
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 class BasePage(Gtk.Box):
     """Base class for all application pages."""
 
-    def __init__(self, window: 'SplitWireWindow', **kwargs):
+    def __init__(self, window: "SplitWireWindow", **kwargs):
         super().__init__(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=16,
@@ -26,7 +27,7 @@ class BasePage(Gtk.Box):
             margin_end=16,
             margin_top=16,
             margin_bottom=16,
-            **kwargs
+            **kwargs,
         )
 
         self._window = window

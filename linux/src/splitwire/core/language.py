@@ -17,6 +17,7 @@ _logger = get_logger()
 
 class LanguageError(Exception):
     """Exception raised for language-related errors."""
+
     pass
 
 
@@ -319,34 +320,26 @@ if __name__ == "__main__":
 
     # English
     en_data = {
-        "buttons": {
-            "save": "Save",
-            "cancel": "Cancel",
-            "install": "Install"
-        },
+        "buttons": {"save": "Save", "cancel": "Cancel", "install": "Install"},
         "messages": {
             "success": "Operation completed successfully!",
             "error": "An error occurred: {0}",
-            "confirm": "Are you sure you want to {action}?"
+            "confirm": "Are you sure you want to {action}?",
         },
-        "simple": "A simple string"
+        "simple": "A simple string",
     }
     with open(test_dir / "en.json", "w") as f:
         json.dump(en_data, f)
 
     # Turkish
     tr_data = {
-        "buttons": {
-            "save": "Kaydet",
-            "cancel": "İptal",
-            "install": "Yükle"
-        },
+        "buttons": {"save": "Kaydet", "cancel": "İptal", "install": "Yükle"},
         "messages": {
             "success": "İşlem başarıyla tamamlandı!",
             "error": "Bir hata oluştu: {0}",
-            "confirm": "{action} işlemini onaylıyor musunuz?"
+            "confirm": "{action} işlemini onaylıyor musunuz?",
         },
-        "simple": "Basit bir metin"
+        "simple": "Basit bir metin",
     }
     with open(test_dir / "tr.json", "w") as f:
         json.dump(tr_data, f)
@@ -361,7 +354,9 @@ if __name__ == "__main__":
     print(f"not_found: {manager.get_text('not_found', default='DEFAULT')}")
 
     # Test formatting
-    print(f"error formatted: {manager.format_text_positional('messages', 'error', args=('Test error',))}")
+    print(
+        f"error formatted: {manager.format_text_positional('messages', 'error', args=('Test error',))}"
+    )
     print(f"confirm formatted: {manager.format_text('messages', 'confirm', action='install')}")
 
     # Test Turkish
@@ -378,5 +373,6 @@ if __name__ == "__main__":
 
     # Cleanup
     import shutil
+
     shutil.rmtree(test_dir)
     print("\nTest completed!")
