@@ -1,5 +1,5 @@
 """
-Base service class for SplitWire-Turkey Linux.
+Base service class for SplitWire Linux.
 
 Provides abstract base class for all services (WireGuard, Zapret, ByeDPI, etc.)
 with common interface for installation, removal, and lifecycle management.
@@ -17,6 +17,7 @@ from splitwire.core import get_logger, get_shell, CommandResult, CommandStatus
 
 class ServiceStatus(Enum):
     """Status of a service."""
+
     RUNNING = "running"
     STOPPED = "stopped"
     FAILED = "failed"
@@ -28,8 +29,9 @@ class ServiceStatus(Enum):
 
 class ServiceType(Enum):
     """Type of service for categorization."""
+
     VPN = "vpn"
-    DPI_BYPASS = "dpi_bypass"
+    PACKET_PROCESSING = "packet_processing"
     PROXY = "proxy"
     DNS = "dns"
     SYSTEM = "system"
@@ -38,6 +40,7 @@ class ServiceType(Enum):
 @dataclass
 class ServiceInfo:
     """Information about a service."""
+
     name: str
     display_name: str
     description: str
@@ -64,8 +67,7 @@ class BaseService(ABC):
     - Configuration management
     """
 
-    def __init__(self, name: str, display_name: str, description: str,
-                 service_type: ServiceType):
+    def __init__(self, name: str, display_name: str, description: str, service_type: ServiceType):
         """
         Initialize base service.
 
@@ -243,10 +245,7 @@ class BaseService(ABC):
             self._logger.warning(f"No systemd unit for {self._name}")
             return False
 
-        result = self._shell.run(
-            ["sudo", "systemctl", "enable", systemd_unit],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "enable", systemd_unit], timeout=30)
         if result.success:
             self._logger.info(f"Enabled autostart for {self._display_name}")
         else:
@@ -264,10 +263,7 @@ class BaseService(ABC):
         if not systemd_unit:
             return False
 
-        result = self._shell.run(
-            ["sudo", "systemctl", "disable", systemd_unit],
-            timeout=30
-        )
+        result = self._shell.run(["sudo", "systemctl", "disable", systemd_unit], timeout=30)
         if result.success:
             self._logger.info(f"Disabled autostart for {self._display_name}")
         return result.success
@@ -283,10 +279,7 @@ class BaseService(ABC):
         if not systemd_unit:
             return False
 
-        result = self._shell.run(
-            ["systemctl", "is-enabled", systemd_unit],
-            timeout=10
-        )
+        result = self._shell.run(["systemctl", "is-enabled", systemd_unit], timeout=10)
         return result.success and "enabled" in result.stdout.lower()
 
     def _get_systemd_unit(self) -> Optional[str]:
@@ -364,7 +357,7 @@ class BaseService(ABC):
                 returncode=-1,
                 stdout="",
                 stderr="No systemd unit configured",
-                command=f"systemctl {action}"
+                command=f"systemctl {action}",
             )
 
         if action in ["start", "stop", "restart", "enable", "disable", "reload"]:
@@ -382,8 +375,14 @@ class SystemdService(BaseService):
     Provides default implementations for systemd-based services.
     """
 
-    def __init__(self, name: str, display_name: str, description: str,
-                 service_type: ServiceType, systemd_unit: Optional[str] = None):
+    def __init__(
+        self,
+        name: str,
+        display_name: str,
+        description: str,
+        service_type: ServiceType,
+        systemd_unit: Optional[str] = None,
+    ):
         """
         Initialize systemd service.
 
@@ -452,10 +451,7 @@ class SystemdService(BaseService):
             return False
 
         # Check if unit file exists
-        result = self._shell.run(
-            ["systemctl", "list-unit-files", unit],
-            timeout=10
-        )
+        result = self._shell.run(["systemctl", "list-unit-files", unit], timeout=10)
         return unit in result.stdout
 
 

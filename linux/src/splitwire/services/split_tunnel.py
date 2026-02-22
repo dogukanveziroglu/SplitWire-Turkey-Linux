@@ -1,5 +1,5 @@
 """
-App-based split tunneling for SplitWire-Turkey Linux.
+App-based split tunneling for SplitWire Linux.
 
 Uses cgproxy (cgroup-based routing) to route specific applications
 through the VPN tunnel while allowing other traffic to bypass it.
@@ -114,6 +114,7 @@ BROWSER_APPS = ["firefox", "chrome", "chromium", "brave", "vivaldi", "opera", "e
 @dataclass
 class TunneledApp:
     """Information about an app configured for tunneling."""
+
     name: str
     path: str
     enabled: bool = True
@@ -123,6 +124,7 @@ class TunneledApp:
 @dataclass
 class SplitTunnelConfig:
     """Split tunnel configuration."""
+
     enabled: bool = False
     include_browsers: bool = False
     apps: list[TunneledApp] = field(default_factory=list)
@@ -171,13 +173,17 @@ class SplitTunnelService(BaseService):
 
                 self._config.apps = []
                 for app_data in data.get("apps", []):
-                    self._config.apps.append(TunneledApp(
-                        name=app_data.get("name", ""),
-                        path=app_data.get("path", ""),
-                        enabled=app_data.get("enabled", True),
-                        is_custom=app_data.get("is_custom", False),
-                    ))
-                self._logger.debug(f"[TUNNEL] Config loaded: {len(self._config.apps)} apps, include_browsers={self._config.include_browsers}")
+                    self._config.apps.append(
+                        TunneledApp(
+                            name=app_data.get("name", ""),
+                            path=app_data.get("path", ""),
+                            enabled=app_data.get("enabled", True),
+                            is_custom=app_data.get("is_custom", False),
+                        )
+                    )
+                self._logger.debug(
+                    f"[TUNNEL] Config loaded: {len(self._config.apps)} apps, include_browsers={self._config.include_browsers}"
+                )
             except Exception as e:
                 self._logger.warning(f"[TUNNEL] Failed to load config: {e}")
 
@@ -196,7 +202,7 @@ class SplitTunnelService(BaseService):
                     "is_custom": app.is_custom,
                 }
                 for app in self._config.apps
-            ]
+            ],
         }
         APPS_CONFIG_FILE.write_text(json.dumps(data, indent=2))
         self._logger.debug(f"[TUNNEL] Config saved: {len(self._config.apps)} apps")
@@ -205,10 +211,13 @@ class SplitTunnelService(BaseService):
     # BaseService implementation
     # =========================================================================
 
-    def install(self, apps: Optional[list[str]] = None,
-                include_browsers: bool = False,
-                interface: str = "splitwire",
-                **kwargs) -> bool:
+    def install(
+        self,
+        apps: Optional[list[str]] = None,
+        include_browsers: bool = False,
+        interface: str = "splitwire",
+        **kwargs,
+    ) -> bool:
         """
         Install and configure split tunneling.
 
@@ -287,10 +296,7 @@ class SplitTunnelService(BaseService):
         """Start cgproxy service."""
         self._logger.info("Starting cgproxy")
 
-        result = self._run_privileged(
-            ["systemctl", "start", CGPROXY_SERVICE],
-            timeout=30
-        )
+        result = self._run_privileged(["systemctl", "start", CGPROXY_SERVICE], timeout=30)
 
         if result.success:
             self._logger.info("cgproxy started")
@@ -305,10 +311,7 @@ class SplitTunnelService(BaseService):
         """Stop cgproxy service."""
         self._logger.info("Stopping cgproxy")
 
-        result = self._run_privileged(
-            ["systemctl", "stop", CGPROXY_SERVICE],
-            timeout=30
-        )
+        result = self._run_privileged(["systemctl", "stop", CGPROXY_SERVICE], timeout=30)
 
         if result.success:
             self._logger.info("cgproxy stopped")
@@ -323,10 +326,7 @@ class SplitTunnelService(BaseService):
         if not self.is_installed():
             return ServiceStatus.NOT_INSTALLED
 
-        result = self._shell.run(
-            ["systemctl", "is-active", CGPROXY_SERVICE],
-            timeout=10
-        )
+        result = self._shell.run(["systemctl", "is-active", CGPROXY_SERVICE], timeout=10)
 
         stdout = result.stdout.strip().lower()
         if stdout == "active":
@@ -362,12 +362,14 @@ class SplitTunnelService(BaseService):
         for app_name, paths in KNOWN_APPS.items():
             for path in paths:
                 if Path(path).exists():
-                    available.append(TunneledApp(
-                        name=app_name,
-                        path=path,
-                        enabled=False,
-                        is_custom=False,
-                    ))
+                    available.append(
+                        TunneledApp(
+                            name=app_name,
+                            path=path,
+                            enabled=False,
+                            is_custom=False,
+                        )
+                    )
                     self._logger.debug(f"[TUNNEL] Found app: {app_name} at {path}")
                     break  # Only add first found path for each app
 
@@ -400,12 +402,14 @@ class SplitTunnelService(BaseService):
                 self._logger.info(f"[TUNNEL] App already in list: {path}")
                 return True
 
-        self._config.apps.append(TunneledApp(
-            name=name,
-            path=path,
-            enabled=True,
-            is_custom=True,
-        ))
+        self._config.apps.append(
+            TunneledApp(
+                name=name,
+                path=path,
+                enabled=True,
+                is_custom=True,
+            )
+        )
         self._config.custom_paths.append(path)
         self._save_config()
 
@@ -433,9 +437,12 @@ class SplitTunnelService(BaseService):
         self._config.include_browsers = include
         self._save_config()
 
-    def configure(self, apps: Optional[list[str]] = None,
-                  include_browsers: bool = False,
-                  interface: str = "splitwire") -> bool:
+    def configure(
+        self,
+        apps: Optional[list[str]] = None,
+        include_browsers: bool = False,
+        interface: str = "splitwire",
+    ) -> bool:
         """
         Configure split tunneling (wrapper for install).
 
@@ -447,11 +454,7 @@ class SplitTunnelService(BaseService):
         Returns:
             True if configuration successful
         """
-        return self.install(
-            apps=apps,
-            include_browsers=include_browsers,
-            interface=interface
-        )
+        return self.install(apps=apps, include_browsers=include_browsers, interface=interface)
 
     def run_app_through_tunnel(self, app_path: str, args: Optional[list[str]] = None) -> bool:
         """
@@ -496,8 +499,9 @@ class SplitTunnelService(BaseService):
 
         return True
 
-    def _build_app_list(self, apps: Optional[list[str]],
-                        include_browsers: bool) -> list[TunneledApp]:
+    def _build_app_list(
+        self, apps: Optional[list[str]], include_browsers: bool
+    ) -> list[TunneledApp]:
         """
         Build list of apps to tunnel.
 
@@ -518,22 +522,26 @@ class SplitTunnelService(BaseService):
                 if app in KNOWN_APPS:
                     for path in KNOWN_APPS[app]:
                         if Path(path).exists() and path not in added_paths:
-                            result.append(TunneledApp(
-                                name=app,
-                                path=path,
-                                enabled=True,
-                                is_custom=False,
-                            ))
+                            result.append(
+                                TunneledApp(
+                                    name=app,
+                                    path=path,
+                                    enabled=True,
+                                    is_custom=False,
+                                )
+                            )
                             added_paths.add(path)
                             break
                 # Check if it's a path
                 elif Path(app).exists() and app not in added_paths:
-                    result.append(TunneledApp(
-                        name=Path(app).stem,
-                        path=app,
-                        enabled=True,
-                        is_custom=True,
-                    ))
+                    result.append(
+                        TunneledApp(
+                            name=Path(app).stem,
+                            path=app,
+                            enabled=True,
+                            is_custom=True,
+                        )
+                    )
                     added_paths.add(app)
 
         # Add browsers if requested
@@ -542,12 +550,14 @@ class SplitTunnelService(BaseService):
                 if browser in KNOWN_APPS:
                     for path in KNOWN_APPS[browser]:
                         if Path(path).exists() and path not in added_paths:
-                            result.append(TunneledApp(
-                                name=browser,
-                                path=path,
-                                enabled=True,
-                                is_custom=False,
-                            ))
+                            result.append(
+                                TunneledApp(
+                                    name=browser,
+                                    path=path,
+                                    enabled=True,
+                                    is_custom=False,
+                                )
+                            )
                             added_paths.add(path)
                             break
 
@@ -555,18 +565,19 @@ class SplitTunnelService(BaseService):
         if "discord" not in [app.name for app in result]:
             for path in KNOWN_APPS.get("discord", []):
                 if Path(path).exists() and path not in added_paths:
-                    result.append(TunneledApp(
-                        name="discord",
-                        path=path,
-                        enabled=True,
-                        is_custom=False,
-                    ))
+                    result.append(
+                        TunneledApp(
+                            name="discord",
+                            path=path,
+                            enabled=True,
+                            is_custom=False,
+                        )
+                    )
                     break
 
         return result
 
-    def _generate_cgproxy_config(self, apps: list[TunneledApp],
-                                  interface: str) -> bool:
+    def _generate_cgproxy_config(self, apps: list[TunneledApp], interface: str) -> bool:
         """
         Generate cgproxy configuration file.
 
@@ -579,7 +590,7 @@ class SplitTunnelService(BaseService):
         """
         # cgproxy config format
         config = {
-            "comment": "Generated by SplitWire-Turkey",
+            "comment": "Generated by SplitWire",
             "port": 0,  # Use nftables for routing
             "program_noproxy": [],
             "program_proxy": [app.path for app in apps if app.enabled],
@@ -605,6 +616,7 @@ class SplitTunnelService(BaseService):
 
         # Write config file
         import tempfile
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write(config_content)
             temp_path = f.name

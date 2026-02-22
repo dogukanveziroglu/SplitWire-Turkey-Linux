@@ -1,7 +1,7 @@
 """
-Zapret DPI bypass service for SplitWire-Turkey Linux.
+Zapret packet processing service for SplitWire Linux.
 
-Provides nfqws and tpws management for bypassing DPI (Deep Packet Inspection).
+Provides nfqws and tpws management for traffic processing.
 Equivalent to GoodbyeDPI/Zapret on Windows.
 """
 
@@ -59,30 +59,33 @@ TPWS_PORT = 988
 
 # Default excluded networks (don't route through zapret)
 DEFAULT_EXCLUDED_NETWORKS = [
-    "127.0.0.0/8",      # Loopback
-    "10.0.0.0/8",       # Private
-    "172.16.0.0/12",    # Private
-    "192.168.0.0/16",   # Private
+    "127.0.0.0/8",  # Loopback
+    "10.0.0.0/8",  # Private
+    "172.16.0.0/12",  # Private
+    "192.168.0.0/16",  # Private
 ]
 
 
 class ZapretMode(Enum):
     """Zapret operation mode."""
-    NFQWS = "nfqws"      # Netfilter queue (packet modification)
-    TPWS = "tpws"        # Transparent proxy
+
+    NFQWS = "nfqws"  # Netfilter queue (packet modification)
+    TPWS = "tpws"  # Transparent proxy
     COMBINED = "combined"  # Both modes
 
 
 class ScanMode(Enum):
     """Blockcheck scan mode."""
-    QUICK = "quick"       # Hızlı - basic scan
-    STANDARD = "standard" # Standart - moderate scan
-    FULL = "full"         # Tam - comprehensive scan
+
+    QUICK = "quick"  # Hızlı - basic scan
+    STANDARD = "standard"  # Standart - moderate scan
+    FULL = "full"  # Tam - comprehensive scan
 
 
 @dataclass
 class ZapretPreset:
     """Configuration preset for Zapret."""
+
     name: str
     description: str
     nfqws_args: str = ""
@@ -95,9 +98,10 @@ class ZapretPreset:
 @dataclass
 class ZapretConfig:
     """Zapret service configuration."""
+
     enabled: bool = False
     mode: ZapretMode = ZapretMode.NFQWS
-    preset_name: str = "turkey_discord"
+    preset_name: str = "discord"
     custom_nfqws_args: str = ""
     custom_tpws_args: str = ""
     use_blacklist: bool = False
@@ -111,21 +115,21 @@ class ZapretConfig:
 # ============================================================================
 
 DEFAULT_PRESETS: dict[str, ZapretPreset] = {
-    "turkey_discord": ZapretPreset(
-        name="Türkiye Discord",
-        description="Discord için optimize edilmiş ayarlar",
+    "discord": ZapretPreset(
+        name="Discord",
+        description="Optimized settings for Discord traffic",
         nfqws_args="--dpi-desync=fake,split2 --dpi-desync-ttl=5 --dpi-desync-fooling=md5sig",
         mode=ZapretMode.NFQWS,
     ),
-    "turkey_general": ZapretPreset(
-        name="Türkiye Genel",
-        description="Genel kullanım için ayarlar",
+    "general": ZapretPreset(
+        name="General",
+        description="General purpose settings",
         nfqws_args="--dpi-desync=fake,disorder2 --dpi-desync-ttl=8 --dpi-desync-fooling=md5sig",
         mode=ZapretMode.NFQWS,
     ),
-    "turkey_youtube": ZapretPreset(
-        name="Türkiye YouTube",
-        description="YouTube için optimize edilmiş",
+    "youtube": ZapretPreset(
+        name="YouTube",
+        description="Optimized settings for YouTube traffic",
         nfqws_args="--dpi-desync=fake,split2 --dpi-desync-ttl=4 --dpi-desync-fooling=md5sig,badseq",
         mode=ZapretMode.NFQWS,
     ),
@@ -167,13 +171,14 @@ DEFAULT_PRESETS: dict[str, ZapretPreset] = {
 # Zapret Service
 # ============================================================================
 
+
 class ZapretService(BaseService):
     """
-    Zapret DPI bypass service manager.
+    Zapret packet processing service manager.
 
     Manages:
     - nfqws: Netfilter queue-based packet manipulation
-    - tpws: Transparent proxy for DPI bypass
+    - tpws: Transparent proxy for traffic processing
     - iptables rules for traffic redirection
     - Presets and custom configurations
     """
@@ -181,9 +186,9 @@ class ZapretService(BaseService):
     def __init__(self):
         super().__init__(
             name="zapret",
-            display_name="Zapret DPI Bypass",
-            description="DPI bypass using nfqws/tpws packet manipulation",
-            service_type=ServiceType.DPI_BYPASS,
+            display_name="Zapret",
+            description="Traffic processing using nfqws/tpws packet manipulation",
+            service_type=ServiceType.PACKET_PROCESSING,
         )
         self._config = ZapretConfig()
         self._presets: dict[str, ZapretPreset] = {}
@@ -272,10 +277,7 @@ class ZapretService(BaseService):
 
             # Remove installation directory
             if ZAPRET_INSTALL_DIR.exists():
-                result = self._run_privileged(
-                    ["rm", "-rf", str(ZAPRET_INSTALL_DIR)],
-                    timeout=60
-                )
+                result = self._run_privileged(["rm", "-rf", str(ZAPRET_INSTALL_DIR)], timeout=60)
                 if not result.success:
                     self._logger.warning(f"Failed to remove {ZAPRET_INSTALL_DIR}")
 
@@ -292,7 +294,9 @@ class ZapretService(BaseService):
         nfqws_exists = NFQWS_BINARY.exists()
         tpws_exists = TPWS_BINARY.exists()
         installed = nfqws_exists or tpws_exists
-        self._logger.debug(f"[ZAPRET] Installation check: nfqws={nfqws_exists}, tpws={tpws_exists}, installed={installed}")
+        self._logger.debug(
+            f"[ZAPRET] Installation check: nfqws={nfqws_exists}, tpws={tpws_exists}, installed={installed}"
+        )
         return installed
 
     # =========================================================================
@@ -493,11 +497,13 @@ class ZapretService(BaseService):
             args.extend(self._config.custom_nfqws_args.split())
         else:
             # Default args
-            args.extend([
-                "--dpi-desync=fake,split2",
-                "--dpi-desync-ttl=5",
-                "--dpi-desync-fooling=md5sig",
-            ])
+            args.extend(
+                [
+                    "--dpi-desync=fake,split2",
+                    "--dpi-desync-ttl=5",
+                    "--dpi-desync-fooling=md5sig",
+                ]
+            )
 
         # Blacklist support
         if (preset and preset.use_blacklist) or self._config.use_blacklist:
@@ -614,10 +620,12 @@ class ZapretService(BaseService):
             args.extend(self._config.custom_tpws_args.split())
         else:
             # Default args
-            args.extend([
-                "--split-pos=3",
-                "--disorder",
-            ])
+            args.extend(
+                [
+                    "--split-pos=3",
+                    "--disorder",
+                ]
+            )
 
         # Blacklist support
         if (preset and preset.use_blacklist) or self._config.use_blacklist:
@@ -648,45 +656,89 @@ class ZapretService(BaseService):
                 # HTTP
                 for port in http_ports:
                     self._logger.debug(f"[ZAPRET] Adding NFQUEUE rule for HTTP port {port}")
-                    result = self._run_privileged([
-                        "iptables", "-t", "mangle", "-A", "POSTROUTING",
-                        "-p", "tcp", "--dport", str(port),
-                        "-j", "NFQUEUE", "--queue-num", str(NFQUEUE_NUM)
-                    ])
+                    result = self._run_privileged(
+                        [
+                            "iptables",
+                            "-t",
+                            "mangle",
+                            "-A",
+                            "POSTROUTING",
+                            "-p",
+                            "tcp",
+                            "--dport",
+                            str(port),
+                            "-j",
+                            "NFQUEUE",
+                            "--queue-num",
+                            str(NFQUEUE_NUM),
+                        ]
+                    )
                     if result.success:
                         rules_added.append(f"NFQUEUE HTTP {port}")
                         self._logger.debug(f"[ZAPRET] Added NFQUEUE rule for HTTP port {port}")
                     else:
-                        self._logger.warning(f"[ZAPRET] Failed to add NFQUEUE rule for HTTP port {port}: {result.stderr}")
+                        self._logger.warning(
+                            f"[ZAPRET] Failed to add NFQUEUE rule for HTTP port {port}: {result.stderr}"
+                        )
 
                 # HTTPS
                 for port in https_ports:
                     self._logger.debug(f"[ZAPRET] Adding NFQUEUE rule for HTTPS port {port}")
-                    result = self._run_privileged([
-                        "iptables", "-t", "mangle", "-A", "POSTROUTING",
-                        "-p", "tcp", "--dport", str(port),
-                        "-j", "NFQUEUE", "--queue-num", str(NFQUEUE_NUM)
-                    ])
+                    result = self._run_privileged(
+                        [
+                            "iptables",
+                            "-t",
+                            "mangle",
+                            "-A",
+                            "POSTROUTING",
+                            "-p",
+                            "tcp",
+                            "--dport",
+                            str(port),
+                            "-j",
+                            "NFQUEUE",
+                            "--queue-num",
+                            str(NFQUEUE_NUM),
+                        ]
+                    )
                     if result.success:
                         rules_added.append(f"NFQUEUE HTTPS {port}")
                         self._logger.debug(f"[ZAPRET] Added NFQUEUE rule for HTTPS port {port}")
                     else:
-                        self._logger.warning(f"[ZAPRET] Failed to add NFQUEUE rule for HTTPS port {port}: {result.stderr}")
+                        self._logger.warning(
+                            f"[ZAPRET] Failed to add NFQUEUE rule for HTTPS port {port}: {result.stderr}"
+                        )
 
             if mode in [ZapretMode.TPWS, ZapretMode.COMBINED]:
                 # REDIRECT rules for tpws
                 for port in https_ports:
-                    self._logger.debug(f"[ZAPRET] Adding REDIRECT rule for port {port} to {TPWS_PORT}")
-                    result = self._run_privileged([
-                        "iptables", "-t", "nat", "-A", "OUTPUT",
-                        "-p", "tcp", "--dport", str(port),
-                        "-j", "REDIRECT", "--to-port", str(TPWS_PORT)
-                    ])
+                    self._logger.debug(
+                        f"[ZAPRET] Adding REDIRECT rule for port {port} to {TPWS_PORT}"
+                    )
+                    result = self._run_privileged(
+                        [
+                            "iptables",
+                            "-t",
+                            "nat",
+                            "-A",
+                            "OUTPUT",
+                            "-p",
+                            "tcp",
+                            "--dport",
+                            str(port),
+                            "-j",
+                            "REDIRECT",
+                            "--to-port",
+                            str(TPWS_PORT),
+                        ]
+                    )
                     if result.success:
                         rules_added.append(f"REDIRECT {port}")
                         self._logger.debug(f"[ZAPRET] Added REDIRECT rule for port {port}")
                     else:
-                        self._logger.warning(f"[ZAPRET] Failed to add REDIRECT rule for port {port}: {result.stderr}")
+                        self._logger.warning(
+                            f"[ZAPRET] Failed to add REDIRECT rule for port {port}: {result.stderr}"
+                        )
 
             self._logger.debug(f"Added iptables rules: {rules_added}")
             return len(rules_added) > 0
@@ -705,24 +757,52 @@ class ZapretService(BaseService):
             # Remove NFQUEUE rules
             for port in http_ports + https_ports:
                 self._logger.debug(f"[ZAPRET] Removing NFQUEUE rule for port {port}")
-                result = self._run_privileged([
-                    "iptables", "-t", "mangle", "-D", "POSTROUTING",
-                    "-p", "tcp", "--dport", str(port),
-                    "-j", "NFQUEUE", "--queue-num", str(NFQUEUE_NUM)
-                ])
+                result = self._run_privileged(
+                    [
+                        "iptables",
+                        "-t",
+                        "mangle",
+                        "-D",
+                        "POSTROUTING",
+                        "-p",
+                        "tcp",
+                        "--dport",
+                        str(port),
+                        "-j",
+                        "NFQUEUE",
+                        "--queue-num",
+                        str(NFQUEUE_NUM),
+                    ]
+                )
                 if not result.success:
-                    self._logger.debug(f"[ZAPRET] NFQUEUE rule for port {port} may not exist: {result.stderr}")
+                    self._logger.debug(
+                        f"[ZAPRET] NFQUEUE rule for port {port} may not exist: {result.stderr}"
+                    )
 
             # Remove REDIRECT rules
             for port in https_ports:
                 self._logger.debug(f"[ZAPRET] Removing REDIRECT rule for port {port}")
-                result = self._run_privileged([
-                    "iptables", "-t", "nat", "-D", "OUTPUT",
-                    "-p", "tcp", "--dport", str(port),
-                    "-j", "REDIRECT", "--to-port", str(TPWS_PORT)
-                ])
+                result = self._run_privileged(
+                    [
+                        "iptables",
+                        "-t",
+                        "nat",
+                        "-D",
+                        "OUTPUT",
+                        "-p",
+                        "tcp",
+                        "--dport",
+                        str(port),
+                        "-j",
+                        "REDIRECT",
+                        "--to-port",
+                        str(TPWS_PORT),
+                    ]
+                )
                 if not result.success:
-                    self._logger.debug(f"[ZAPRET] REDIRECT rule for port {port} may not exist: {result.stderr}")
+                    self._logger.debug(
+                        f"[ZAPRET] REDIRECT rule for port {port} may not exist: {result.stderr}"
+                    )
 
             self._logger.info("[ZAPRET] iptables rules removed")
             return True
@@ -837,7 +917,11 @@ class ZapretService(BaseService):
             return []
         try:
             content = BLACKLIST_FILE.read_text()
-            domains = [line.strip() for line in content.splitlines() if line.strip() and not line.startswith("#")]
+            domains = [
+                line.strip()
+                for line in content.splitlines()
+                if line.strip() and not line.startswith("#")
+            ]
             self._logger.debug(f"[ZAPRET] Loaded {len(domains)} domains from blacklist")
             return domains
         except Exception as e:
@@ -917,7 +1001,7 @@ class ZapretService(BaseService):
                 self._config = ZapretConfig(
                     enabled=data.get("enabled", False),
                     mode=ZapretMode(data.get("mode", "nfqws")),
-                    preset_name=data.get("preset_name", "turkey_discord"),
+                    preset_name=data.get("preset_name", "discord"),
                     custom_nfqws_args=data.get("custom_nfqws_args", ""),
                     custom_tpws_args=data.get("custom_tpws_args", ""),
                     use_blacklist=data.get("use_blacklist", False),
@@ -951,9 +1035,12 @@ class ZapretService(BaseService):
         """Get current configuration."""
         return self._config
 
-    def configure(self, params: Optional[str] = None,
-                  preset: Optional[str] = None,
-                  mode: Optional[ZapretMode] = None) -> bool:
+    def configure(
+        self,
+        params: Optional[str] = None,
+        preset: Optional[str] = None,
+        mode: Optional[ZapretMode] = None,
+    ) -> bool:
         """
         Configure Zapret with specified parameters.
 
@@ -983,8 +1070,7 @@ class ZapretService(BaseService):
         self._logger.info(f"Zapret configured with preset={preset}, mode={self._config.mode.value}")
         return True
 
-    def run_once(self, params: Optional[str] = None,
-                 preset: Optional[str] = None) -> bool:
+    def run_once(self, params: Optional[str] = None, preset: Optional[str] = None) -> bool:
         """
         Run Zapret once without installing as a service.
 
@@ -1032,19 +1118,27 @@ class ZapretService(BaseService):
         elif self._shell.command_exists("dnf"):
             # Fedora/RHEL
             packages = [
-                "git", "make", "gcc",
+                "git",
+                "make",
+                "gcc",
                 "libnetfilter_queue-devel",
-                "libcap-devel", "libnfnetlink-devel",
-                "zlib-devel", "iptables",
+                "libcap-devel",
+                "libnfnetlink-devel",
+                "zlib-devel",
+                "iptables",
             ]
             cmd = ["dnf", "install", "-y"] + packages
         elif self._shell.command_exists("pacman"):
             # Arch
             packages = [
-                "git", "make", "gcc",
+                "git",
+                "make",
+                "gcc",
                 "libnetfilter_queue",
-                "libcap", "libnfnetlink",
-                "zlib", "iptables",
+                "libcap",
+                "libnfnetlink",
+                "zlib",
+                "iptables",
             ]
             cmd = ["pacman", "-S", "--noconfirm"] + packages
         else:
@@ -1063,26 +1157,28 @@ class ZapretService(BaseService):
         self._logger.info("Cloning Zapret repository...")
 
         # Create parent directory
-        result = self._run_privileged(
-            ["mkdir", "-p", str(ZAPRET_INSTALL_DIR.parent)],
-            timeout=30
-        )
+        result = self._run_privileged(["mkdir", "-p", str(ZAPRET_INSTALL_DIR.parent)], timeout=30)
 
         if ZAPRET_INSTALL_DIR.exists():
             # Update existing repo
             self._logger.info("Updating existing Zapret installation...")
             result = self._run_privileged(
-                ["git", "-C", str(ZAPRET_INSTALL_DIR), "pull"],
-                timeout=300
+                ["git", "-C", str(ZAPRET_INSTALL_DIR), "pull"], timeout=300
             )
         else:
             # Clone new repo
-            result = self._run_privileged([
-                "git", "clone", "--depth=1",
-                "-b", ZAPRET_REPO_BRANCH,
-                ZAPRET_REPO,
-                str(ZAPRET_INSTALL_DIR)
-            ], timeout=300)
+            result = self._run_privileged(
+                [
+                    "git",
+                    "clone",
+                    "--depth=1",
+                    "-b",
+                    ZAPRET_REPO_BRANCH,
+                    ZAPRET_REPO,
+                    str(ZAPRET_INSTALL_DIR),
+                ],
+                timeout=300,
+            )
 
         if not result.success:
             self._logger.error(f"Git operation failed: {result.stderr}")
@@ -1097,8 +1193,7 @@ class ZapretService(BaseService):
         # Run make in nfq directory for nfqws
         if (ZAPRET_INSTALL_DIR / "nfq").exists():
             result = self._run_privileged(
-                ["make", "-C", str(ZAPRET_INSTALL_DIR / "nfq")],
-                timeout=300
+                ["make", "-C", str(ZAPRET_INSTALL_DIR / "nfq")], timeout=300
             )
             if not result.success:
                 self._logger.warning(f"nfqws build warning: {result.stderr}")
@@ -1106,8 +1201,7 @@ class ZapretService(BaseService):
         # Run make in tpws directory
         if (ZAPRET_INSTALL_DIR / "tpws").exists():
             result = self._run_privileged(
-                ["make", "-C", str(ZAPRET_INSTALL_DIR / "tpws")],
-                timeout=300
+                ["make", "-C", str(ZAPRET_INSTALL_DIR / "tpws")], timeout=300
             )
             if not result.success:
                 self._logger.warning(f"tpws build warning: {result.stderr}")
@@ -1139,7 +1233,7 @@ class ZapretService(BaseService):
     def _install_systemd_service(self) -> bool:
         """Install systemd service file."""
         service_content = f"""[Unit]
-Description=SplitWire Zapret DPI Bypass
+Description=SplitWire Zapret Packet Processing
 After=network.target
 
 [Service]
@@ -1158,9 +1252,7 @@ WantedBy=multi-user.target
 
         # Write using privileged command
         result = self._run_privileged(
-            ["tee", str(service_file)],
-            input_data=service_content,
-            timeout=30
+            ["tee", str(service_file)], input_data=service_content, timeout=30
         )
 
         if result.success:

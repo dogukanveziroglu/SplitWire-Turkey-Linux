@@ -1,7 +1,7 @@
 """
-ByeDPI (ciadpi) proxy service for SplitWire-Turkey Linux.
+ByeDPI (ciadpi) proxy service for SplitWire Linux.
 
-Provides SOCKS5 proxy with DPI bypass capabilities.
+Provides SOCKS5 proxy with traffic processing capabilities.
 ciadpi is the Linux version of ByeDPI.
 """
 
@@ -55,17 +55,19 @@ SYSTEMD_SERVICE = "splitwire-byedpi.service"
 
 class ByeDPIMode(Enum):
     """ByeDPI operation mode."""
-    DISORDER = "disorder"      # Packet reordering
-    SPLIT = "split"            # Packet splitting
-    FAKE = "fake"              # Fake packets
-    OOB = "oob"                # Out-of-band data
-    DISOOB = "disoob"          # Disorder + OOB
-    COMBINED = "combined"      # Multiple methods
+
+    DISORDER = "disorder"  # Packet reordering
+    SPLIT = "split"  # Packet splitting
+    FAKE = "fake"  # Fake packets
+    OOB = "oob"  # Out-of-band data
+    DISOOB = "disoob"  # Disorder + OOB
+    COMBINED = "combined"  # Multiple methods
 
 
 @dataclass
 class ByeDPIPreset:
     """Configuration preset for ByeDPI."""
+
     name: str
     description: str
     args: str
@@ -76,8 +78,9 @@ class ByeDPIPreset:
 @dataclass
 class ByeDPIConfig:
     """ByeDPI service configuration."""
+
     enabled: bool = False
-    preset_name: str = "turkey_default"
+    preset_name: str = "default"
     custom_args: str = ""
     proxy_host: str = DEFAULT_PROXY_HOST
     proxy_port: int = DEFAULT_PROXY_PORT
@@ -90,15 +93,15 @@ class ByeDPIConfig:
 # ============================================================================
 
 DEFAULT_PRESETS: dict[str, ByeDPIPreset] = {
-    "turkey_default": ByeDPIPreset(
-        name="Türkiye Varsayılan",
-        description="Türkiye için optimize edilmiş varsayılan ayarlar",
+    "default": ByeDPIPreset(
+        name="Default",
+        description="Default optimized settings",
         args="--disorder 1 --auto=torst --tlsrec 1+s",
         mode=ByeDPIMode.DISORDER,
     ),
-    "turkey_discord": ByeDPIPreset(
-        name="Türkiye Discord",
-        description="Discord için optimize edilmiş",
+    "discord": ByeDPIPreset(
+        name="Discord",
+        description="Optimized settings for Discord traffic",
         args="--disorder 3 --auto=torst --tlsrec 1+s --fake -1 --ttl 8",
         mode=ByeDPIMode.COMBINED,
     ),
@@ -146,7 +149,7 @@ DEFAULT_PRESETS: dict[str, ByeDPIPreset] = {
     ),
     "preset_auto": ByeDPIPreset(
         name="Auto Mode",
-        description="Otomatik tespit ve bypass",
+        description="Automatic detection and processing",
         args="--auto=torst",
         mode=ByeDPIMode.COMBINED,
     ),
@@ -155,9 +158,9 @@ DEFAULT_PRESETS: dict[str, ByeDPIPreset] = {
 
 class ByeDPIService(BaseService):
     """
-    ByeDPI proxy service for DPI bypass.
+    ByeDPI proxy service for traffic processing.
 
-    Runs ciadpi as a SOCKS5 proxy that can bypass DPI restrictions.
+    Runs ciadpi as a SOCKS5 proxy for traffic processing.
     Apps can be routed through the proxy using cgproxy or system proxy settings.
     """
 
@@ -166,7 +169,7 @@ class ByeDPIService(BaseService):
         super().__init__(
             name="byedpi",
             display_name="ByeDPI Proxy",
-            description="SOCKS5 proxy with DPI bypass",
+            description="SOCKS5 proxy with traffic processing",
             service_type=ServiceType.PROXY,
         )
         self._config = ByeDPIConfig()
@@ -187,7 +190,7 @@ class ByeDPIService(BaseService):
                 data = json.loads(CONFIG_FILE.read_text())
                 self._config = ByeDPIConfig(
                     enabled=data.get("enabled", False),
-                    preset_name=data.get("preset_name", "turkey_default"),
+                    preset_name=data.get("preset_name", "default"),
                     custom_args=data.get("custom_args", ""),
                     proxy_host=data.get("proxy_host", DEFAULT_PROXY_HOST),
                     proxy_port=data.get("proxy_port", DEFAULT_PROXY_PORT),
@@ -210,7 +213,9 @@ class ByeDPIService(BaseService):
             "tunneled_apps": self._config.tunneled_apps,
         }
         CONFIG_FILE.write_text(json.dumps(data, indent=2))
-        self._logger.debug(f"[BYEDPI] Config saved: preset={self._config.preset_name}, port={self._config.proxy_port}")
+        self._logger.debug(
+            f"[BYEDPI] Config saved: preset={self._config.preset_name}, port={self._config.proxy_port}"
+        )
 
     def _load_custom_presets(self) -> None:
         """Load custom presets from file."""
@@ -246,16 +251,19 @@ class ByeDPIService(BaseService):
     # BaseService implementation
     # =========================================================================
 
-    def install(self, preset: Optional[str] = None,
-                include_browsers: bool = False,
-                one_shot: bool = False,
-                as_service: bool = True,
-                **kwargs) -> bool:
+    def install(
+        self,
+        preset: Optional[str] = None,
+        include_browsers: bool = False,
+        one_shot: bool = False,
+        as_service: bool = True,
+        **kwargs,
+    ) -> bool:
         """
         Install and start ByeDPI.
 
         Args:
-            preset: Preset name to use (default: turkey_default)
+            preset: Preset name to use (default: default)
             include_browsers: Route browsers through proxy
             one_shot: Run without installing service (stops when app closes)
             as_service: Install as systemd service
@@ -275,7 +283,7 @@ class ByeDPIService(BaseService):
                     return False
 
             # Set preset
-            preset_name = preset or "turkey_default"
+            preset_name = preset or "default"
             if preset_name not in self.get_all_presets():
                 self._logger.error(f"Unknown preset: {preset_name}")
                 return False
@@ -340,10 +348,7 @@ class ByeDPIService(BaseService):
 
         # Check if systemd service is installed
         if self._is_service_installed():
-            result = self._run_privileged(
-                ["systemctl", "start", SYSTEMD_SERVICE],
-                timeout=30
-            )
+            result = self._run_privileged(["systemctl", "start", SYSTEMD_SERVICE], timeout=30)
             if result.success:
                 self._logger.info("ByeDPI started via systemd")
                 self._notify_status_change(ServiceStatus.RUNNING)
@@ -361,10 +366,7 @@ class ByeDPIService(BaseService):
 
         # Try systemd first
         if self._is_service_installed():
-            result = self._run_privileged(
-                ["systemctl", "stop", SYSTEMD_SERVICE],
-                timeout=30
-            )
+            result = self._run_privileged(["systemctl", "stop", SYSTEMD_SERVICE], timeout=30)
             if result.success:
                 self._logger.info("ByeDPI stopped via systemd")
                 self._notify_status_change(ServiceStatus.STOPPED)
@@ -380,10 +382,7 @@ class ByeDPIService(BaseService):
 
         # Check systemd service
         if self._is_service_installed():
-            result = self._shell.run(
-                ["systemctl", "is-active", SYSTEMD_SERVICE],
-                timeout=10
-            )
+            result = self._shell.run(["systemctl", "is-active", SYSTEMD_SERVICE], timeout=10)
             stdout = result.stdout.strip().lower()
             if stdout == "active":
                 return ServiceStatus.RUNNING
@@ -507,9 +506,12 @@ class ByeDPIService(BaseService):
         """Get list of apps tunneled through proxy."""
         return self._config.tunneled_apps.copy()
 
-    def configure(self, preset: Optional[str] = None,
-                  custom_params: Optional[str] = None,
-                  include_browsers: bool = False) -> bool:
+    def configure(
+        self,
+        preset: Optional[str] = None,
+        custom_params: Optional[str] = None,
+        include_browsers: bool = False,
+    ) -> bool:
         """
         Configure ByeDPI with specified preset or custom parameters.
 
@@ -530,7 +532,9 @@ class ByeDPIService(BaseService):
         self._config.include_browsers = include_browsers
         self._save_config()
 
-        self._logger.info(f"ByeDPI configured with preset={preset}, include_browsers={include_browsers}")
+        self._logger.info(
+            f"ByeDPI configured with preset={preset}, include_browsers={include_browsers}"
+        )
         return True
 
     # =========================================================================
@@ -541,7 +545,9 @@ class ByeDPIService(BaseService):
         """Check if ciadpi binary is installed."""
         exists = BYEDPI_BINARY.exists()
         executable = os.access(BYEDPI_BINARY, os.X_OK) if exists else False
-        self._logger.debug(f"[BYEDPI] Binary check: exists={exists}, executable={executable}, path={BYEDPI_BINARY}")
+        self._logger.debug(
+            f"[BYEDPI] Binary check: exists={exists}, executable={executable}, path={BYEDPI_BINARY}"
+        )
         return exists and executable
 
     def _download_binary(self) -> bool:
@@ -552,8 +558,7 @@ class ByeDPIService(BaseService):
             # Get latest release info
             self._logger.info("Fetching latest release info...")
             req = urllib.request.Request(
-                CIADPI_RELEASE_URL,
-                headers={"User-Agent": "SplitWire-Turkey"}
+                CIADPI_RELEASE_URL, headers={"User-Agent": "SplitWire-Turkey"}
             )
             with urllib.request.urlopen(req, timeout=30) as response:
                 release_data = json.loads(response.read().decode())
@@ -576,9 +581,11 @@ class ByeDPIService(BaseService):
             for asset in release_data.get("assets", []):
                 asset_name = asset.get("name", "")
                 # Match pattern: byedpi-VERSION-ARCH.tar.gz (not Windows)
-                if (arch_suffix in asset_name and
-                    asset_name.endswith(".tar.gz") and
-                    "w64" not in asset_name):
+                if (
+                    arch_suffix in asset_name
+                    and asset_name.endswith(".tar.gz")
+                    and "w64" not in asset_name
+                ):
                     download_url = asset.get("browser_download_url")
                     break
 
@@ -599,11 +606,10 @@ class ByeDPIService(BaseService):
 
             try:
                 req = urllib.request.Request(
-                    download_url,
-                    headers={"User-Agent": "SplitWire-Turkey"}
+                    download_url, headers={"User-Agent": "SplitWire-Turkey"}
                 )
                 with urllib.request.urlopen(req, timeout=120) as response:
-                    with open(tmp_path, 'wb') as f:
+                    with open(tmp_path, "wb") as f:
                         f.write(response.read())
 
                 # Extract from tar.gz archive
@@ -618,7 +624,9 @@ class ByeDPIService(BaseService):
                             if filename.startswith("ciadpi"):
                                 src_binary = Path(root) / filename
                                 # Copy to installation directory
-                                result = self._run_privileged(["cp", str(src_binary), str(BYEDPI_BINARY)])
+                                result = self._run_privileged(
+                                    ["cp", str(src_binary), str(BYEDPI_BINARY)]
+                                )
                                 if result.success:
                                     binary_found = True
                                 break
@@ -756,7 +764,7 @@ class ByeDPIService(BaseService):
     def _save_pid(self, pid: int) -> None:
         """Save PID to file."""
         try:
-            with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
                 f.write(str(pid))
                 tmp_path = f.name
             self._run_privileged(["cp", tmp_path, str(BYEDPI_PID_FILE)])
@@ -785,10 +793,7 @@ class ByeDPIService(BaseService):
 
     def _is_service_installed(self) -> bool:
         """Check if systemd service is installed."""
-        result = self._shell.run(
-            ["systemctl", "list-unit-files", SYSTEMD_SERVICE],
-            timeout=10
-        )
+        result = self._shell.run(["systemctl", "list-unit-files", SYSTEMD_SERVICE], timeout=10)
         return SYSTEMD_SERVICE in result.stdout
 
     def _install_systemd_service(self) -> bool:
@@ -824,7 +829,7 @@ WantedBy=multi-user.target
 """
 
         try:
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.service', delete=False) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".service", delete=False) as f:
                 f.write(service_content)
                 tmp_path = f.name
 

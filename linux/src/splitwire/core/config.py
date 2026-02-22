@@ -1,5 +1,5 @@
 """
-Configuration manager for SplitWire-Turkey Linux.
+Configuration manager for SplitWire Linux.
 
 Handles application settings using XDG Base Directory specification.
 Config is stored in ~/.config/splitwire/config.json
@@ -19,6 +19,7 @@ _logger = get_logger()
 
 class Theme(Enum):
     """Application theme."""
+
     LIGHT = "light"
     DARK = "dark"
     SYSTEM = "system"
@@ -26,6 +27,7 @@ class Theme(Enum):
 
 class Language(Enum):
     """Supported languages."""
+
     TURKISH = "tr"
     ENGLISH = "en"
     RUSSIAN = "ru"
@@ -35,6 +37,7 @@ class Language(Enum):
 @dataclass
 class DNSConfig:
     """DNS configuration."""
+
     enabled: bool = False
     primary: str = "1.1.1.1"
     secondary: str = "1.0.0.1"
@@ -45,13 +48,16 @@ class DNSConfig:
 @dataclass
 class WireGuardConfig:
     """WireGuard/VPN configuration."""
+
     config_path: str = ""
     auto_connect: bool = False
     split_tunnel_enabled: bool = True
     allowed_apps: list[str] = field(default_factory=list)
     excluded_apps: list[str] = field(default_factory=list)
     custom_apps: list[str] = field(default_factory=list)  # User-added custom app paths
-    enabled_known_apps: dict[str, bool] = field(default_factory=dict)  # Which known apps are enabled
+    enabled_known_apps: dict[str, bool] = field(
+        default_factory=dict
+    )  # Which known apps are enabled
     kill_switch: bool = False
     include_browsers: bool = False
     refresh_timer_enabled: bool = False
@@ -60,7 +66,8 @@ class WireGuardConfig:
 
 @dataclass
 class ZapretConfig:
-    """Zapret DPI bypass configuration."""
+    """Zapret packet processing configuration."""
+
     enabled: bool = False
     mode: str = "nfqws"  # nfqws or tpws
     strategy: str = "default"
@@ -71,6 +78,7 @@ class ZapretConfig:
 @dataclass
 class ByeDPIConfig:
     """ByeDPI/ciadpi proxy configuration."""
+
     enabled: bool = False
     port: int = 10080
     strategy: str = "disorder"
@@ -81,6 +89,7 @@ class ByeDPIConfig:
 @dataclass
 class AppConfig:
     """Main application configuration."""
+
     # General
     theme: str = Theme.SYSTEM.value
     language: str = Language.ENGLISH.value
@@ -191,7 +200,9 @@ class ConfigManager:
                     data = json.load(f)
                 self._config = self._dict_to_config(data)
                 self._config.first_run = False
-                _logger.debug(f"[CONFIG] Config loaded: theme={self._config.theme}, language={self._config.language}")
+                _logger.debug(
+                    f"[CONFIG] Config loaded: theme={self._config.theme}, language={self._config.language}"
+                )
             except (json.JSONDecodeError, KeyError, TypeError) as e:
                 # Config file corrupted, use defaults
                 _logger.error(f"[CONFIG] Failed to load config (corrupted), using defaults: {e}")

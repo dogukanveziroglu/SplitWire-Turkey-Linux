@@ -1,5 +1,5 @@
 """
-WireGuard VPN service for SplitWire-Turkey Linux.
+WireGuard VPN service for SplitWire Linux.
 
 Provides WireGuard VPN management with:
 - wg-quick up/down commands
@@ -53,11 +53,13 @@ DEFAULT_EXCLUDED_NETWORKS = [
     "255.255.255.255/32",
 ]
 
+
 # Tunnel modes
 class TunnelMode:
     """VPN tunnel routing modes."""
+
     SPLIT = "split"  # Only route specific IPs through VPN (faster, less data)
-    FULL = "full"    # Route ALL traffic through VPN (bypasses all blocks)
+    FULL = "full"  # Route ALL traffic through VPN (routes all traffic)
 
 
 # Discord and Cloudflare service IP ranges for split tunneling
@@ -78,7 +80,7 @@ DISCORD_CLOUDFLARE_IPS = [
     # Additional Cloudflare ranges
     "188.114.96.0/24",
     "188.114.97.0/24",
-    # DNS servers - route DNS through VPN to bypass ISP DNS hijacking/blocking
+    # DNS servers - route DNS through VPN to use alternative DNS resolution
     # Cloudflare DNS
     "1.1.1.1/32",
     "1.0.0.1/32",
@@ -93,11 +95,11 @@ DISCORD_CLOUDFLARE_IPS = [
 # Roblox IP ranges
 ROBLOX_IPS = [
     # Roblox main servers
-    "128.116.0.0/16",   # Roblox primary range
+    "128.116.0.0/16",  # Roblox primary range
     "128.116.13.0/24",  # roblox.com
     # Roblox CDN (Akamai, Fastly)
-    "23.0.0.0/8",       # Akamai
-    "151.101.0.0/16",   # Fastly
+    "23.0.0.0/8",  # Akamai
+    "151.101.0.0/16",  # Fastly
 ]
 
 # Combined IPs for split tunnel mode
@@ -132,6 +134,7 @@ REFRESH_SERVICE_UNIT = "splitwire-wg-refresh.service"
 @dataclass
 class WireGuardInterface:
     """Information about a WireGuard interface."""
+
     name: str
     public_key: str = ""
     private_key: str = ""
@@ -147,6 +150,7 @@ class WireGuardInterface:
 @dataclass
 class WGCFAccount:
     """WGCF account information."""
+
     device_id: str = ""
     access_token: str = ""
     private_key: str = ""
@@ -186,12 +190,15 @@ class WireGuardService(BaseService):
     # BaseService implementation
     # =========================================================================
 
-    def install(self, allowed_apps: Optional[list[str]] = None,
-                include_browsers: bool = False,
-                use_warp: bool = True,
-                custom_config: Optional[Path] = None,
-                endpoint_type: str = "standard",
-                **kwargs) -> bool:
+    def install(
+        self,
+        allowed_apps: Optional[list[str]] = None,
+        include_browsers: bool = False,
+        use_warp: bool = True,
+        custom_config: Optional[Path] = None,
+        endpoint_type: str = "standard",
+        **kwargs,
+    ) -> bool:
         """
         Install WireGuard VPN configuration.
 
@@ -284,10 +291,7 @@ class WireGuardService(BaseService):
             self._logger.error("Config file not found")
             return False
 
-        result = self._run_privileged(
-            ["wg-quick", "up", self._interface_name],
-            timeout=30
-        )
+        result = self._run_privileged(["wg-quick", "up", self._interface_name], timeout=30)
 
         if result.success:
             self._logger.info("WireGuard VPN started")
@@ -302,10 +306,7 @@ class WireGuardService(BaseService):
         """Stop WireGuard VPN connection."""
         self._logger.info("Stopping WireGuard VPN")
 
-        result = self._run_privileged(
-            ["wg-quick", "down", self._interface_name],
-            timeout=30
-        )
+        result = self._run_privileged(["wg-quick", "down", self._interface_name], timeout=30)
 
         if result.success:
             self._logger.info("WireGuard VPN stopped")
@@ -340,10 +341,7 @@ class WireGuardService(BaseService):
         except PermissionError:
             # Can't check directly, try via shell with sudo
             self._logger.debug(f"[WG] Permission denied checking config, using sudo")
-            result = self._shell.run(
-                ["sudo", "test", "-f", str(self._config_file)],
-                timeout=5
-            )
+            result = self._shell.run(["sudo", "test", "-f", str(self._config_file)], timeout=5)
             self._logger.debug(f"[WG] Config file check via sudo: exists={result.success}")
             return result.success
 
@@ -408,8 +406,7 @@ class WireGuardService(BaseService):
 
         self._logger.debug(f"[WG] Testing connection to {test_host} via {self._interface_name}")
         result = self._shell.run(
-            ["ping", "-c", "1", "-W", "5", "-I", self._interface_name, test_host],
-            timeout=10
+            ["ping", "-c", "1", "-W", "5", "-I", self._interface_name, test_host], timeout=10
         )
         if result.success:
             self._logger.info(f"[WG] Connection test successful: {test_host}")
@@ -466,9 +463,7 @@ class WireGuardService(BaseService):
         self._logger.info("Registering WARP account...")
 
         result = self._shell.run(
-            [str(WGCF_BINARY), "register", "--accept-tos"],
-            cwd=WGCF_DIR,
-            timeout=60
+            [str(WGCF_BINARY), "register", "--accept-tos"], cwd=WGCF_DIR, timeout=60
         )
 
         if result.success:
@@ -491,11 +486,7 @@ class WireGuardService(BaseService):
 
         self._logger.info("Generating WARP profile...")
 
-        result = self._shell.run(
-            [str(WGCF_BINARY), "generate"],
-            cwd=WGCF_DIR,
-            timeout=60
-        )
+        result = self._shell.run([str(WGCF_BINARY), "generate"], cwd=WGCF_DIR, timeout=60)
 
         if result.success and WGCF_PROFILE_FILE.exists():
             self._logger.info("WARP profile generated")
@@ -504,8 +495,9 @@ class WireGuardService(BaseService):
             self._logger.error(f"Profile generation failed: {result.stderr}")
             return False
 
-    def _generate_warp_config(self, endpoint_type: str = "standard",
-                              tunnel_mode: str = TunnelMode.SPLIT) -> Optional[str]:
+    def _generate_warp_config(
+        self, endpoint_type: str = "standard", tunnel_mode: str = TunnelMode.SPLIT
+    ) -> Optional[str]:
         """
         Generate WireGuard config for WARP.
 
@@ -535,9 +527,12 @@ class WireGuardService(BaseService):
 
         return config
 
-    def _modify_allowed_ips(self, config: str,
-                            custom_ips: Optional[list[str]] = None,
-                            tunnel_mode: str = TunnelMode.SPLIT) -> str:
+    def _modify_allowed_ips(
+        self,
+        config: str,
+        custom_ips: Optional[list[str]] = None,
+        tunnel_mode: str = TunnelMode.SPLIT,
+    ) -> str:
         """
         Modify AllowedIPs in config based on tunnel mode.
 
@@ -565,10 +560,7 @@ class WireGuardService(BaseService):
 
         # Replace existing AllowedIPs
         config = re.sub(
-            r'^AllowedIPs\s*=.*$',
-            f'AllowedIPs = {allowed_ips}',
-            config,
-            flags=re.MULTILINE
+            r"^AllowedIPs\s*=.*$", f"AllowedIPs = {allowed_ips}", config, flags=re.MULTILINE
         )
 
         return config
@@ -587,23 +579,15 @@ class WireGuardService(BaseService):
         endpoint = WARP_ENDPOINTS.get(endpoint_type, WARP_ENDPOINTS["standard"])
 
         # Replace existing Endpoint
-        config = re.sub(
-            r'^Endpoint\s*=.*$',
-            f'Endpoint = {endpoint}',
-            config,
-            flags=re.MULTILINE
-        )
+        config = re.sub(r"^Endpoint\s*=.*$", f"Endpoint = {endpoint}", config, flags=re.MULTILINE)
 
         self._logger.info(f"Using endpoint: {endpoint}")
 
         # Add PersistentKeepalive to prevent NAT timeout issues
         # This keeps the tunnel alive and prevents intermittent high latency
-        if 'PersistentKeepalive' not in config:
+        if "PersistentKeepalive" not in config:
             config = re.sub(
-                r'^(Endpoint\s*=.*)$',
-                r'\1\nPersistentKeepalive = 25',
-                config,
-                flags=re.MULTILINE
+                r"^(Endpoint\s*=.*)$", r"\1\nPersistentKeepalive = 25", config, flags=re.MULTILINE
             )
             self._logger.info("Added PersistentKeepalive = 25")
 
@@ -628,15 +612,12 @@ class WireGuardService(BaseService):
         # Remove DNS line completely - this prevents wg-quick from
         # changing system DNS which breaks internet when DNS IPs
         # aren't routed through VPN
-        config = re.sub(r'^DNS\s*=.*\n?', '', config, flags=re.MULTILINE)
+        config = re.sub(r"^DNS\s*=.*\n?", "", config, flags=re.MULTILINE)
 
         # Remove IPv6 address to prevent routing issues
         # Keep only IPv4: "Address = 172.16.0.2/32"
         config = re.sub(
-            r'^(Address\s*=\s*[0-9./]+),\s*[0-9a-fA-F:]+/\d+',
-            r'\1',
-            config,
-            flags=re.MULTILINE
+            r"^(Address\s*=\s*[0-9./]+),\s*[0-9a-fA-F:]+/\d+", r"\1", config, flags=re.MULTILINE
         )
 
         return config
@@ -722,9 +703,7 @@ class WireGuardService(BaseService):
             True if installation successful
         """
         # Ensure /etc/wireguard exists
-        result = self._run_privileged(
-            ["mkdir", "-p", str(WIREGUARD_CONFIG_DIR)]
-        )
+        result = self._run_privileged(["mkdir", "-p", str(WIREGUARD_CONFIG_DIR)])
         if not result.success:
             self._logger.error(f"Failed to create config dir: {result.stderr}")
             return False
@@ -736,17 +715,13 @@ class WireGuardService(BaseService):
 
         try:
             # Copy to /etc/wireguard with correct permissions
-            result = self._run_privileged(
-                ["cp", temp_path, str(self._config_file)]
-            )
+            result = self._run_privileged(["cp", temp_path, str(self._config_file)])
             if not result.success:
                 self._logger.error(f"Failed to copy config: {result.stderr}")
                 return False
 
             # Set permissions (600 - owner read/write only)
-            result = self._run_privileged(
-                ["chmod", "600", str(self._config_file)]
-            )
+            result = self._run_privileged(["chmod", "600", str(self._config_file)])
             if not result.success:
                 self._logger.warning(f"Failed to set permissions: {result.stderr}")
 
@@ -789,7 +764,7 @@ class WireGuardService(BaseService):
                     interface.latest_handshake = value
                 elif key == "transfer":
                     # Parse "X MiB received, Y MiB sent"
-                    match = re.search(r'([\d.]+)\s*\w+\s*received.*?([\d.]+)\s*\w+\s*sent', value)
+                    match = re.search(r"([\d.]+)\s*\w+\s*received.*?([\d.]+)\s*\w+\s*sent", value)
                     if match:
                         # Convert to bytes (approximate)
                         interface.transfer_rx = int(float(match.group(1)) * 1024 * 1024)
@@ -889,10 +864,13 @@ class WireGuardService(BaseService):
             self._logger.warning(f"[WG] Failed to check refresh timer status: {e}")
             return False
 
-    def generate_config(self, allowed_apps: Optional[list[str]] = None,
-                       include_browsers: bool = False,
-                       endpoint: Optional[str] = None,
-                       tunnel_mode: str = TunnelMode.SPLIT) -> Optional[str]:
+    def generate_config(
+        self,
+        allowed_apps: Optional[list[str]] = None,
+        include_browsers: bool = False,
+        endpoint: Optional[str] = None,
+        tunnel_mode: str = TunnelMode.SPLIT,
+    ) -> Optional[str]:
         """
         Generate WireGuard configuration and install it.
 
@@ -906,7 +884,9 @@ class WireGuardService(BaseService):
             Path to generated config file or None
         """
         endpoint_type = endpoint or "standard"
-        self._logger.info(f"Generating WireGuard config (endpoint={endpoint_type}, mode={tunnel_mode})...")
+        self._logger.info(
+            f"Generating WireGuard config (endpoint={endpoint_type}, mode={tunnel_mode})..."
+        )
 
         # Generate WARP profile
         if not self.generate_warp_profile():
@@ -936,10 +916,13 @@ class WireGuardService(BaseService):
             self._logger.error(f"Failed to generate config: {e}")
             return None
 
-    def generate_config_content(self, allowed_apps: Optional[list[str]] = None,
-                                include_browsers: bool = False,
-                                endpoint: Optional[str] = None,
-                                tunnel_mode: str = TunnelMode.SPLIT) -> str:
+    def generate_config_content(
+        self,
+        allowed_apps: Optional[list[str]] = None,
+        include_browsers: bool = False,
+        endpoint: Optional[str] = None,
+        tunnel_mode: str = TunnelMode.SPLIT,
+    ) -> str:
         """
         Generate WireGuard configuration content as string.
 
@@ -953,7 +936,9 @@ class WireGuardService(BaseService):
             Configuration file content as string
         """
         endpoint_type = endpoint or "standard"
-        self._logger.info(f"Generating WireGuard config content (endpoint={endpoint_type}, mode={tunnel_mode})...")
+        self._logger.info(
+            f"Generating WireGuard config content (endpoint={endpoint_type}, mode={tunnel_mode})..."
+        )
 
         # Ensure profile exists
         if not WGCF_PROFILE_FILE.exists():

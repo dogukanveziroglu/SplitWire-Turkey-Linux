@@ -1,10 +1,10 @@
 """
-Service modules for SplitWire-Turkey Linux.
+Service modules for SplitWire Linux.
 
 This package contains service managers for:
 - WireGuard VPN with WGCF/WARP integration (Phase 2)
 - Split tunneling (app-based routing) (Phase 2)
-- Zapret DPI bypass (Phase 3)
+- Zapret packet processing (Phase 3)
 - Blockcheck scanner (Phase 3)
 - ByeDPI proxy (Phase 4)
 - Proxy routing (Phase 4)

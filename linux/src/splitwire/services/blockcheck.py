@@ -1,7 +1,7 @@
 """
-Blockcheck integration for SplitWire-Turkey Linux.
+Blockcheck integration for SplitWire Linux.
 
-Runs Zapret's blockcheck.sh to automatically detect optimal DPI bypass parameters.
+Runs Zapret's blockcheck.sh to automatically detect optimal packet processing parameters.
 Equivalent to "Zapret Otomatik Kurulum" in Windows version.
 """
 
@@ -30,13 +30,15 @@ BLOCKCHECK_RESULTS = Path.home() / ".config" / "splitwire" / "zapret" / "blockch
 
 class ScanMode(Enum):
     """Blockcheck scan modes."""
-    QUICK = "quick"       # Hızlı - basic scan (~1-2 min)
-    STANDARD = "standard" # Standart - moderate scan (~5-10 min)
-    FULL = "full"         # Tam - comprehensive scan (~15-30 min)
+
+    QUICK = "quick"  # Hızlı - basic scan (~1-2 min)
+    STANDARD = "standard"  # Standart - moderate scan (~5-10 min)
+    FULL = "full"  # Tam - comprehensive scan (~15-30 min)
 
 
 class ScanStatus(Enum):
     """Blockcheck scan status."""
+
     IDLE = "idle"
     RUNNING = "running"
     COMPLETED = "completed"
@@ -47,6 +49,7 @@ class ScanStatus(Enum):
 @dataclass
 class BlockcheckResult:
     """Results from a blockcheck scan."""
+
     success: bool = False
     scan_mode: ScanMode = ScanMode.QUICK
     duration_seconds: float = 0.0
@@ -62,6 +65,7 @@ class BlockcheckResult:
 @dataclass
 class ScanProgress:
     """Progress information during scan."""
+
     status: ScanStatus = ScanStatus.IDLE
     percent: int = 0
     current_test: str = ""
@@ -112,9 +116,10 @@ FULL_TARGETS = [
 # Blockcheck Service
 # ============================================================================
 
+
 class BlockcheckService:
     """
-    Service for running Zapret's blockcheck to detect optimal DPI bypass parameters.
+    Service for running Zapret's blockcheck to detect optimal packet processing parameters.
 
     Provides:
     - Three scan modes (quick, standard, full)
@@ -167,9 +172,12 @@ class BlockcheckService:
         if callback in self._progress_callbacks:
             self._progress_callbacks.remove(callback)
 
-    def start_scan(self, mode: ScanMode = ScanMode.STANDARD,
-                   targets: Optional[list[str]] = None,
-                   async_mode: bool = True) -> bool:
+    def start_scan(
+        self,
+        mode: ScanMode = ScanMode.STANDARD,
+        targets: Optional[list[str]] = None,
+        async_mode: bool = True,
+    ) -> bool:
         """
         Start a blockcheck scan.
 
@@ -199,9 +207,7 @@ class BlockcheckService:
 
         if async_mode:
             self._scan_thread = threading.Thread(
-                target=self._run_scan,
-                args=(mode, targets),
-                daemon=True
+                target=self._run_scan, args=(mode, targets), daemon=True
             )
             self._scan_thread.start()
             return True
@@ -240,10 +246,15 @@ class BlockcheckService:
 
         # Use curl with zapret
         cmd = [
-            "curl", "-s", "-o", "/dev/null",
-            "-w", "%{http_code}",
-            "--connect-timeout", "10",
-            f"https://{target}"
+            "curl",
+            "-s",
+            "-o",
+            "/dev/null",
+            "-w",
+            "%{http_code}",
+            "--connect-timeout",
+            "10",
+            f"https://{target}",
         ]
 
         result = self._shell.run(cmd, timeout=15)
@@ -314,11 +325,13 @@ class BlockcheckService:
                     if not success:
                         strategy_works = False
 
-                    result.tested_strategies.append({
-                        "strategy": strategy["name"],
-                        "target": target,
-                        "success": success,
-                    })
+                    result.tested_strategies.append(
+                        {
+                            "strategy": strategy["name"],
+                            "target": target,
+                            "success": success,
+                        }
+                    )
 
                 if strategy_works:
                     working.append(strategy_results)
@@ -353,8 +366,7 @@ class BlockcheckService:
             self._notify_progress()
 
             self._logger.info(
-                f"Blockcheck completed: {len(working)} working, "
-                f"{len(failed)} failed strategies"
+                f"Blockcheck completed: {len(working)} working, {len(failed)} failed strategies"
             )
             return result.success
 
@@ -463,11 +475,16 @@ class BlockcheckService:
             # For now, use curl to test connectivity
             # In a full implementation, this would actually apply the strategy
             cmd = [
-                "curl", "-s", "-o", "/dev/null",
-                "-w", "%{http_code}",
-                "--connect-timeout", "5",
+                "curl",
+                "-s",
+                "-o",
+                "/dev/null",
+                "-w",
+                "%{http_code}",
+                "--connect-timeout",
+                "5",
                 "-k",  # Allow insecure for testing
-                f"https://{target}"
+                f"https://{target}",
             ]
 
             result = self._shell.run(cmd, timeout=10)
@@ -541,19 +558,18 @@ class BlockcheckService:
         # "nfqws --dpi-desync=fake ... : PASSED"
         # "tpws --split-pos=3 : PASSED"
 
-        passed_pattern = re.compile(
-            r"(nfqws|tpws)\s+([^:]+):\s*(PASSED|OK|SUCCESS)",
-            re.IGNORECASE
-        )
+        passed_pattern = re.compile(r"(nfqws|tpws)\s+([^:]+):\s*(PASSED|OK|SUCCESS)", re.IGNORECASE)
 
         for match in passed_pattern.finditer(output):
             mode = match.group(1).lower()
             args = match.group(2).strip()
 
-            result.working_strategies.append({
-                "mode": mode,
-                "args": args,
-            })
+            result.working_strategies.append(
+                {
+                    "mode": mode,
+                    "args": args,
+                }
+            )
 
         # Get recommended strategy (first working one)
         if result.working_strategies:

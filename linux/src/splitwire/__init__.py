@@ -1,11 +1,11 @@
 """
-SplitWire-Turkey Linux
+SplitWire Linux
 
-Network restriction bypass tool for Ubuntu/Linux.
+Privacy-focused network routing tool for Ubuntu/Linux.
 
 This package provides:
 - WireGuard VPN with split tunneling (via cgproxy)
-- Zapret DPI bypass (nfqws/tpws)
+- Zapret packet processing (nfqws/tpws)
 - ByeDPI/ciadpi proxy
 - DNS management with DoH support
 """
