@@ -88,8 +88,8 @@
     "wgcf_generating": "WARP yapilandirmasi olusturuluyor..."
   },
   "zapret": {
-    "title": "Zapret DPI Bypass",
-    "description": "nfqws/tpws kullanarak Derin Paket Inceleme atlama",
+    "title": "Zapret Paket Isleme",
+    "description": "nfqws/tpws kullanarak trafik isleme",
     "mode": "Mod",
     "mode_nfqws": "nfqws (netfilter kuyrugu)",
     "mode_tpws": "tpws (seffaf proxy)",
@@ -115,7 +115,7 @@
   },
   "byedpi": {
     "title": "ByeDPI/ciadpi Proxy",
-    "description": "SOCKS proxy kullanarak DPI atlama",
+    "description": "SOCKS proxy kullanarak trafik isleme",
     "port": "Proxy Portu",
     "strategy": "Strateji",
     "strategy_disorder": "Düzensizlik",
@@ -191,7 +191,7 @@
   },
   "about": {
     "title": "Hakkinda",
-    "description": "Linux icin ag kisitlama atlama araci",
+    "description": "Linux icin gizlilik odakli ag yonlendirme araci",
     "version": "Surum {0}",
     "github": "GitHub Deposu",
     "license": "Lisans: MIT",
@@ -259,8 +259,8 @@
     "wireguard_connect": "VPN'e bağlan",
     "wireguard_disconnect": "VPN bağlantısını kes",
     "split_tunnel": "Sadece seçili uygulamaları VPN üzerinden yönlendirmek için bölünmüş tünellemeyi etkinleştir",
-    "zapret_auto": "Ağınız için en iyi DPI atlama parametrelerini otomatik bul",
-    "byedpi_proxy": "DPI atlama için uygulama trafiğini yerel SOCKS proxy üzerinden yönlendir",
+    "zapret_auto": "Ağınız için en iyi paket isleme parametrelerini otomatik bul",
+    "byedpi_proxy": "Trafik isleme için uygulama trafiğini yerel SOCKS proxy üzerinden yönlendir",
     "dns_doh": "DNS sorgularını HTTPS üzerinden DNS kullanarak şifrele",
     "standard_install": "WireGuard/WGCF ile standart kurulum",
     "alternative_install": "Alternatif WireGuard kurulumu",
@@ -271,21 +271,21 @@
     "clear_list": "Özel listeyi temizle",
     "custom_install": "Özel listeyle kurulum yap",
     "generate_config": "Özel WireGuard config dosyası oluştur",
-    "byedpi_split": "ByeDPI ile uygulama bazlı DPI bypass",
+    "byedpi_split": "ByeDPI ile uygulama bazli trafik isleme",
     "byedpi_browser_tunneling": "Chrome, Firefox vb. tarayıcıları dahil et",
     "discord_repair": "Discord önbelleğini temizle ve onar",
     "discord_ptb_install": "Discord Public Test Build kur",
     "webcord_install": "Alternatif Discord istemcisi kur",
     "clean_install_ptb": "Mevcut Discord'u kaldır ve PTB kur",
     "webcord_shortcut": "Masaüstü kısayolu oluştur",
-    "auto_dns": "WireGuard ve bypass kurulumlarında DNS'i otomatik ayarla"
+    "auto_dns": "WireGuard ve hizmet kurulumlarinda DNS'i otomatik ayarla"
   },
   "help": {
     "wireguard_title": "WireGuard Yardım",
     "wireguard_content": "WireGuard modern bir VPN protokoludur. Bir yapilandirma dosyasi secin ve VPN baglantisi kurmak icin Baglan'a tiklayin. Sadece secili uygulamalari VPN uzerinden yonlendirmek icin bolunmus tunellemeyi etkinlestirin.",
     "zapret_title": "Zapret Yardim",
-    "zapret_content": "Zapret, paket manipulasyonu kullanarak DPI (Derin Paket Inceleme) atlamasi yapar. Optimal parametreleri bulmak icin Otomatik Kurulum'u kullanin veya manuel yapilandirma icin bir on ayar secin.",
+    "zapret_content": "Zapret, paket manipulasyonu kullanarak trafik isleme yapar. Optimal parametreleri bulmak icin Otomatik Kurulum'u kullanin veya manuel yapilandirma icin bir on ayar secin.",
     "byedpi_title": "ByeDPI Yardim",
-    "byedpi_content": "ByeDPI, DPI atlamasi yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir."
+    "byedpi_content": "ByeDPI, trafik isleme yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir."
   }
 }

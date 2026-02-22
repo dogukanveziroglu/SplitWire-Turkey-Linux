@@ -54,8 +54,8 @@
     "wgcf_generating": "Generando configuracion WARP..."
   },
   "zapret": {
-    "title": "Zapret DPI Bypass",
-    "description": "Evitar inspeccion profunda de paquetes usando nfqws/tpws",
+    "title": "Zapret Procesamiento de Paquetes",
+    "description": "Procesamiento de trafico usando nfqws/tpws",
     "mode": "Modo",
     "mode_nfqws": "nfqws (cola netfilter)",
     "mode_tpws": "tpws (proxy transparente)",
@@ -74,7 +74,7 @@
   },
   "byedpi": {
     "title": "ByeDPI/ciadpi Proxy",
-    "description": "Evitar DPI usando proxy SOCKS",
+    "description": "Procesamiento de trafico usando proxy SOCKS",
     "port": "Puerto del proxy",
     "strategy": "Estrategia",
     "strategy_disorder": "Desorden",
@@ -123,7 +123,7 @@
   },
   "about": {
     "title": "Acerca de",
-    "description": "Herramienta para evadir restricciones de red para Linux",
+    "description": "Herramienta de enrutamiento de red para Linux",
     "version": "Version {0}",
     "github": "Repositorio GitHub",
     "license": "Licencia: MIT",
@@ -181,16 +181,16 @@
     "wireguard_connect": "Conectar a VPN",
     "wireguard_disconnect": "Desconectar de VPN",
     "split_tunnel": "Habilitar tunelizacion dividida para enrutar solo las aplicaciones seleccionadas a traves de VPN",
-    "zapret_auto": "Encontrar automaticamente los mejores parametros de evasion DPI para su red",
-    "byedpi_proxy": "Enrutar el trafico de la aplicacion a traves del proxy SOCKS local para evadir DPI",
+    "zapret_auto": "Encontrar automaticamente los mejores parametros de procesamiento de paquetes para su red",
+    "byedpi_proxy": "Enrutar el trafico de la aplicacion a traves del proxy SOCKS local para procesamiento de trafico",
     "dns_doh": "Cifrar las consultas DNS usando DNS sobre HTTPS"
   },
   "help": {
     "wireguard_title": "Ayuda de WireGuard",
     "wireguard_content": "WireGuard es un protocolo VPN moderno. Seleccione un archivo de configuracion y haga clic en Conectar para establecer una conexion VPN. Habilite la tunelizacion dividida para enrutar solo las aplicaciones seleccionadas a traves de VPN.",
     "zapret_title": "Ayuda de Zapret",
-    "zapret_content": "Zapret realiza evasion de DPI (Inspeccion Profunda de Paquetes) usando manipulacion de paquetes. Use la Instalacion Automatica para encontrar parametros optimos, o seleccione un preajuste para configuracion manual.",
+    "zapret_content": "Zapret realiza procesamiento de paquetes usando manipulacion de paquetes. Use la Instalacion Automatica para encontrar parametros optimos, o seleccione un preajuste para configuracion manual.",
     "byedpi_title": "Ayuda de ByeDPI",
-    "byedpi_content": "ByeDPI crea un proxy SOCKS local que realiza evasion de DPI. El trafico de las aplicaciones seleccionadas sera enrutado a traves de este proxy."
+    "byedpi_content": "ByeDPI crea un proxy SOCKS local que realiza procesamiento de trafico. El trafico de las aplicaciones seleccionadas sera enrutado a traves de este proxy."
   }
 }
