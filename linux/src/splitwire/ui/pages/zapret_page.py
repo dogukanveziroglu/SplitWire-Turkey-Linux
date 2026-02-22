@@ -1,12 +1,13 @@
 """
-Zapret Page for SplitWire-Turkey.
+Zapret Page for SplitWire.
 
-Provides Zapret DPI bypass setup with blockcheck integration.
+Provides Zapret packet processing setup with blockcheck integration.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
 from typing import TYPE_CHECKING
@@ -26,9 +27,9 @@ if TYPE_CHECKING:
 
 
 class ZapretPage(BasePage):
-    """Zapret DPI bypass setup page."""
+    """Zapret packet processing setup page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow"):
         self._zapret_service = get_zapret_service()
         self._blockcheck_service = get_blockcheck_service()
         self._scan_in_progress = False
@@ -56,7 +57,8 @@ class ZapretPage(BasePage):
         self._btn_auto = self.create_action_button(
             label=get_text("zapret", "auto_install") or "Zapret Otomatik Kurulum",
             callback=self._on_auto_setup,
-            tooltip=get_text("tooltips", "zapret_auto") or "Blockcheck ile en uygun ayarları otomatik bul",
+            tooltip=get_text("tooltips", "zapret_auto")
+            or "Blockcheck ile en uygun ayarları otomatik bul",
             suggested=True,
         )
         auto_group.add(self._btn_auto)
@@ -154,7 +156,8 @@ class ZapretPage(BasePage):
         # Install service button
         self._btn_service = Gtk.Button(
             label=get_text("zapret", "install_service") or "Önayarlı Hizmet Kur",
-            tooltip_text=get_text("tooltips", "preset_service") or "Seçili ayarla sistemd hizmeti kur",
+            tooltip_text=get_text("tooltips", "preset_service")
+            or "Seçili ayarla sistemd hizmeti kur",
         )
         self._btn_service.connect("clicked", self._on_install_service)
         buttons_box.append(self._btn_service)
@@ -162,7 +165,8 @@ class ZapretPage(BasePage):
         # One-time run button
         self._btn_once = Gtk.Button(
             label=get_text("zapret", "run_once") or "Önayarlı Tek Seferlik",
-            tooltip_text=get_text("tooltips", "preset_once") or "Seçili ayarı tek seferlik çalıştır",
+            tooltip_text=get_text("tooltips", "preset_once")
+            or "Seçili ayarı tek seferlik çalıştır",
         )
         self._btn_once.connect("clicked", self._on_run_once)
         buttons_box.append(self._btn_once)
@@ -253,7 +257,7 @@ class ZapretPage(BasePage):
             # start_scan returns bool, get result via get_last_result()
             success = self._blockcheck_service.start_scan(
                 mode=scan_mode,
-                async_mode=False  # Run synchronously in thread
+                async_mode=False,  # Run synchronously in thread
             )
 
             if success:
@@ -286,7 +290,7 @@ class ZapretPage(BasePage):
         GLib.idle_add(
             self._update_progress,
             progress.percent / 100.0,
-            f"Test ediliyor: {progress.current_test}"
+            f"Test ediliyor: {progress.current_test}",
         )
 
     def _update_progress(self, fraction, text):
@@ -394,22 +398,22 @@ class ZapretPage(BasePage):
         dialog = Adw.MessageDialog(
             transient_for=self._window,
             heading="Zapret Yardım",
-            body="""Zapret, DPI (Deep Packet Inspection) engellerini aşmak için paket manipülasyonu yapar.
+            body="""Zapret, DPI (Deep Packet Inspection) icin paket manipulasyonu yapar.
 
-Otomatik Kurulum: Blockcheck ile en uygun ayarları test eder ve uygular.
+Otomatik Kurulum: Blockcheck ile en uygun ayarlari test eder ve uygular.
 
 Tarama Seviyeleri:
-- Hızlı: 3 temel strateji
+- Hizli: 3 temel strateji
 - Standart: 7 strateji
 - Tam: 12+ strateji
 
-Hazır Ayarlar:
-- Turkey Discord: Discord için optimize edilmiş
-- Turkey General: Genel kullanım
-- Turkey YouTube: YouTube için optimize edilmiş
+Hazir Ayarlar:
+- Discord: Discord icin optimize edilmis
+- General: Genel kullanim
+- YouTube: YouTube icin optimize edilmis
 
-Hizmet Kur: systemd servisi olarak çalıştırır
-Tek Seferlik: Sadece bu oturum için çalıştırır""",
+Hizmet Kur: systemd servisi olarak calistirir
+Tek Seferlik: Sadece bu oturum icin calistirir""",
         )
         dialog.add_response("ok", "Tamam")
         dialog.present()

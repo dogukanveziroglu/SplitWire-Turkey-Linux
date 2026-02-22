@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SplitWire-Turkey Linux - Main entry point.
+SplitWire Linux - Main entry point.
 
 This module serves as the entry point for the application.
 It initializes core systems and launches the GUI.
@@ -29,7 +29,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         prog="splitwire",
-        description="SplitWire-Turkey - Network restriction bypass tool for Linux",
+        description="SplitWire - A privacy-focused network routing tool for Linux",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -40,58 +40,36 @@ Examples:
   splitwire --debug            Enable debug logging
 
 For more information, visit: https://github.com/cagritaskn/SplitWire-Turkey
-        """
+        """,
     )
 
     parser.add_argument(
-        "--version", "-v",
-        action="store_true",
-        help="Show version information and exit"
+        "--version", "-v", action="store_true", help="Show version information and exit"
+    )
+
+    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging")
+
+    parser.add_argument("--cli", action="store_true", help="Run in CLI mode (no GUI)")
+
+    parser.add_argument(
+        "--check-deps", action="store_true", help="Check system dependencies and exit"
     )
 
     parser.add_argument(
-        "--debug", "-d",
-        action="store_true",
-        help="Enable debug logging"
+        "--check-system", action="store_true", help="Show system information and exit"
     )
 
-    parser.add_argument(
-        "--cli",
-        action="store_true",
-        help="Run in CLI mode (no GUI)"
-    )
+    parser.add_argument("--install-deps", action="store_true", help="Install missing dependencies")
 
     parser.add_argument(
-        "--check-deps",
-        action="store_true",
-        help="Check system dependencies and exit"
-    )
-
-    parser.add_argument(
-        "--check-system",
-        action="store_true",
-        help="Show system information and exit"
-    )
-
-    parser.add_argument(
-        "--install-deps",
-        action="store_true",
-        help="Install missing dependencies"
-    )
-
-    parser.add_argument(
-        "--language", "-l",
+        "--language",
+        "-l",
         choices=["tr", "en", "ru", "es"],
         default=None,
-        help="Set application language"
+        help="Set application language",
     )
 
-    parser.add_argument(
-        "--config-dir",
-        type=Path,
-        default=None,
-        help="Override config directory"
-    )
+    parser.add_argument("--config-dir", type=Path, default=None, help="Override config directory")
 
     return parser.parse_args()
 
@@ -101,8 +79,8 @@ def show_version() -> None:
     from splitwire.core import get_config
 
     config = get_config()
-    print(f"SplitWire-Turkey Linux v{config.version}")
-    print("Network restriction bypass tool for Ubuntu/Linux")
+    print(f"SplitWire Linux v{config.version}")
+    print("A privacy-focused network routing tool for Linux")
     print("")
     print("GitHub: https://github.com/cagritaskn/SplitWire-Turkey")
     print("License: MIT")
@@ -117,8 +95,7 @@ def check_dependencies() -> bool:
 
     # Return True if all required deps are installed
     missing_required = [
-        d for d in system_deps + python_deps
-        if d.required and d.status.value == "missing"
+        d for d in system_deps + python_deps if d.required and d.status.value == "missing"
     ]
     return len(missing_required) == 0
 
@@ -157,7 +134,7 @@ def run_gui(args: argparse.Namespace) -> int:
 
     # Initialize logger
     logger = init_logger(debug=args.debug)
-    logger.info("Starting SplitWire-Turkey Linux")
+    logger.info("Starting SplitWire Linux")
 
     # Load configuration
     config_manager = get_config_manager()
@@ -173,6 +150,7 @@ def run_gui(args: argparse.Namespace) -> int:
     # Check if GTK is available
     try:
         import gi
+
         gi.require_version("Gtk", "4.0")
         gi.require_version("Adw", "1")
         from gi.repository import Gtk, Adw
@@ -210,7 +188,7 @@ def run_cli(args: argparse.Namespace) -> int:
 
     # Initialize logger
     logger = init_logger(debug=args.debug)
-    logger.info("Starting SplitWire-Turkey Linux (CLI mode)")
+    logger.info("Starting SplitWire Linux (CLI mode)")
 
     # Load configuration
     config = get_config()

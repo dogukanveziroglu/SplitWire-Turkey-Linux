@@ -5,8 +5,9 @@ The main application window with navigation and all pages.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, Gio, GLib, GdkPixbuf
 from typing import Optional, Dict, Callable
@@ -95,7 +96,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._init_theme_toggle()
         # Use notify::active instead of state-set for reliable toggle handling
         self._theme_toggle.connect("notify::active", self._on_theme_toggled)
-        
+
         theme_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=8,
@@ -211,7 +212,8 @@ class SplitWireWindow(Adw.ApplicationWindow):
         # Import pages here to avoid circular imports
         from splitwire.ui.pages.main_page import MainPage
         from splitwire.ui.pages.byedpi_page import ByeDPIPage
-        # Zapret/GoodbyeDPI disabled - doesn't work against Turkish ISP deep packet inspection
+
+        # Zapret/GoodbyeDPI disabled
         # from splitwire.ui.pages.zapret_page import ZapretPage
         # from splitwire.ui.pages.goodbyedpi_page import GoodbyeDPIPage
         from splitwire.ui.pages.repair_page import RepairPage
@@ -221,26 +223,19 @@ class SplitWireWindow(Adw.ApplicationWindow):
         # Main page (WireGuard)
         main_page = MainPage(window=self)
         self._stack.add_titled_with_icon(
-            main_page,
-            "main",
-            get_text("tabs", "main") or "Ana Sayfa",
-            "go-home-symbolic"
+            main_page, "main", get_text("tabs", "main") or "Ana Sayfa", "go-home-symbolic"
         )
         self._pages["main"] = main_page
 
         # ByeDPI page
         byedpi_page = ByeDPIPage(window=self)
         self._stack.add_titled_with_icon(
-            byedpi_page,
-            "byedpi",
-            "ByeDPI",
-            "network-transmit-receive-symbolic"
+            byedpi_page, "byedpi", "ByeDPI", "network-transmit-receive-symbolic"
         )
         self._pages["byedpi"] = byedpi_page
 
-        # Zapret/GoodbyeDPI pages disabled - doesn't work against Turkish ISP
-        # Turkish ISPs use aggressive deep packet inspection that defeats these methods
-        # Keeping code for potential future use (other countries)
+        # Zapret/GoodbyeDPI pages disabled
+        # Keeping code for potential future use
         #
         # zapret_page = ZapretPage(window=self)
         # self._stack.add_titled_with_icon(
@@ -260,7 +255,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
             repair_page,
             "repair",
             get_text("tabs", "repair") or "Onarım",
-            "applications-games-symbolic"
+            "applications-games-symbolic",
         )
         self._pages["repair"] = repair_page
 
@@ -270,7 +265,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
             advanced_page,
             "advanced",
             get_text("tabs", "advanced") or "Gelişmiş",
-            "applications-system-symbolic"
+            "applications-system-symbolic",
         )
         self._pages["advanced"] = advanced_page
 
@@ -280,7 +275,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
             settings_page,
             "settings",
             get_text("tabs", "settings") or "Ayarlar",
-            "preferences-system-symbolic"
+            "preferences-system-symbolic",
         )
         self._pages["settings"] = settings_page
 
@@ -318,12 +313,13 @@ class SplitWireWindow(Adw.ApplicationWindow):
 
         # Refresh page if it has a refresh method
         page = self._pages.get(page_name)
-        if page and hasattr(page, 'refresh'):
+        if page and hasattr(page, "refresh"):
             page.refresh()
 
     def _init_theme_toggle(self):
         """Initialize theme toggle state from config."""
         from splitwire.core import get_config_manager
+
         try:
             config = get_config_manager().load()
             # Switch ON = dark mode
@@ -361,7 +357,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         """Refresh all UI translations."""
         # Refresh each page
         for page in self._pages.values():
-            if hasattr(page, 'refresh_translations'):
+            if hasattr(page, "refresh_translations"):
                 page.refresh_translations()
 
         # Update window title

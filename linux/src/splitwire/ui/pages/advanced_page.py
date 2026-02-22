@@ -1,13 +1,14 @@
 """
-Advanced Page for SplitWire-Turkey.
+Advanced Page for SplitWire.
 
 Provides service management and advanced options.
-Equivalent to Windows "Gelişmiş" tab.
+Equivalent to Windows "Gelismis" tab.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
 from typing import TYPE_CHECKING, Dict, List
@@ -16,7 +17,7 @@ from splitwire.core import get_text
 from splitwire.services import (
     get_wireguard_service,
     get_split_tunnel_service,
-    # get_zapret_service,  # Disabled - doesn't work against Turkish ISP
+    # get_zapret_service,  # Disabled
     get_byedpi_service,
     get_proxy_route_service,
     get_dns_service,
@@ -31,7 +32,7 @@ if TYPE_CHECKING:
 class AdvancedPage(BasePage):
     """Advanced service management page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow"):
         self._services = {
             "wireguard": {
                 "name": "WireGuard",
@@ -41,7 +42,7 @@ class AdvancedPage(BasePage):
                 "name": "Split Tunnel (cgproxy)",
                 "service": get_split_tunnel_service(),
             },
-            # Zapret disabled - doesn't work against Turkish ISP
+            # Zapret disabled
             # "zapret": {
             #     "name": "Zapret",
             #     "service": get_zapret_service(),
@@ -87,8 +88,10 @@ class AdvancedPage(BasePage):
 
         # Auto DNS switch
         self._switch_auto_dns = self.create_switch_row(
-            title=get_text("advanced", "auto_dns") or "DNS ve DoH ayarlarını her kurulumda gerçekleştir",
-            subtitle=get_text("tooltips", "auto_dns") or "WireGuard ve bypass kurulumlarında DNS'i otomatik ayarla",
+            title=get_text("advanced", "auto_dns")
+            or "DNS ve DoH ayarlarını her kurulumda gerçekleştir",
+            subtitle=get_text("tooltips", "auto_dns")
+            or "WireGuard ve hizmet kurulumlarinda DNS'i otomatik ayarla",
             active=True,
         )
         options_group.add(self._switch_auto_dns)
@@ -117,16 +120,14 @@ class AdvancedPage(BasePage):
 
         # Uninstall SplitWire button
         self._btn_uninstall = self.create_action_button(
-            label=get_text("advanced", "uninstall") or "SplitWire-Turkey'i Kaldır",
+            label=get_text("advanced", "uninstall") or "SplitWire'i Kaldır",
             callback=self._on_uninstall,
             destructive=True,
         )
         actions_group.add(self._btn_uninstall)
 
         # Logs section
-        logs_group = self.create_preferences_group(
-            title=get_text("advanced", "logs") or "Loglar"
-        )
+        logs_group = self.create_preferences_group(title=get_text("advanced", "logs") or "Loglar")
         self.append(logs_group)
 
         # Open logs button
@@ -204,6 +205,7 @@ class AdvancedPage(BasePage):
     def _refresh_all_status(self):
         """Refresh all service statuses."""
         self._logger.debug("[UI:Advanced] Refreshing all service statuses...")
+
         def do_refresh():
             results = {}
             for key, info in self._services.items():
@@ -212,7 +214,9 @@ class AdvancedPage(BasePage):
                     status = service.status()
                     installed = service.is_installed()
                     results[key] = (status, installed)
-                    self._logger.debug(f"[UI:Advanced] {key}: status={status.value}, installed={installed}")
+                    self._logger.debug(
+                        f"[UI:Advanced] {key}: status={status.value}, installed={installed}"
+                    )
                 except Exception as e:
                     self._logger.error(f"[UI:Advanced] Error checking {key}: {e}")
                     results[key] = (ServiceStatus.UNKNOWN, False)
@@ -230,10 +234,16 @@ class AdvancedPage(BasePage):
 
     def refresh_translations(self):
         """Refresh UI translations."""
-        self._switch_auto_dns.set_title(get_text("advanced", "auto_dns") or "DNS ve DoH ayarlarını her kurulumda gerçekleştir")
-        self._btn_remove_all.set_label(get_text("advanced", "remove_all") or "Tüm Hizmetleri Kaldır")
-        self._btn_reset_dns.set_label(get_text("advanced", "reset_dns") or "DNS ve DoH Ayarlarını Geri Al")
-        self._btn_uninstall.set_label(get_text("advanced", "uninstall") or "SplitWire-Turkey'i Kaldır")
+        self._switch_auto_dns.set_title(
+            get_text("advanced", "auto_dns") or "DNS ve DoH ayarlarını her kurulumda gerçekleştir"
+        )
+        self._btn_remove_all.set_label(
+            get_text("advanced", "remove_all") or "Tüm Hizmetleri Kaldır"
+        )
+        self._btn_reset_dns.set_label(
+            get_text("advanced", "reset_dns") or "DNS ve DoH Ayarlarını Geri Al"
+        )
+        self._btn_uninstall.set_label(get_text("advanced", "uninstall") or "SplitWire'i Kaldır")
 
     # Event handlers
 
@@ -355,8 +365,8 @@ class AdvancedPage(BasePage):
         """Handle uninstall SplitWire button."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="SplitWire-Turkey'i Kaldır",
-            body="SplitWire-Turkey ve tüm bileşenleri kaldırılacak. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
+            heading="SplitWire'i Kaldır",
+            body="SplitWire ve tüm bileşenleri kaldırılacak. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
         )
         dialog.add_response("cancel", "İptal")
         dialog.add_response("uninstall", "Kaldır")
@@ -367,8 +377,8 @@ class AdvancedPage(BasePage):
     def _on_uninstall_confirmed(self, dialog, response):
         """Handle uninstall confirmation."""
         if response == "uninstall":
-            self._logger.info("[UI:Advanced] Uninstalling SplitWire-Turkey...")
-            self.set_status("SplitWire-Turkey kaldırılıyor...")
+            self._logger.info("[UI:Advanced] Uninstalling SplitWire...")
+            self.set_status("SplitWire kaldırılıyor...")
 
             def do_uninstall():
                 # Remove all services first
@@ -396,7 +406,7 @@ class AdvancedPage(BasePage):
 
             def on_complete(result):
                 if result:
-                    self.show_toast("SplitWire-Turkey kaldırıldı. Uygulamayı kapatın.")
+                    self.show_toast("SplitWire kaldırıldı. Uygulamayı kapatın.")
                     # Quit the application
                     app = self._window.get_application()
                     if app:

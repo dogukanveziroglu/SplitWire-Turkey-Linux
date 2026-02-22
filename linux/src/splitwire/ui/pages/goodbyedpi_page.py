@@ -1,13 +1,14 @@
 """
-GoodbyeDPI Page for SplitWire-Turkey.
+GoodbyeDPI Page for SplitWire.
 
 On Linux, GoodbyeDPI functionality is provided by Zapret's nfqws.
 This page provides a similar interface with blacklist support.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
 from typing import TYPE_CHECKING
@@ -39,7 +40,7 @@ GOODBYEDPI_PRESETS = {
 class GoodbyeDPIPage(BasePage):
     """GoodbyeDPI (nfqws) setup page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow"):
         self._zapret_service = get_zapret_service()
         self._config_manager = get_config_manager()
         self._blacklist_path = os.path.expanduser("~/.config/splitwire/blacklist.txt")
@@ -121,7 +122,8 @@ class GoodbyeDPIPage(BasePage):
         # Use blacklist switch
         self._switch_blacklist = self.create_switch_row(
             title=get_text("goodbyedpi", "use_blacklist") or "Blacklist kullan",
-            subtitle=get_text("tooltips", "goodbyedpi_use_blacklist") or "Sadece belirli domainlere uygula",
+            subtitle=get_text("tooltips", "goodbyedpi_use_blacklist")
+            or "Sadece belirli domainlere uygula",
             active=False,
             callback=self._on_blacklist_toggled,
         )
@@ -188,7 +190,8 @@ class GoodbyeDPIPage(BasePage):
         # Run once button
         self._btn_once = Gtk.Button(
             label=get_text("goodbyedpi", "run_once") or "Tek Seferlik",
-            tooltip_text=get_text("tooltips", "goodbyedpi_once") or "Sadece bu oturum için çalıştır",
+            tooltip_text=get_text("tooltips", "goodbyedpi_once")
+            or "Sadece bu oturum için çalıştır",
         )
         self._btn_once.connect("clicked", self._on_run_once)
         buttons_box.append(self._btn_once)
@@ -240,7 +243,7 @@ class GoodbyeDPIPage(BasePage):
         """Load blacklist from file."""
         try:
             if os.path.exists(self._blacklist_path):
-                with open(self._blacklist_path, 'r') as f:
+                with open(self._blacklist_path, "r") as f:
                     content = f.read()
                     buffer = self._txt_blacklist.get_buffer()
                     buffer.set_text(content)
@@ -263,7 +266,9 @@ discordcdn.com"""
 
     def refresh_translations(self):
         """Refresh UI translations."""
-        self._switch_blacklist.set_title(get_text("goodbyedpi", "use_blacklist") or "Blacklist kullan")
+        self._switch_blacklist.set_title(
+            get_text("goodbyedpi", "use_blacklist") or "Blacklist kullan"
+        )
         self._btn_service.set_label(get_text("goodbyedpi", "install_service") or "Hizmet Kur")
         self._btn_once.set_label(get_text("goodbyedpi", "run_once") or "Tek Seferlik")
         self._btn_remove.set_label(get_text("goodbyedpi", "remove") or "GoodbyeDPI'ı Kaldır")
@@ -296,7 +301,7 @@ discordcdn.com"""
             start, end = buffer.get_bounds()
             content = buffer.get_text(start, end, False)
 
-            with open(self._blacklist_path, 'w') as f:
+            with open(self._blacklist_path, "w") as f:
                 f.write(content)
 
             self._logger.info(f"[UI:GoodbyeDPI] Blacklist saved to {self._blacklist_path}")
@@ -327,10 +332,7 @@ discordcdn.com"""
             if not self._zapret_service.is_installed():
                 self._zapret_service.install()
 
-            self._zapret_service.configure(
-                mode=ZapretMode.NFQWS,
-                params=params
-            )
+            self._zapret_service.configure(mode=ZapretMode.NFQWS, params=params)
             self._zapret_service.start()
             return True
 
@@ -397,19 +399,20 @@ discordcdn.com"""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
             heading="GoodbyeDPI Yardım",
-            body="""GoodbyeDPI, Windows'ta WinDivert kullanır. Linux'ta bu işlev Zapret'in nfqws bileşeni tarafından sağlanır.
+            body="""GoodbyeDPI, Windows'ta WinDivert kullanir.
+Linux'ta bu islev Zapret'in nfqws bileseni tarafindan saglanir.
 
-Hazır Ayarlar:
-- Preset 1-6: Farklı DPI bypass stratejileri
+Hazir Ayarlar:
+- Preset 1-6: Farkli DPI paket isleme stratejileri
 
 Blacklist:
-- Sadece belirli domainlere bypass uygular
-- Her satıra bir domain yazın
+- Sadece belirli domainlere uygular
+- Her satira bir domain yazin
 
-Hizmet Kur: systemd servisi olarak çalıştırır
-Tek Seferlik: Sadece bu oturum için çalıştırır
+Hizmet Kur: systemd servisi olarak calistirir
+Tek Seferlik: Sadece bu oturum icin calistirir
 
-Not: Bu sayfa Zapret'in nfqws modunu kullanır.""",
+Not: Bu sayfa Zapret'in nfqws modunu kullanir.""",
         )
         dialog.add_response("ok", "Tamam")
         dialog.present()

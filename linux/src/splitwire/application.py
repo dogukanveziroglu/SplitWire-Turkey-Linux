@@ -1,13 +1,14 @@
 """
-SplitWire-Turkey GTK4/Libadwaita Application.
+SplitWire GTK4/Libadwaita Application.
 
 Main application class that initializes the GUI and manages
 the application lifecycle.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 from typing import Optional
@@ -28,8 +29,7 @@ class SplitWireApp(Adw.Application):
 
     def __init__(self):
         super().__init__(
-            application_id='com.splitwire.turkey',
-            flags=Gio.ApplicationFlags.DEFAULT_FLAGS
+            application_id="com.splitwire.turkey", flags=Gio.ApplicationFlags.DEFAULT_FLAGS
         )
 
         self.window: Optional[SplitWireWindow] = None
@@ -42,8 +42,8 @@ class SplitWireApp(Adw.Application):
         GLib.set_prgname("splitwire")
 
         # Connect signals
-        self.connect('activate', self.on_activate)
-        self.connect('shutdown', self.on_shutdown)
+        self.connect("activate", self.on_activate)
+        self.connect("shutdown", self.on_shutdown)
 
         # Setup actions
         self._setup_actions()
@@ -188,9 +188,7 @@ class SplitWireApp(Adw.Application):
         display = Gdk.Display.get_default()
         if display:
             Gtk.StyleContext.add_provider_for_display(
-                display,
-                css_provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
             )
 
     def on_activate(self, app):
@@ -235,9 +233,9 @@ class SplitWireApp(Adw.Application):
             developers=[
                 "Dogukan Veziroglu",
             ],
-            comments="Network restriction bypass tool for Linux.\n\n"
-                     "Provides WireGuard VPN, Zapret DPI bypass, ByeDPI proxy, "
-                     "and Discord repair tools."
+            comments="Manages network traffic routing with privacy-preserving configurations.\n\n"
+            "Provides WireGuard VPN, Zapret packet processing, ByeDPI proxy, "
+            "and Discord repair tools.",
         )
         about.present()
 
@@ -272,7 +270,12 @@ class SplitWireApp(Adw.Application):
         if self.window:
             self.window.refresh_translations()
 
-    def show_notification(self, title: str, body: str, priority: Gio.NotificationPriority = Gio.NotificationPriority.NORMAL):
+    def show_notification(
+        self,
+        title: str,
+        body: str,
+        priority: Gio.NotificationPriority = Gio.NotificationPriority.NORMAL,
+    ):
         """Show a desktop notification."""
         notification = Gio.Notification.new(title)
         notification.set_body(body)

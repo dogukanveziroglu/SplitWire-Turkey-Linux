@@ -1,5 +1,5 @@
 """
-SplitWire-Turkey UI Pages.
+SplitWire UI Pages.
 
 Contains all application pages:
 - MainPage: WireGuard/WireSock setup
@@ -8,14 +8,15 @@ Contains all application pages:
 - AdvancedPage: Advanced service management
 - SettingsPage: Application settings
 
-Disabled pages (don't work against Turkish ISP):
-- ZapretPage: Zapret DPI bypass
+Disabled pages:
+- ZapretPage: Zapret packet processing
 - GoodbyeDPIPage: GoodbyeDPI (nfqws on Linux)
 """
 
 from .main_page import MainPage
 from .byedpi_page import ByeDPIPage
-# Disabled - Zapret doesn't work against Turkish ISP deep packet inspection
+
+# Disabled
 # from .zapret_page import ZapretPage
 # from .goodbyedpi_page import GoodbyeDPIPage
 from .repair_page import RepairPage

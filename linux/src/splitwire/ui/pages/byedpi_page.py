@@ -5,8 +5,9 @@ Provides ByeDPI proxy setup with split tunneling support.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
 from typing import TYPE_CHECKING
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 class ByeDPIPage(BasePage):
     """ByeDPI proxy setup page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow"):
         self._byedpi_service = get_byedpi_service()
         self._proxy_service = get_proxy_route_service()
         super().__init__(window)
@@ -45,16 +46,15 @@ class ByeDPIPage(BasePage):
         self._update_status_indicator()
 
         # Setup group
-        setup_group = self.create_preferences_group(
-            title=get_text("byedpi", "setup") or "Kurulum"
-        )
+        setup_group = self.create_preferences_group(title=get_text("byedpi", "setup") or "Kurulum")
         self.append(setup_group)
 
         # Split tunneling setup button
         self._btn_split_setup = self.create_action_button(
             label=get_text("byedpi", "split_setup") or "ByeDPI Split Tunneling Kurulum",
             callback=self._on_split_setup,
-            tooltip=get_text("tooltips", "byedpi_split") or "ByeDPI ile uygulama bazlı DPI bypass",
+            tooltip=get_text("tooltips", "byedpi_split")
+            or "ByeDPI ile uygulama bazlı trafik yonlendirme",
             suggested=True,
         )
         setup_group.add(self._btn_split_setup)
@@ -68,7 +68,8 @@ class ByeDPIPage(BasePage):
         # Browser tunneling switch
         self._switch_browser = self.create_switch_row(
             title=get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap",
-            subtitle=get_text("tooltips", "byedpi_browser_tunneling") or "Chrome, Firefox vb. tarayıcıları dahil et",
+            subtitle=get_text("tooltips", "byedpi_browser_tunneling")
+            or "Chrome, Firefox vb. tarayıcıları dahil et",
             active=False,
             callback=self._on_browser_tunneling_changed,
         )
@@ -187,8 +188,12 @@ class ByeDPIPage(BasePage):
 
     def refresh_translations(self):
         """Refresh UI translations."""
-        self._btn_split_setup.set_label(get_text("byedpi", "split_setup") or "ByeDPI Split Tunneling Kurulum")
-        self._switch_browser.set_title(get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap")
+        self._btn_split_setup.set_label(
+            get_text("byedpi", "split_setup") or "ByeDPI Split Tunneling Kurulum"
+        )
+        self._switch_browser.set_title(
+            get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap"
+        )
         self._btn_remove.set_label(get_text("byedpi", "remove") or "ByeDPI'ı Kaldır")
 
     # Event handlers
@@ -212,8 +217,7 @@ class ByeDPIPage(BasePage):
             # Install and configure ByeDPI
             self._byedpi_service.install()
             self._byedpi_service.configure(
-                preset=preset_name,
-                custom_params=params if params else None
+                preset=preset_name, custom_params=params if params else None
             )
 
             # Configure proxy routing
@@ -242,7 +246,9 @@ class ByeDPIPage(BasePage):
         active = row.get_active()
         self._logger.info(f"[UI:ByeDPI] Browser tunneling changed: {active}")
         if active:
-            self._lbl_status.set_label(get_text("byedpi", "browser_enabled") or "Tarayıcılar dahil edilecek")
+            self._lbl_status.set_label(
+                get_text("byedpi", "browser_enabled") or "Tarayıcılar dahil edilecek"
+            )
         else:
             self._lbl_status.set_label("")
 
@@ -265,7 +271,8 @@ class ByeDPIPage(BasePage):
         dialog = Adw.MessageDialog(
             transient_for=self._window,
             heading=get_text("dialogs", "confirm_remove") or "Kaldır",
-            body=get_text("dialogs", "remove_byedpi_body") or "ByeDPI kaldırılacak. Devam etmek istiyor musunuz?",
+            body=get_text("dialogs", "remove_byedpi_body")
+            or "ByeDPI kaldırılacak. Devam etmek istiyor musunuz?",
         )
         dialog.add_response("cancel", get_text("buttons", "cancel") or "İptal")
         dialog.add_response("remove", get_text("buttons", "remove") or "Kaldır")
@@ -299,17 +306,18 @@ class ByeDPIPage(BasePage):
         dialog = Adw.MessageDialog(
             transient_for=self._window,
             heading=get_text("help", "byedpi_title") or "ByeDPI Yardım",
-            body=get_text("help", "byedpi_body") or """ByeDPI, DPI (Deep Packet Inspection) engellerini aşmak için SOCKS5 proxy kullanır.
+            body=get_text("help", "byedpi_body")
+            or """ByeDPI, trafik isleme icin SOCKS5 proxy kullanir.
 
-Split Tunneling: Sadece Discord ve seçilen uygulamalar proxy üzerinden geçer.
+Split Tunneling: Sadece Discord ve secilen uygulamalar proxy uzerinden gecer.
 
-Hazır Ayarlar: Farklı DPI bypass stratejileri sunar:
-- Disorder: Paket sırasını boz
-- Split: Paketleri böl
-- Fake: Sahte paketler gönder
+Hazir Ayarlar: Farkli trafik isleme stratejileri sunar:
+- Disorder: Paket sirasini boz
+- Split: Paketleri bol
+- Fake: Sahte paketler gonder
 - OOB: Out-of-band veri kullan
 
-Tarayıcılar için tünelleme aktifse tarayıcılar da proxy üzerinden geçer.""",
+Tarayicilar icin tunelleme aktifse tarayicilar da proxy uzerinden gecer.""",
         )
         dialog.add_response("ok", "Tamam")
         dialog.present()
