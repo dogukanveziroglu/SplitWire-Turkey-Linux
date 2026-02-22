@@ -1,5 +1,5 @@
 """
-Post-test recovery and verification for SplitWire-Turkey integration tests.
+Post-test recovery and verification for SplitWire integration tests.
 
 This module provides utilities for verifying system state after tests
 and performing recovery operations if needed.
@@ -17,6 +17,7 @@ from .pre_test import NetworkBaseline, PreTestChecklist, verify_baseline
 
 class RecoveryStatus(Enum):
     """Status of recovery operation."""
+
     SUCCESS = "success"
     PARTIAL = "partial"
     FAILED = "failed"
@@ -26,6 +27,7 @@ class RecoveryStatus(Enum):
 @dataclass
 class RecoveryResult:
     """Result of a recovery operation."""
+
     status: RecoveryStatus
     connectivity_restored: bool
     differences_found: List[str]
@@ -73,10 +75,10 @@ class PostTestRecovery:
 
         # Determine if recovery is needed
         needs_recovery = (
-            force_cleanup or
-            not connectivity or
-            len(differences) > 0 or
-            len(self._checklist.get_issues()) > 0
+            force_cleanup
+            or not connectivity
+            or len(differences) > 0
+            or len(self._checklist.get_issues()) > 0
         )
 
         if not needs_recovery:
@@ -85,12 +87,12 @@ class PostTestRecovery:
                 connectivity_restored=True,
                 differences_found=[],
                 actions_taken=[],
-                errors=[]
+                errors=[],
             )
 
         # Perform recovery
         if self._cleanup_processes():
-            actions.append("Killed bypass processes")
+            actions.append("Stopped service processes")
 
         if self._cleanup_iptables():
             actions.append("Cleaned iptables rules")
@@ -113,7 +115,7 @@ class PostTestRecovery:
                 connectivity_restored=True,
                 differences_found=differences,
                 actions_taken=actions,
-                errors=errors
+                errors=errors,
             )
         else:
             errors.append("Connectivity not restored after cleanup")
@@ -122,7 +124,7 @@ class PostTestRecovery:
                 connectivity_restored=False,
                 differences_found=differences,
                 actions_taken=actions,
-                errors=errors
+                errors=errors,
             )
 
     def verify_only(self) -> Dict[str, bool]:
@@ -134,7 +136,7 @@ class PostTestRecovery:
         """
         return {
             "connectivity": self._check_connectivity(),
-            "no_bypass_processes": self._verify_no_bypass_processes(),
+            "no_service_processes": self._verify_no_service_processes(),
             "iptables_clean": self._verify_iptables_clean(),
             "wireguard_stopped": self._verify_wireguard_stopped(),
             "dns_restored": self._verify_dns_restored(),
@@ -156,16 +158,12 @@ class PostTestRecovery:
 
         return False
 
-    def _verify_no_bypass_processes(self) -> bool:
-        """Verify no bypass processes are running."""
+    def _verify_no_service_processes(self) -> bool:
+        """Verify no managed service processes are running."""
         processes = ["nfqws", "tpws", "ciadpi"]
 
         for proc in processes:
-            result = subprocess.run(
-                ["pgrep", "-x", proc],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["pgrep", "-x", proc], capture_output=True, text=True)
             if result.returncode == 0:
                 return False
 
@@ -177,7 +175,7 @@ class PostTestRecovery:
         result = subprocess.run(
             ["sudo", "iptables", "-t", "mangle", "-L", "POSTROUTING", "-n"],
             capture_output=True,
-            text=True
+            text=True,
         )
         if result.returncode == 0:
             if "NFQUEUE" in result.stdout:
@@ -185,9 +183,7 @@ class PostTestRecovery:
 
         # Check nat OUTPUT for REDIRECT
         result = subprocess.run(
-            ["sudo", "iptables", "-t", "nat", "-L", "OUTPUT", "-n"],
-            capture_output=True,
-            text=True
+            ["sudo", "iptables", "-t", "nat", "-L", "OUTPUT", "-n"], capture_output=True, text=True
         )
         if result.returncode == 0:
             if "REDIRECT" in result.stdout:
@@ -197,11 +193,7 @@ class PostTestRecovery:
 
     def _verify_wireguard_stopped(self) -> bool:
         """Verify WireGuard interface is down."""
-        result = subprocess.run(
-            ["ip", "link", "show", "splitwire"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["ip", "link", "show", "splitwire"], capture_output=True, text=True)
         return result.returncode != 0
 
     def _verify_dns_restored(self) -> bool:
@@ -209,20 +201,18 @@ class PostTestRecovery:
         config_path = "/etc/systemd/resolved.conf.d/splitwire.conf"
         try:
             from pathlib import Path
+
             return not Path(config_path).exists()
         except Exception:
             return True
 
     def _cleanup_processes(self) -> bool:
-        """Kill bypass processes."""
+        """Stop managed service processes."""
         processes = ["nfqws", "tpws", "ciadpi"]
         killed_any = False
 
         for proc in processes:
-            result = subprocess.run(
-                ["sudo", "pkill", "-9", proc],
-                capture_output=True
-            )
+            result = subprocess.run(["sudo", "pkill", "-9", proc], capture_output=True)
             if result.returncode == 0:
                 killed_any = True
 
@@ -234,16 +224,14 @@ class PostTestRecovery:
 
         # Flush mangle POSTROUTING
         result = subprocess.run(
-            ["sudo", "iptables", "-t", "mangle", "-F", "POSTROUTING"],
-            capture_output=True
+            ["sudo", "iptables", "-t", "mangle", "-F", "POSTROUTING"], capture_output=True
         )
         if result.returncode == 0:
             cleaned = True
 
         # Flush nat OUTPUT
         result = subprocess.run(
-            ["sudo", "iptables", "-t", "nat", "-F", "OUTPUT"],
-            capture_output=True
+            ["sudo", "iptables", "-t", "nat", "-F", "OUTPUT"], capture_output=True
         )
         if result.returncode == 0:
             cleaned = True
@@ -253,18 +241,12 @@ class PostTestRecovery:
     def _cleanup_wireguard(self) -> bool:
         """Stop WireGuard interface."""
         # Try wg-quick down
-        result = subprocess.run(
-            ["sudo", "wg-quick", "down", "splitwire"],
-            capture_output=True
-        )
+        result = subprocess.run(["sudo", "wg-quick", "down", "splitwire"], capture_output=True)
         if result.returncode == 0:
             return True
 
         # Try ip link delete
-        result = subprocess.run(
-            ["sudo", "ip", "link", "delete", "splitwire"],
-            capture_output=True
-        )
+        result = subprocess.run(["sudo", "ip", "link", "delete", "splitwire"], capture_output=True)
 
         return result.returncode == 0
 
@@ -276,17 +258,13 @@ class PostTestRecovery:
         cleaned = False
 
         if config_path.exists():
-            result = subprocess.run(
-                ["sudo", "rm", "-f", str(config_path)],
-                capture_output=True
-            )
+            result = subprocess.run(["sudo", "rm", "-f", str(config_path)], capture_output=True)
             if result.returncode == 0:
                 cleaned = True
 
         # Restart systemd-resolved
         result = subprocess.run(
-            ["sudo", "systemctl", "restart", "systemd-resolved"],
-            capture_output=True
+            ["sudo", "systemctl", "restart", "systemd-resolved"], capture_output=True
         )
 
         return cleaned or result.returncode == 0
@@ -304,9 +282,7 @@ def assert_clean_state() -> None:
 
     failures = [key for key, value in results.items() if not value]
     if failures:
-        raise AssertionError(
-            f"System not in clean state. Failed checks: {failures}"
-        )
+        raise AssertionError(f"System not in clean state. Failed checks: {failures}")
 
 
 def assert_connectivity() -> None:

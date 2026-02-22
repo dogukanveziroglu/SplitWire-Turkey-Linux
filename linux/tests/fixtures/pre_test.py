@@ -1,5 +1,5 @@
 """
-Pre-test checklist and baseline capture for SplitWire-Turkey integration tests.
+Pre-test checklist and baseline capture for SplitWire integration tests.
 
 This module provides utilities for capturing the system state before
 running risky network tests, enabling proper restoration on failure.
@@ -17,6 +17,7 @@ from datetime import datetime
 @dataclass
 class NetworkBaseline:
     """Captured network baseline state."""
+
     timestamp: datetime
     interfaces: List[str]
     routing_table: str
@@ -138,6 +139,7 @@ class PreTestChecklist:
     def _check_root(self) -> None:
         """Check for root privileges."""
         import os
+
         if os.geteuid() != 0:
             self.issues.append("Tests require root privileges (run with sudo)")
 
@@ -158,31 +160,22 @@ class PreTestChecklist:
                 continue
 
         if not connected:
-            self.issues.append(
-                "No network connectivity - cannot proceed with tests"
-            )
+            self.issues.append("No network connectivity - cannot proceed with tests")
 
     def _check_processes(self) -> None:
         """Check for conflicting processes."""
         for process in self.CONFLICT_PROCESSES:
-            result = subprocess.run(
-                ["pgrep", "-x", process],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["pgrep", "-x", process], capture_output=True, text=True)
             if result.returncode == 0:
                 self.issues.append(
-                    f"Conflicting process '{process}' is running. "
-                    f"Run emergency_restore.sh first."
+                    f"Conflicting process '{process}' is running. Run emergency_restore.sh first."
                 )
 
     def _check_iptables(self) -> None:
         """Check iptables for leftover rules."""
         for table, chain in self.EXPECTED_EMPTY_CHAINS:
             result = subprocess.run(
-                ["sudo", "iptables", "-t", table, "-L", chain, "-n"],
-                capture_output=True,
-                text=True
+                ["sudo", "iptables", "-t", table, "-L", chain, "-n"], capture_output=True, text=True
             )
             if result.returncode == 0:
                 # Check if chain has non-default rules
@@ -197,32 +190,21 @@ class PreTestChecklist:
 
     def _check_wireguard(self) -> None:
         """Check for existing WireGuard interfaces."""
-        result = subprocess.run(
-            ["ip", "link", "show", "splitwire"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["ip", "link", "show", "splitwire"], capture_output=True, text=True)
         if result.returncode == 0:
             self.issues.append(
-                "WireGuard interface 'splitwire' exists. "
-                "Run emergency_restore.sh first."
+                "WireGuard interface 'splitwire' exists. Run emergency_restore.sh first."
             )
 
     def _check_dns(self) -> None:
         """Check for SplitWire DNS configuration."""
         dns_config = Path("/etc/systemd/resolved.conf.d/splitwire.conf")
         if dns_config.exists():
-            self.issues.append(
-                "SplitWire DNS config exists. Run emergency_restore.sh first."
-            )
+            self.issues.append("SplitWire DNS config exists. Run emergency_restore.sh first.")
 
     def _get_interfaces(self) -> List[str]:
         """Get list of network interfaces."""
-        result = subprocess.run(
-            ["ip", "-o", "link", "show"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["ip", "-o", "link", "show"], capture_output=True, text=True)
         if result.returncode != 0:
             return []
 
@@ -236,19 +218,13 @@ class PreTestChecklist:
 
     def _get_routing_table(self) -> str:
         """Get current routing table."""
-        result = subprocess.run(
-            ["ip", "route", "show"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["ip", "route", "show"], capture_output=True, text=True)
         return result.stdout if result.returncode == 0 else ""
 
     def _get_iptables(self, table: str) -> str:
         """Get iptables rules for specified table."""
         result = subprocess.run(
-            ["sudo", "iptables", "-t", table, "-L", "-n", "-v"],
-            capture_output=True,
-            text=True
+            ["sudo", "iptables", "-t", table, "-L", "-n", "-v"], capture_output=True, text=True
         )
         return result.stdout if result.returncode == 0 else ""
 
@@ -257,16 +233,13 @@ class PreTestChecklist:
         servers = []
 
         # Try resolvectl first
-        result = subprocess.run(
-            ["resolvectl", "status"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["resolvectl", "status"], capture_output=True, text=True)
         if result.returncode == 0:
             import re
+
             for line in result.stdout.split("\n"):
                 if "DNS Servers:" in line or "Current DNS Server:" in line:
-                    ips = re.findall(r'\d+\.\d+\.\d+\.\d+', line)
+                    ips = re.findall(r"\d+\.\d+\.\d+\.\d+", line)
                     servers.extend(ips)
 
         # Fallback to resolv.conf
@@ -294,11 +267,7 @@ class PreTestChecklist:
         check_list = self.CONFLICT_PROCESSES + ["wireguard", "wg-quick"]
 
         for proc in check_list:
-            result = subprocess.run(
-                ["pgrep", "-a", proc],
-                capture_output=True,
-                text=True
-            )
+            result = subprocess.run(["pgrep", "-a", proc], capture_output=True, text=True)
             if result.returncode == 0:
                 processes.append(result.stdout.strip())
 
@@ -326,11 +295,7 @@ class PreTestChecklist:
 
     def _get_wireguard_interfaces(self) -> List[str]:
         """Get list of WireGuard interfaces."""
-        result = subprocess.run(
-            ["wg", "show", "interfaces"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["wg", "show", "interfaces"], capture_output=True, text=True)
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip().split()
         return []
@@ -369,9 +334,7 @@ def verify_baseline(current: NetworkBaseline, original: NetworkBaseline) -> List
 
     # Check DNS
     if set(current.dns_servers) != set(original.dns_servers):
-        differences.append(
-            f"DNS servers changed: {original.dns_servers} -> {current.dns_servers}"
-        )
+        differences.append(f"DNS servers changed: {original.dns_servers} -> {current.dns_servers}")
 
     # Check connectivity
     for host, was_connected in original.connectivity_hosts.items():
@@ -382,6 +345,6 @@ def verify_baseline(current: NetworkBaseline, original: NetworkBaseline) -> List
     # Check running processes
     new_procs = set(current.running_processes) - set(original.running_processes)
     if new_procs:
-        differences.append(f"New bypass processes: {new_procs}")
+        differences.append(f"New service processes: {new_procs}")
 
     return differences

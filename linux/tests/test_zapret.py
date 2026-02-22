@@ -1,5 +1,5 @@
 """
-Tests for the Zapret DPI bypass service module.
+Tests for the Zapret packet processing service module.
 """
 
 import json
@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock, PropertyMock
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from splitwire.services.zapret import (
@@ -72,7 +73,7 @@ class TestZapretConfig:
         config = ZapretConfig()
         assert config.enabled is False
         assert config.mode == ZapretMode.NFQWS
-        assert config.preset_name == "turkey_discord"
+        assert config.preset_name == "discord"
         assert config.use_blacklist is False
         assert 80 in config.http_ports
         assert 443 in config.https_ports
@@ -100,18 +101,18 @@ class TestDefaultPresets:
         assert isinstance(DEFAULT_PRESETS, dict)
         assert len(DEFAULT_PRESETS) >= 5  # At least 5 presets
 
-    def test_turkey_discord_preset(self):
-        """Test Turkey Discord preset exists and has args."""
-        assert "turkey_discord" in DEFAULT_PRESETS
-        preset = DEFAULT_PRESETS["turkey_discord"]
-        assert preset.name == "Türkiye Discord"
+    def test_discord_preset(self):
+        """Test Discord preset exists and has args."""
+        assert "discord" in DEFAULT_PRESETS
+        preset = DEFAULT_PRESETS["discord"]
+        assert preset.name == "Discord"
         assert "dpi-desync" in preset.nfqws_args
         assert preset.mode == ZapretMode.NFQWS
 
-    def test_turkey_general_preset(self):
-        """Test Turkey General preset."""
-        assert "turkey_general" in DEFAULT_PRESETS
-        preset = DEFAULT_PRESETS["turkey_general"]
+    def test_general_preset(self):
+        """Test General preset."""
+        assert "general" in DEFAULT_PRESETS
+        preset = DEFAULT_PRESETS["general"]
         assert preset.mode == ZapretMode.NFQWS
 
     def test_tpws_preset_exists(self):
@@ -128,52 +129,52 @@ class TestZapretService:
     @pytest.fixture
     def service(self):
         """Create a Zapret service instance."""
-        with patch('splitwire.services.zapret.get_logger') as mock_logger:
+        with patch("splitwire.services.zapret.get_logger") as mock_logger:
             mock_logger.return_value = MagicMock()
-            with patch('splitwire.services.zapret.get_shell') as mock_shell:
+            with patch("splitwire.services.zapret.get_shell") as mock_shell:
                 mock_shell.return_value = MagicMock()
-                with patch('splitwire.services.zapret.LOCAL_CONFIG_DIR', Path(tempfile.mkdtemp())):
+                with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tempfile.mkdtemp())):
                     service = ZapretService()
                     return service
 
     def test_service_properties(self, service):
         """Test service properties."""
         assert service.name == "zapret"
-        assert service.display_name == "Zapret DPI Bypass"
-        assert service.service_type == ServiceType.DPI_BYPASS
+        assert service.display_name == "Zapret"
+        assert service.service_type == ServiceType.PACKET_PROCESSING
 
     def test_not_installed_initially(self, service):
         """Test service is not installed by default."""
-        with patch.object(Path, 'exists', return_value=False):
+        with patch.object(Path, "exists", return_value=False):
             assert not service.is_installed()
 
     def test_status_not_installed(self, service):
         """Test status when not installed."""
-        with patch.object(service, 'is_installed', return_value=False):
+        with patch.object(service, "is_installed", return_value=False):
             assert service.status() == ServiceStatus.NOT_INSTALLED
 
     def test_get_presets(self, service):
         """Test getting presets."""
         presets = service.get_presets()
-        assert "turkey_discord" in presets
-        assert "turkey_general" in presets
-        assert isinstance(presets["turkey_discord"], ZapretPreset)
+        assert "discord" in presets
+        assert "general" in presets
+        assert isinstance(presets["discord"], ZapretPreset)
 
     def test_get_preset(self, service):
         """Test getting specific preset."""
-        preset = service.get_preset("turkey_discord")
+        preset = service.get_preset("discord")
         assert preset is not None
-        assert preset.name == "Türkiye Discord"
+        assert preset.name == "Discord"
 
         # Non-existent preset
         assert service.get_preset("nonexistent") is None
 
     def test_set_preset(self, service):
         """Test setting active preset."""
-        assert service._config.preset_name == "turkey_discord"
-        result = service.set_preset("turkey_general")
+        assert service._config.preset_name == "discord"
+        result = service.set_preset("general")
         assert result is True
-        assert service._config.preset_name == "turkey_general"
+        assert service._config.preset_name == "general"
 
         # Invalid preset
         result = service.set_preset("nonexistent")
@@ -208,7 +209,7 @@ class TestZapretService:
         assert "to_remove" not in service.get_presets()
 
         # Cannot remove built-in
-        result = service.remove_custom_preset("turkey_discord")
+        result = service.remove_custom_preset("discord")
         assert result is False
 
 
@@ -219,12 +220,15 @@ class TestZapretBlacklist:
     def service(self):
         """Create a Zapret service with temp config dir."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('splitwire.services.zapret.get_logger') as mock_logger:
+            with patch("splitwire.services.zapret.get_logger") as mock_logger:
                 mock_logger.return_value = MagicMock()
-                with patch('splitwire.services.zapret.get_shell') as mock_shell:
+                with patch("splitwire.services.zapret.get_shell") as mock_shell:
                     mock_shell.return_value = MagicMock()
-                    with patch('splitwire.services.zapret.LOCAL_CONFIG_DIR', Path(tmpdir)):
-                        with patch('splitwire.services.zapret.BLACKLIST_FILE', Path(tmpdir) / "blacklist.txt"):
+                    with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tmpdir)):
+                        with patch(
+                            "splitwire.services.zapret.BLACKLIST_FILE",
+                            Path(tmpdir) / "blacklist.txt",
+                        ):
                             service = ZapretService()
                             yield service
 
@@ -271,17 +275,17 @@ class TestZapretNfqwsArgs:
     @pytest.fixture
     def service(self):
         """Create a Zapret service instance."""
-        with patch('splitwire.services.zapret.get_logger') as mock_logger:
+        with patch("splitwire.services.zapret.get_logger") as mock_logger:
             mock_logger.return_value = MagicMock()
-            with patch('splitwire.services.zapret.get_shell') as mock_shell:
+            with patch("splitwire.services.zapret.get_shell") as mock_shell:
                 mock_shell.return_value = MagicMock()
-                with patch('splitwire.services.zapret.LOCAL_CONFIG_DIR', Path(tempfile.mkdtemp())):
+                with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tempfile.mkdtemp())):
                     service = ZapretService()
                     return service
 
     def test_build_nfqws_args_with_preset(self, service):
         """Test building nfqws args from preset."""
-        preset = DEFAULT_PRESETS["turkey_discord"]
+        preset = DEFAULT_PRESETS["discord"]
         args = service._build_nfqws_args(preset)
 
         assert "--qnum" in args
@@ -303,11 +307,11 @@ class TestZapretTpwsArgs:
     @pytest.fixture
     def service(self):
         """Create a Zapret service instance."""
-        with patch('splitwire.services.zapret.get_logger') as mock_logger:
+        with patch("splitwire.services.zapret.get_logger") as mock_logger:
             mock_logger.return_value = MagicMock()
-            with patch('splitwire.services.zapret.get_shell') as mock_shell:
+            with patch("splitwire.services.zapret.get_shell") as mock_shell:
                 mock_shell.return_value = MagicMock()
-                with patch('splitwire.services.zapret.LOCAL_CONFIG_DIR', Path(tempfile.mkdtemp())):
+                with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tempfile.mkdtemp())):
                     service = ZapretService()
                     return service
 
@@ -337,21 +341,21 @@ class TestZapretConfig:
         with tempfile.TemporaryDirectory() as tmpdir:
             config_file = Path(tmpdir) / "custom.json"
 
-            with patch('splitwire.services.zapret.get_logger') as mock_logger:
+            with patch("splitwire.services.zapret.get_logger") as mock_logger:
                 mock_logger.return_value = MagicMock()
-                with patch('splitwire.services.zapret.get_shell') as mock_shell:
+                with patch("splitwire.services.zapret.get_shell") as mock_shell:
                     mock_shell.return_value = MagicMock()
-                    with patch('splitwire.services.zapret.LOCAL_CONFIG_DIR', Path(tmpdir)):
-                        with patch('splitwire.services.zapret.CUSTOM_CONFIG_FILE', config_file):
+                    with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tmpdir)):
+                        with patch("splitwire.services.zapret.CUSTOM_CONFIG_FILE", config_file):
                             # Create service and modify config
                             service = ZapretService()
-                            service._config.preset_name = "turkey_general"
+                            service._config.preset_name = "general"
                             service._config.use_blacklist = True
                             service._save_config()
 
                             # Create new service and verify loaded
                             service2 = ZapretService()
-                            assert service2._config.preset_name == "turkey_general"
+                            assert service2._config.preset_name == "general"
                             assert service2._config.use_blacklist is True
 
 
@@ -361,6 +365,7 @@ class TestZapretServiceIntegration:
     def test_get_zapret_service_singleton(self):
         """Test that get_zapret_service returns singleton."""
         import splitwire.services.zapret as zapret_module
+
         zapret_module._zapret_service = None
 
         service1 = get_zapret_service()

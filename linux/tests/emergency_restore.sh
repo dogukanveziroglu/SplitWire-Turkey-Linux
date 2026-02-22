@@ -57,7 +57,7 @@ run_cmd() {
     fi
 }
 
-echo "Phase 1: Killing bypass processes"
+echo "Phase 1: Stopping service processes"
 echo "-------------------------------------------"
 run_cmd "Killing nfqws" pkill -9 nfqws
 run_cmd "Killing tpws" pkill -9 tpws

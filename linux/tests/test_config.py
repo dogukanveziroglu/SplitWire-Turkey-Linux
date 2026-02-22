@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from splitwire.core.config import (
@@ -102,7 +103,7 @@ class TestZapretConfig:
         config = ZapretConfig()
         assert config.enabled is False
         assert config.mode == "nfqws"
-        assert config.preset == "turkey_discord"
+        assert config.strategy == "default"
 
     def test_custom_args(self):
         """Test Zapret with custom arguments."""
@@ -144,7 +145,7 @@ class TestConfigManager:
     @pytest.fixture
     def config_manager(self, temp_config_dir):
         """Create a ConfigManager with temporary directory."""
-        with patch.object(ConfigManager, '_get_config_dir', return_value=temp_config_dir):
+        with patch.object(ConfigManager, "_get_config_dir", return_value=temp_config_dir):
             manager = ConfigManager.__new__(ConfigManager)
             manager._config_dir = temp_config_dir
             manager._config_file = temp_config_dir / "config.json"
@@ -154,7 +155,7 @@ class TestConfigManager:
     def test_config_dir_creation(self, temp_config_dir):
         """Test that config directory is created."""
         config_dir = temp_config_dir / "splitwire"
-        with patch.object(ConfigManager, '_get_config_dir', return_value=config_dir):
+        with patch.object(ConfigManager, "_get_config_dir", return_value=config_dir):
             manager = ConfigManager.__new__(ConfigManager)
             manager._config_dir = config_dir
             manager._config_dir.mkdir(parents=True, exist_ok=True)

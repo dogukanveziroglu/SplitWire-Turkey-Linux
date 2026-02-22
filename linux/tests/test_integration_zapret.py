@@ -57,6 +57,7 @@ TPWS_PROCESS = "tpws"
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture(autouse=True)
 def ensure_clean_state_zapret():
     """
@@ -123,6 +124,7 @@ def zapret_baseline():
 # Phase 7: Zapret Integration Tests
 # =============================================================================
 
+
 class TestZapretIntegration:
     """
     Zapret integration tests with STRICT kill switch protection.
@@ -143,7 +145,7 @@ class TestZapretIntegration:
             ServiceStatus.STOPPED,
             ServiceStatus.NOT_INSTALLED,
             ServiceStatus.FAILED,
-            ServiceStatus.UNKNOWN
+            ServiceStatus.UNKNOWN,
         ]
 
     @pytest.mark.phase7
@@ -163,21 +165,18 @@ class TestZapretIntegration:
         presets = zapret_service.get_presets()
         assert len(presets) > 0, "No Zapret presets available"
 
-        # Should have at least a Turkey Discord preset
+        # Should have at least a Discord preset
         preset_names = list(presets.keys())
-        assert any("turkey" in name.lower() or "discord" in name.lower()
-                   for name in preset_names), \
-            "No Turkey/Discord preset found"
+        assert any(
+            "discord" in name.lower() for name in preset_names
+        ), "No Discord preset found"
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
     @pytest.mark.requires_internet
     @pytest.mark.slow
     def test_zapret_start_stop_safe_preset(
-        self,
-        zapret_service,
-        kill_switch_strict,
-        zapret_baseline
+        self, zapret_service, kill_switch_strict, zapret_baseline
     ):
         """
         Test Zapret start and stop with safest preset.
@@ -187,11 +186,11 @@ class TestZapretIntegration:
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
 
-        # Find safest preset (prefer turkey_discord or similar targeted preset)
+        # Find safest preset (prefer discord or similar targeted preset)
         presets = zapret_service.get_presets()
         safe_preset = None
 
-        for name in ["turkey_discord", "discord", "turkey"]:
+        for name in ["discord", "general"]:
             if name in presets:
                 safe_preset = name
                 break
@@ -212,8 +211,9 @@ class TestZapretIntegration:
 
             # IMMEDIATELY check connectivity (within 0.5s)
             time.sleep(0.5)
-            assert tcp_connect_test("8.8.8.8", 53, timeout=3), \
+            assert tcp_connect_test("8.8.8.8", 53, timeout=3), (
                 "CRITICAL: Lost connectivity immediately after Zapret start!"
+            )
 
             # Wait a bit more
             time.sleep(2)
@@ -252,10 +252,7 @@ class TestZapretIntegration:
     @pytest.mark.requires_internet
     @pytest.mark.slow
     def test_zapret_iptables_rules_correct(
-        self,
-        zapret_service,
-        kill_switch_strict,
-        zapret_baseline
+        self, zapret_service, kill_switch_strict, zapret_baseline
     ):
         """Test that Zapret adds correct iptables rules."""
         if not zapret_service.is_installed():
@@ -275,8 +272,7 @@ class TestZapretIntegration:
             assert "POSTROUTING" in mangle_rules, "POSTROUTING chain not found"
 
             # Check for correct ports (443 for HTTPS)
-            assert "443" in mangle_rules or "dpt:443" in mangle_rules, \
-                "Port 443 rule not found"
+            assert "443" in mangle_rules or "dpt:443" in mangle_rules, "Port 443 rule not found"
 
         finally:
             zapret_service.stop()
@@ -285,11 +281,7 @@ class TestZapretIntegration:
     @pytest.mark.phase7
     @pytest.mark.requires_root
     @pytest.mark.requires_internet
-    def test_zapret_multiple_start_safe(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_zapret_multiple_start_safe(self, zapret_service, kill_switch_strict):
         """Test that multiple starts don't create duplicate rules."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -310,8 +302,9 @@ class TestZapretIntegration:
             second_nfqueue_count = second_rules.count("NFQUEUE")
 
             # Should not have more rules
-            assert second_nfqueue_count <= first_nfqueue_count * 2, \
+            assert second_nfqueue_count <= first_nfqueue_count * 2, (
                 "Duplicate NFQUEUE rules created"
+            )
 
         finally:
             zapret_service.stop()
@@ -320,11 +313,7 @@ class TestZapretIntegration:
     @pytest.mark.phase7
     @pytest.mark.requires_root
     @pytest.mark.requires_internet
-    def test_zapret_connectivity_during_operation(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_zapret_connectivity_during_operation(self, zapret_service, kill_switch_strict):
         """Test connectivity is maintained while Zapret is running."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -339,11 +328,13 @@ class TestZapretIntegration:
             # Check multiple times during operation
             for i in range(5):
                 time.sleep(1)
-                assert tcp_connect_test("8.8.8.8", 53, timeout=3), \
-                    f"Lost connectivity at check {i+1}"
+                assert tcp_connect_test("8.8.8.8", 53, timeout=3), (
+                    f"Lost connectivity at check {i + 1}"
+                )
 
             # DNS should work
             from helpers import dns_lookup
+
             ips = dns_lookup("google.com")
             assert len(ips) > 0, "DNS resolution failed during Zapret"
 
@@ -356,6 +347,7 @@ class TestZapretIntegration:
 # Kill Switch Strict Behavior Tests
 # =============================================================================
 
+
 class TestZapretKillSwitchBehavior:
     """Test strict kill switch behavior during Zapret operations."""
 
@@ -364,24 +356,19 @@ class TestZapretKillSwitchBehavior:
     def test_strict_kill_switch_config(self, kill_switch_strict):
         """Test strict kill switch has appropriate settings."""
         # Timeout should be short
-        assert kill_switch_strict.config.timeout <= 45, \
-            "Zapret kill switch timeout too long"
+        assert kill_switch_strict.config.timeout <= 45, "Zapret kill switch timeout too long"
 
         # Threshold should be very short
-        assert kill_switch_strict.config.threshold <= 5, \
-            "Zapret kill switch threshold too long"
+        assert kill_switch_strict.config.threshold <= 5, "Zapret kill switch threshold too long"
 
         # Check interval should be fast
-        assert kill_switch_strict.config.check_interval <= 1.0, \
+        assert kill_switch_strict.config.check_interval <= 1.0, (
             "Zapret kill switch check interval too slow"
+        )
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
-    def test_kill_switch_not_triggered_on_success(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_kill_switch_not_triggered_on_success(self, zapret_service, kill_switch_strict):
         """Test kill switch isn't triggered during successful operation."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -390,25 +377,21 @@ class TestZapretKillSwitchBehavior:
             zapret_service.start()
             time.sleep(3)
 
-            assert not kill_switch_strict.was_triggered, \
+            assert not kill_switch_strict.was_triggered, (
                 "Kill switch triggered during successful Zapret operation"
+            )
 
             zapret_service.stop()
             time.sleep(1)
 
-            assert not kill_switch_strict.was_triggered, \
-                "Kill switch triggered during Zapret stop"
+            assert not kill_switch_strict.was_triggered, "Kill switch triggered during Zapret stop"
 
         finally:
             force_cleanup_zapret()
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
-    def test_kill_switch_monitors_connectivity(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_kill_switch_monitors_connectivity(self, zapret_service, kill_switch_strict):
         """Test kill switch continuously monitors during Zapret."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -431,16 +414,13 @@ class TestZapretKillSwitchBehavior:
 # Zapret Rule Cleanup Tests
 # =============================================================================
 
+
 class TestZapretCleanup:
     """Test Zapret cleanup procedures."""
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
-    def test_zapret_rules_removed_on_stop(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_zapret_rules_removed_on_stop(self, zapret_service, kill_switch_strict):
         """Test iptables rules are properly removed on stop."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -465,11 +445,7 @@ class TestZapretCleanup:
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
-    def test_zapret_process_killed_on_stop(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_zapret_process_killed_on_stop(self, zapret_service, kill_switch_strict):
         """Test nfqws process is killed on stop."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -505,11 +481,7 @@ class TestZapretCleanup:
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
-    def test_cleanup_after_simulated_crash(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_cleanup_after_simulated_crash(self, zapret_service, kill_switch_strict):
         """Test cleanup after simulated crash."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -541,16 +513,13 @@ class TestZapretCleanup:
 # Error Handling Tests
 # =============================================================================
 
+
 class TestZapretErrorHandling:
     """Test Zapret error handling."""
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
-    def test_zapret_stop_without_start(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_zapret_stop_without_start(self, zapret_service, kill_switch_strict):
         """Test stopping Zapret that wasn't started."""
         # Should not crash
         result = zapret_service.stop()
@@ -561,16 +530,14 @@ class TestZapretErrorHandling:
 
     @pytest.mark.phase7
     @pytest.mark.requires_root
-    def test_zapret_handles_missing_binary(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_zapret_handles_missing_binary(self, zapret_service, kill_switch_strict):
         """Test Zapret handles missing binary gracefully."""
         from splitwire.services.zapret import NFQWS_BINARY
 
-        binary_path = Path(NFQWS_BINARY) if hasattr(NFQWS_BINARY, '__fspath__') else Path(str(NFQWS_BINARY))
-        backup_path = binary_path.with_suffix('.bak')
+        binary_path = (
+            Path(NFQWS_BINARY) if hasattr(NFQWS_BINARY, "__fspath__") else Path(str(NFQWS_BINARY))
+        )
+        backup_path = binary_path.with_suffix(".bak")
 
         try:
             if binary_path.exists():
@@ -591,11 +558,7 @@ class TestZapretErrorHandling:
     @pytest.mark.phase7
     @pytest.mark.requires_root
     @pytest.mark.slow
-    def test_zapret_restart_cycle(
-        self,
-        zapret_service,
-        kill_switch_strict
-    ):
+    def test_zapret_restart_cycle(self, zapret_service, kill_switch_strict):
         """Test multiple start/stop cycles."""
         if not zapret_service.is_installed():
             pytest.skip("Zapret not installed")
@@ -604,19 +567,19 @@ class TestZapretErrorHandling:
             for i in range(3):
                 # Start
                 result = zapret_service.start()
-                assert result, f"Start failed on cycle {i+1}"
+                assert result, f"Start failed on cycle {i + 1}"
 
                 time.sleep(1)
-                assert has_nfqueue_rules(), f"Rules not created on cycle {i+1}"
-                assert tcp_connect_test("8.8.8.8", 53), f"Lost connectivity on cycle {i+1}"
+                assert has_nfqueue_rules(), f"Rules not created on cycle {i + 1}"
+                assert tcp_connect_test("8.8.8.8", 53), f"Lost connectivity on cycle {i + 1}"
 
                 # Stop
                 result = zapret_service.stop()
-                assert result, f"Stop failed on cycle {i+1}"
+                assert result, f"Stop failed on cycle {i + 1}"
 
                 time.sleep(1)
-                assert not has_nfqueue_rules(), f"Rules not removed on cycle {i+1}"
-                assert wait_for_connectivity(timeout=10), f"No connectivity after cycle {i+1}"
+                assert not has_nfqueue_rules(), f"Rules not removed on cycle {i + 1}"
+                assert wait_for_connectivity(timeout=10), f"No connectivity after cycle {i + 1}"
 
         finally:
             force_cleanup_zapret()
@@ -625,6 +588,7 @@ class TestZapretErrorHandling:
 # =============================================================================
 # Final Verification
 # =============================================================================
+
 
 class TestZapretFinalVerification:
     """Final verification tests - run last."""
