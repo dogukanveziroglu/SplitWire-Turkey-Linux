@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "splitwire-linux"
 version = "1.0.0"
-description = "Network restriction bypass tool for Linux (Ubuntu)"
+description = "Privacy-focused network routing tool for Linux"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     {name = "SplitWire-Turkey Contributors"}
 ]
-keywords = ["vpn", "wireguard", "dpi-bypass", "network", "privacy"]
+keywords = ["vpn", "wireguard", "dpi", "network", "privacy", "routing"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: X11 Applications :: GTK",
