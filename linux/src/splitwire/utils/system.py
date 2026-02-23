@@ -5,13 +5,12 @@ Detects Ubuntu version, systemd, firewall backend, WireGuard support,
 and other system capabilities needed for SplitWire-Turkey.
 """
 
+import logging
 import os
 import subprocess
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +165,9 @@ class SystemDetector:
         logger.debug(f"[SYSTEM] Init: {self._info.init_system.value}")
         logger.debug(f"[SYSTEM] Firewall: {self._info.firewall_backend.value}")
         logger.debug(
-            f"[SYSTEM] WireGuard: tools={self._info.wireguard_tools_installed}, module={self._info.wireguard_module_loaded}"
+            "[SYSTEM] WireGuard: tools=%s, module=%s",
+            self._info.wireguard_tools_installed,
+            self._info.wireguard_module_loaded,
         )
         logger.debug(f"[SYSTEM] NFQUEUE: {self._info.nfqueue_available}")
         logger.debug(f"[SYSTEM] Cgroups v2: {self._info.cgroups_v2}")
@@ -223,7 +224,11 @@ class SystemDetector:
                         self._info.ubuntu.minor = int(parts[1])
 
                 # Check if supported (22.04+)
-                if self._info.ubuntu.major > 22 or (self._info.ubuntu.major == 22 and self._info.ubuntu.minor >= 4):
+                _min_major = 22
+                _min_minor = 4
+                major = self._info.ubuntu.major
+                minor = self._info.ubuntu.minor
+                if major > _min_major or (major == _min_major and minor >= _min_minor):
                     self._info.ubuntu.is_supported = True
         except (OSError, ValueError, KeyError):
             pass
@@ -394,12 +399,8 @@ def print_system_info(info: SystemInfo) -> None:
 
     logger.info("Init System: %s", info.init_system.value)
     logger.info("Firewall: %s", info.firewall_backend.value)
-    logger.info(
-        "  iptables: %s", "Yes" if info.iptables_available else "No"
-    )
-    logger.info(
-        "  nftables: %s", "Yes" if info.nftables_available else "No"
-    )
+    logger.info("  iptables: %s", "Yes" if info.iptables_available else "No")
+    logger.info("  nftables: %s", "Yes" if info.nftables_available else "No")
 
     logger.info("WireGuard:")
     logger.info(
@@ -432,17 +433,11 @@ def print_system_info(info: SystemInfo) -> None:
     )
 
     logger.info("cgroups:")
-    logger.info(
-        "  v2: %s", "Yes" if info.cgroups_v2 else "No"
-    )
-    logger.info(
-        "  cgproxy: %s", "Yes" if info.cgproxy_available else "No"
-    )
+    logger.info("  v2: %s", "Yes" if info.cgroups_v2 else "No")
+    logger.info("  cgproxy: %s", "Yes" if info.cgproxy_available else "No")
 
     logger.info("Python: %s", info.python_version)
-    logger.info(
-        "Running as root: %s", "Yes" if info.is_root else "No"
-    )
+    logger.info("Running as root: %s", "Yes" if info.is_root else "No")
     logger.info(
         "Can sudo: %s",
         "Yes" if info.can_sudo else "N/A" if info.is_root else "No",

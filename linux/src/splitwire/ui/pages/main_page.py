@@ -81,9 +81,7 @@ class MainPage(BasePage):
         buttons_group.add(self._btn_disconnect)
 
         # Options group
-        options_group = self.create_preferences_group(
-            title=get_text("main", "options")
-        )
+        options_group = self.create_preferences_group(title=get_text("main", "options"))
         self.append(options_group)
 
         # Browser tunneling switch
@@ -274,12 +272,8 @@ class MainPage(BasePage):
     def refresh_translations(self):
         """Refresh UI translations."""
         self._btn_standard.set_label(get_text("main", "standard_setup"))
-        self._switch_browser.set_title(
-            get_text("main", "browser_tunneling")
-        )
-        self._switch_refresh.set_title(
-            get_text("main", "refresh_timer")
-        )
+        self._switch_browser.set_title(get_text("main", "browser_tunneling"))
+        self._switch_refresh.set_title(get_text("main", "refresh_timer"))
         self._btn_remove.set_label(get_text("main", "remove_service"))
 
     # Event handlers
@@ -290,7 +284,6 @@ class MainPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def do_setup():
-            error_msg = None
             try:
                 # Register WGCF account if needed
                 if not self._wg_service.register_wgcf():
@@ -332,13 +325,6 @@ class MainPage(BasePage):
                 # NOW it's safe to change DNS (VPN is active, DNS queries can go through VPN)
                 self._dns_service.install(preset="cloudflare")
 
-                # Setup split tunnel with selected apps (optional, for app-based routing)
-                include_browsers = self._switch_browser.get_active()
-                apps = self._get_selected_apps()
-                # Note: cgproxy split tunneling is separate from WireGuard's IP-based routing
-                # WireGuard already routes Discord/Cloudflare IPs through VPN via AllowedIPs
-                # self._st_service.configure(apps=apps, include_browsers=include_browsers)
-
                 # Save settings
                 self._save_settings()
 
@@ -356,7 +342,11 @@ class MainPage(BasePage):
                 self.show_toast(get_text("messages", "setup_complete"))
             else:
                 self._logger.error(f"[UI:Main] Standard setup failed: {error}")
-                error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                error_msg = (
+                    get_text("messages", "error_generic").format(error)
+                    if error
+                    else get_text("status", "error")
+                )
                 self.show_toast(error_msg)
             self.set_status("")
 
@@ -383,7 +373,11 @@ class MainPage(BasePage):
             if success:
                 self.show_toast(get_text("messages", "service_stopped").format("WireGuard"))
             else:
-                error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                error_msg = (
+                    get_text("messages", "error_generic").format(error)
+                    if error
+                    else get_text("status", "error")
+                )
                 self.show_toast(error_msg)
             self.set_status("")
 
@@ -440,13 +434,9 @@ class MainPage(BasePage):
                 if path not in self._custom_apps:
                     self._custom_apps.append(path)
                     self._save_settings()  # Persist the change
-                    self.show_toast(
-                        get_text("messages", "item_added").format(path)
-                    )
+                    self.show_toast(get_text("messages", "item_added").format(path))
                 else:
-                    self.show_toast(
-                        get_text("messages", "item_exists").format(path)
-                    )
+                    self.show_toast(get_text("messages", "item_exists").format(path))
         except GLib.Error as e:
             if e.code != 2:  # Not cancelled
                 self._logger.error(f"Folder selection error: {e}")
@@ -517,7 +507,11 @@ class MainPage(BasePage):
             if success:
                 self.show_toast(get_text("messages", "setup_complete"))
             else:
-                error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                error_msg = (
+                    get_text("messages", "error_generic").format(error)
+                    if error
+                    else get_text("status", "error")
+                )
                 self.show_toast(error_msg)
             self.set_status("")
 
@@ -589,7 +583,11 @@ class MainPage(BasePage):
                 if success:
                     self.show_toast(get_text("messages", "service_removed"))
                 else:
-                    error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                    error_msg = (
+                        get_text("messages", "error_generic").format(error)
+                        if error
+                        else get_text("status", "error")
+                    )
                     self.show_toast(error_msg)
                 self.set_status("")
 

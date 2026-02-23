@@ -5,14 +5,13 @@ Provides wrappers around pkexec for running commands with elevated
 privileges from a GUI application.
 """
 
+import logging
 import os
 import shutil
 import subprocess
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,6 @@ class ElevationResult:
 
 class PolkitError(Exception):
     """Exception raised for polkit-related errors."""
-
 
 
 class PolkitHelper:
@@ -267,7 +265,7 @@ class PolkitHelper:
 
     def _run_sudo(self, command: list[str], timeout: int, capture_output: bool) -> ElevationResult:
         """Run command with sudo."""
-        sudo_cmd = ["sudo"] + command
+        sudo_cmd = ["sudo", *command]
 
         try:
             if capture_output:
@@ -308,9 +306,9 @@ class PolkitHelper:
     ) -> ElevationResult:
         """Run command with gksudo or kdesudo."""
         if method == ElevationMethod.GKSUDO:
-            sudo_cmd = ["gksudo", "--"] + command
+            sudo_cmd = ["gksudo", "--", *command]
         else:
-            sudo_cmd = ["kdesudo", "--"] + command
+            sudo_cmd = ["kdesudo", "--", *command]
 
         try:
             if capture_output:
@@ -366,7 +364,7 @@ class PolkitHelper:
 
     def run_iptables(self, args: list[str]) -> ElevationResult:
         """Run iptables command."""
-        return self.run_elevated(["iptables"] + args, action_id=self.ACTION_ZAPRET, timeout=10)
+        return self.run_elevated(["iptables", *args], action_id=self.ACTION_ZAPRET, timeout=10)
 
     def copy_file_as_root(self, src: str, dst: str) -> ElevationResult:
         """Copy a file to a root-owned location."""

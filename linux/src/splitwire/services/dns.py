@@ -360,17 +360,18 @@ class DNSService(BaseService):
         self._logger.debug(f"[DNS] Current DNS servers: {current_dns}")
         if current_dns:
             preset = self.get_current_preset()
-            if preset:
-                if preset.primary in current_dns or preset.secondary in current_dns:
-                    self._logger.debug(
-                        f"[DNS] DNS verification successful: preset {self._config.preset_name} is active"
-                    )
-                    return ServiceStatus.RUNNING
+            if preset and (preset.primary in current_dns or preset.secondary in current_dns):
+                self._logger.debug(
+                    "[DNS] DNS verification successful: preset %s is active",
+                    self._config.preset_name,
+                )
+                return ServiceStatus.RUNNING
 
             # Check custom DNS
             if self._config.custom_primary and self._config.custom_primary in current_dns:
                 self._logger.debug(
-                    f"[DNS] DNS verification successful: custom DNS {self._config.custom_primary} is active"
+                    "[DNS] DNS verification successful: custom DNS %s is active",
+                    self._config.custom_primary,
                 )
                 return ServiceStatus.RUNNING
 
@@ -480,7 +481,7 @@ class DNSService(BaseService):
 
             # Get DoH/DoT settings
             preset = self.get_current_preset()
-            dot_hostname = preset.dot_hostname if preset else None
+            _dot_hostname = preset.dot_hostname if preset else None
 
             # Build resolved.conf content
             config_lines = [
@@ -565,11 +566,12 @@ class DNSService(BaseService):
                 self._logger.error("Failed to get active connections")
                 return False
 
+            _min_nm_fields = 3  # NAME:TYPE:DEVICE
             connections = []
             for line in result.stdout.strip().split("\n"):
                 if line:
                     parts = line.split(":")
-                    if len(parts) >= 3:
+                    if len(parts) >= _min_nm_fields:
                         connections.append(parts[0])
 
             if not connections:
@@ -798,9 +800,11 @@ nameserver {secondary}
             elif self._dns_manager == DNSManager.MANUAL:
                 if Path("/etc/resolv.conf").exists():
                     content = Path("/etc/resolv.conf").read_text()
-                    for line in content.split("\n"):
-                        if line.startswith("nameserver"):
-                            dns_servers.append(line.split()[1])
+                    dns_servers.extend(
+                        line.split()[1]
+                        for line in content.split("\n")
+                        if line.startswith("nameserver")
+                    )
 
         except Exception as e:
             self._logger.warning(f"Failed to get current DNS: {e}")

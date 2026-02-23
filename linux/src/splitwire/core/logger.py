@@ -19,7 +19,7 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-
+from typing import ClassVar
 
 # Log formats
 FILE_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s"
@@ -37,7 +37,7 @@ class ColoredFormatter(logging.Formatter):
     """Formatter that adds colors to console output."""
 
     # ANSI color codes
-    COLORS = {
+    COLORS: ClassVar[dict[str, str]] = {
         "DEBUG": "\033[36m",  # Cyan
         "INFO": "\033[32m",  # Green
         "WARNING": "\033[33m",  # Yellow
@@ -50,9 +50,7 @@ class ColoredFormatter(logging.Formatter):
         """Format the log record with color codes on levelname."""
         levelname = record.levelname
         if levelname in self.COLORS:
-            record.levelname = (
-                f"{self.COLORS[levelname]}{levelname}{self.RESET}"
-            )
+            record.levelname = f"{self.COLORS[levelname]}{levelname}{self.RESET}"
 
         result = super().format(record)
 

@@ -6,6 +6,7 @@ Equivalent to "Zapret Otomatik Kurulum" in Windows version.
 """
 
 import json
+import logging
 import re
 import subprocess
 import threading
@@ -14,8 +15,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-
-import logging
 
 from splitwire.core import get_shell
 
@@ -32,9 +31,9 @@ BLOCKCHECK_RESULTS = Path.home() / ".config" / "splitwire" / "zapret" / "blockch
 class ScanMode(Enum):
     """Blockcheck scan modes."""
 
-    QUICK = "quick"  # Hızlı - basic scan (~1-2 min)
-    STANDARD = "standard"  # Standart - moderate scan (~5-10 min)
-    FULL = "full"  # Tam - comprehensive scan (~15-30 min)
+    QUICK = "quick"  # basic scan (~1-2 min)
+    STANDARD = "standard"  # moderate scan (~5-10 min)
+    FULL = "full"  # comprehensive scan (~15-30 min)
 
 
 class ScanStatus(Enum):
@@ -396,7 +395,9 @@ class BlockcheckService:
             {
                 "name": "fake+disorder2 TTL8",
                 "mode": "nfqws",
-                "args": "--dpi-desync=fake,disorder2 --dpi-desync-ttl=8 --dpi-desync-fooling=md5sig",
+                "args": (
+                    "--dpi-desync=fake,disorder2 --dpi-desync-ttl=8 --dpi-desync-fooling=md5sig"
+                ),
             },
             {
                 "name": "split2 only",
@@ -501,7 +502,7 @@ class BlockcheckService:
         for callback in self._progress_callbacks:
             try:
                 callback(self._progress)
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 self._logger.warning(f"Progress callback error: {e}")
 
     def _save_result(self, result: BlockcheckResult) -> None:
@@ -554,8 +555,8 @@ class BlockcheckService:
 
         # Look for successful strategies
         # Format varies but typically includes lines like:
-        # "nfqws --dpi-desync=fake ... : PASSED"
-        # "tpws --split-pos=3 : PASSED"
+        # nfqws --dpi-desync=fake ... : PASSED
+        # tpws --split-pos=3 : PASSED
 
         passed_pattern = re.compile(r"(nfqws|tpws)\s+([^:]+):\s*(PASSED|OK|SUCCESS)", re.IGNORECASE)
 

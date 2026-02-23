@@ -62,9 +62,7 @@ class AdvancedPage(BasePage):
     def _build_ui(self):
         """Build the advanced page UI."""
         # Services group
-        services_group = self.create_preferences_group(
-            title=get_text("advanced", "services")
-        )
+        services_group = self.create_preferences_group(title=get_text("advanced", "services"))
         self.append(services_group)
 
         # Create status row for each service
@@ -77,9 +75,7 @@ class AdvancedPage(BasePage):
         self._refresh_all_status()
 
         # Options group
-        options_group = self.create_preferences_group(
-            title=get_text("advanced", "options")
-        )
+        options_group = self.create_preferences_group(title=get_text("advanced", "options"))
         self.append(options_group)
 
         # Auto DNS switch
@@ -91,9 +87,7 @@ class AdvancedPage(BasePage):
         options_group.add(self._switch_auto_dns)
 
         # Actions group
-        actions_group = self.create_preferences_group(
-            title=get_text("advanced", "actions")
-        )
+        actions_group = self.create_preferences_group(title=get_text("advanced", "actions"))
         self.append(actions_group)
 
         # Remove all services button
@@ -228,15 +222,9 @@ class AdvancedPage(BasePage):
 
     def refresh_translations(self):
         """Refresh UI translations."""
-        self._switch_auto_dns.set_title(
-            get_text("advanced", "auto_dns")
-        )
-        self._btn_remove_all.set_label(
-            get_text("advanced", "remove_all")
-        )
-        self._btn_reset_dns.set_label(
-            get_text("advanced", "reset_dns")
-        )
+        self._switch_auto_dns.set_title(get_text("advanced", "auto_dns"))
+        self._btn_remove_all.set_label(get_text("advanced", "remove_all"))
+        self._btn_reset_dns.set_label(get_text("advanced", "reset_dns"))
         self._btn_uninstall.set_label(get_text("advanced", "uninstall"))
 
     # Event handlers

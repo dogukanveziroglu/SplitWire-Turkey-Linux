@@ -16,9 +16,9 @@ from .repair_page import RepairPage
 from .settings_page import SettingsPage
 
 __all__ = [
-    "MainPage",
-    "ByeDPIPage",
-    "RepairPage",
     "AdvancedPage",
+    "ByeDPIPage",
+    "MainPage",
+    "RepairPage",
     "SettingsPage",
 ]

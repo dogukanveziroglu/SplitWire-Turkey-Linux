@@ -103,25 +103,25 @@ DEFAULT_PRESETS: dict[str, ByeDPIPreset] = {
     ),
     "preset_disorder": ByeDPIPreset(
         name="Disorder Mode",
-        description="Paket sırası karıştırma",
+        description="Packet order disruption",
         args="--disorder 1",
         mode=ByeDPIMode.DISORDER,
     ),
     "preset_disorder2": ByeDPIPreset(
         name="Disorder Mode 2",
-        description="Gelişmiş paket sırası karıştırma",
+        description="Advanced packet order disruption",
         args="--disorder 3",
         mode=ByeDPIMode.DISORDER,
     ),
     "preset_split": ByeDPIPreset(
         name="Split Mode",
-        description="Paket bölme",
+        description="Packet splitting",
         args="--split 1",
         mode=ByeDPIMode.SPLIT,
     ),
     "preset_split_tlsrec": ByeDPIPreset(
         name="Split + TLS Record",
-        description="Paket bölme ve TLS kayıt bölme",
+        description="Packet splitting with TLS record splitting",
         args="--split 1 --tlsrec 1+s",
         mode=ByeDPIMode.SPLIT,
     ),
@@ -210,7 +210,9 @@ class ByeDPIService(BaseService):
         }
         CONFIG_FILE.write_text(json.dumps(data, indent=2))
         self._logger.debug(
-            f"[BYEDPI] Config saved: preset={self._config.preset_name}, port={self._config.proxy_port}"
+            "[BYEDPI] Config saved: preset=%s, port=%s",
+            self._config.preset_name,
+            self._config.proxy_port,
         )
 
     def _load_custom_presets(self) -> None:
@@ -348,7 +350,7 @@ class ByeDPIService(BaseService):
                 self._notify_status_change(ServiceStatus.RUNNING)
                 return True
             self._logger.error(f"Failed to start service: {result.stderr}")
-                # Fall back to direct start
+            # Fall back to direct start
 
         # Start directly
         return self._start_process()
@@ -543,7 +545,7 @@ class ByeDPIService(BaseService):
         )
         return exists and executable
 
-    def _download_binary(self) -> bool:
+    def _download_binary(self) -> bool:  # noqa: C901, PLR0912
         """Download ciadpi binary from GitHub releases."""
         import tarfile
 
@@ -601,18 +603,17 @@ class ByeDPIService(BaseService):
                 req = urllib.request.Request(
                     download_url, headers={"User-Agent": "SplitWire-Turkey"}
                 )
-                with urllib.request.urlopen(req, timeout=120) as response:
-                    with open(tmp_path, "wb") as f:
-                        f.write(response.read())
+                with urllib.request.urlopen(req, timeout=120) as resp, open(tmp_path, "wb") as f:
+                    f.write(resp.read())
 
                 # Extract from tar.gz archive
                 with tempfile.TemporaryDirectory() as extract_dir:
                     with tarfile.open(tmp_path, "r:gz") as tar:
-                        tar.extractall(extract_dir)
+                        tar.extractall(extract_dir)  # noqa: S202
 
                     # Find the ciadpi binary in extracted files (name may include arch suffix)
                     binary_found = False
-                    for root, dirs, files in os.walk(extract_dir):
+                    for root, _dirs, files in os.walk(extract_dir):
                         for filename in files:
                             if filename.startswith("ciadpi"):
                                 src_binary = Path(root) / filename
@@ -658,10 +659,7 @@ class ByeDPIService(BaseService):
             args = self._config.custom_args.split()
         else:
             preset = self.get_current_preset()
-            if preset:
-                args = preset.args.split()
-            else:
-                args = []
+            args = preset.args.split() if preset else []
 
         cmd.extend(args)
         return cmd
@@ -677,7 +675,7 @@ class ByeDPIService(BaseService):
             self._logger.info(f"Starting: {' '.join(cmd)}")
 
             # Create PID directory
-            result = self._run_privileged(["mkdir", "-p", str(PID_DIR)])
+            _result = self._run_privileged(["mkdir", "-p", str(PID_DIR)])
 
             # Start process
             self._process = subprocess.Popen(
@@ -690,7 +688,7 @@ class ByeDPIService(BaseService):
             # Wait a moment to check if it started
             time.sleep(0.5)
             if self._process.poll() is not None:
-                stdout, stderr = self._process.communicate()
+                _stdout, stderr = self._process.communicate()
                 self._logger.error(f"Process exited: {stderr.decode()}")
                 return False
 
@@ -717,7 +715,7 @@ class ByeDPIService(BaseService):
                         try:
                             os.kill(pid, 0)
                             time.sleep(0.1)
-                        except ProcessLookupError:
+                        except ProcessLookupError:  # noqa: PERF203
                             break
                     else:
                         # Force kill if still running

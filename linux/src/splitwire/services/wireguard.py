@@ -474,9 +474,8 @@ class WireGuardService(BaseService):
         Returns:
             True if generation successful
         """
-        if not WGCF_ACCOUNT_FILE.exists():
-            if not self.register_warp_account():
-                return False
+        if not WGCF_ACCOUNT_FILE.exists() and not self.register_warp_account():
+            return False
 
         self._logger.info("Generating WARP profile...")
 
@@ -502,9 +501,8 @@ class WireGuardService(BaseService):
             Config content or None
         """
         # Ensure profile exists
-        if not WGCF_PROFILE_FILE.exists():
-            if not self.generate_warp_profile():
-                return None
+        if not WGCF_PROFILE_FILE.exists() and not self.generate_warp_profile():
+            return None
 
         # Read and modify profile
         config = WGCF_PROFILE_FILE.read_text()
@@ -516,9 +514,7 @@ class WireGuardService(BaseService):
         config = self._modify_endpoint(config, endpoint_type)
 
         # Remove DNS line to prevent internet breakage
-        config = self._add_dns_config(config)
-
-        return config
+        return self._add_dns_config(config)
 
     def _modify_allowed_ips(
         self,
@@ -552,11 +548,9 @@ class WireGuardService(BaseService):
         allowed_ips = ", ".join(ips_to_route)
 
         # Replace existing AllowedIPs
-        config = re.sub(
+        return re.sub(
             r"^AllowedIPs\s*=.*$", f"AllowedIPs = {allowed_ips}", config, flags=re.MULTILINE
         )
-
-        return config
 
     def _modify_endpoint(self, config: str, endpoint_type: str = "standard") -> str:
         """
@@ -609,11 +603,9 @@ class WireGuardService(BaseService):
 
         # Remove IPv6 address to prevent routing issues
         # Keep only IPv4: "Address = 172.16.0.2/32"
-        config = re.sub(
+        return re.sub(
             r"^(Address\s*=\s*[0-9./]+),\s*[0-9a-fA-F:]+/\d+", r"\1", config, flags=re.MULTILINE
         )
-
-        return config
 
     def _download_wgcf(self) -> bool:
         """
@@ -653,7 +645,7 @@ class WireGuardService(BaseService):
 
             # Save binary
             WGCF_BINARY.write_bytes(binary_data)
-            os.chmod(WGCF_BINARY, 0o755)
+            os.chmod(WGCF_BINARY, 0o755)  # noqa: S103
 
             self._logger.info("wgcf downloaded successfully")
             return True
@@ -672,11 +664,7 @@ class WireGuardService(BaseService):
     def _check_dependencies(self) -> bool:
         """Check required dependencies are installed."""
         required = ["wg", "wg-quick", "ip"]
-        missing = []
-
-        for cmd in required:
-            if not self._check_binary_exists(cmd):
-                missing.append(cmd)
+        missing = [cmd for cmd in required if not self._check_binary_exists(cmd)]
 
         if missing:
             self._logger.error(f"Missing dependencies: {', '.join(missing)}")
@@ -736,8 +724,8 @@ class WireGuardService(BaseService):
         """
         interface = WireGuardInterface(name=self._interface_name)
 
-        for line in output.splitlines():
-            line = line.strip()
+        for raw_line in output.splitlines():
+            line = raw_line.strip()
             if ":" in line:
                 key, value = line.split(":", 1)
                 key = key.strip().lower()
@@ -792,19 +780,21 @@ class WireGuardService(BaseService):
             systemd = get_systemd_manager()
 
             # Install both the timer and service units if not present
-            if not systemd.unit_exists(REFRESH_SERVICE_UNIT):
-                if not systemd.install_unit(REFRESH_SERVICE_UNIT, enable=False):
-                    self._logger.error("Failed to install refresh service unit")
-                    return False
+            if not systemd.unit_exists(REFRESH_SERVICE_UNIT) and not systemd.install_unit(
+                REFRESH_SERVICE_UNIT, enable=False
+            ):
+                self._logger.error("Failed to install refresh service unit")
+                return False
 
-            if not systemd.unit_exists(REFRESH_TIMER_UNIT):
-                if not systemd.install_unit(REFRESH_TIMER_UNIT, enable=True, start=True):
-                    self._logger.error("Failed to install refresh timer unit")
-                    return False
-            else:
-                # Enable and start the timer
-                systemd.enable(REFRESH_TIMER_UNIT)
-                systemd.start(REFRESH_TIMER_UNIT)
+            if not systemd.unit_exists(REFRESH_TIMER_UNIT) and not systemd.install_unit(
+                REFRESH_TIMER_UNIT, enable=True, start=True
+            ):
+                self._logger.error("Failed to install refresh timer unit")
+                return False
+
+            # Enable and start the timer
+            systemd.enable(REFRESH_TIMER_UNIT)
+            systemd.start(REFRESH_TIMER_UNIT)
 
             self._logger.info("WireGuard refresh timer enabled (30 min interval)")
             return True
@@ -933,9 +923,8 @@ class WireGuardService(BaseService):
         )
 
         # Ensure profile exists
-        if not WGCF_PROFILE_FILE.exists():
-            if not self.generate_warp_profile():
-                return ""
+        if not WGCF_PROFILE_FILE.exists() and not self.generate_warp_profile():
+            return ""
 
         # Read and return the config
         try:
@@ -946,8 +935,7 @@ class WireGuardService(BaseService):
             # Always modify endpoint to use static IP (avoid DNS dependency at startup)
             config = self._modify_endpoint(config, endpoint_type)
 
-            config = self._add_dns_config(config)
-            return config
+            return self._add_dns_config(config)
         except Exception as e:
             self._logger.error(f"Failed to read config: {e}")
             return ""

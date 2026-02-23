@@ -2,7 +2,7 @@
 Repair Page for SplitWire-Turkey.
 
 Provides Discord repair and alternative client installation.
-Equivalent to Windows "Onarım" tab.
+Equivalent to Windows "Onarim" (Repair) tab.
 """
 
 import gi
@@ -36,9 +36,7 @@ class RepairPage(BasePage):
     def _build_ui(self):
         """Build the repair page UI."""
         # Main actions group
-        actions_group = self.create_preferences_group(
-            title=get_text("repair", "actions")
-        )
+        actions_group = self.create_preferences_group(title=get_text("repair", "actions"))
         self.append(actions_group)
 
         # Discord repair button
@@ -67,9 +65,7 @@ class RepairPage(BasePage):
         actions_group.add(self._btn_webcord)
 
         # Options group
-        options_group = self.create_preferences_group(
-            title=get_text("repair", "options")
-        )
+        options_group = self.create_preferences_group(title=get_text("repair", "options"))
         self.append(options_group)
 
         # Clean install for PTB switch
@@ -201,9 +197,7 @@ class RepairPage(BasePage):
             status_dict["remove_btn"].set_visible(True)
         else:
             status_dict["status_dot"].set_css_classes(["status-stopped"])
-            status_dict["status_label"].set_label(
-                get_text("status", "not_installed")
-            )
+            status_dict["status_label"].set_label(get_text("status", "not_installed"))
             status_dict["action_btn"].set_label(get_text("buttons", "install"))
             status_dict["remove_btn"].set_visible(False)
 
@@ -272,8 +266,7 @@ class RepairPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def do_repair():
-            result = self._discord_service.repair_discord()
-            return result
+            return self._discord_service.repair_discord()
 
         def on_complete(result):
             self._refresh_status()

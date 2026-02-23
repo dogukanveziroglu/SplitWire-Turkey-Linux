@@ -74,16 +74,26 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# GTK: gi.require_version() must precede gi.repository imports
-"src/splitwire/application.py" = ["E402", "ARG002"]
-"src/splitwire/ui/*.py" = ["E402", "ARG002"]
-"src/splitwire/ui/**/*.py" = ["E402", "ARG002"]
-# Entry point uses lazy imports for fast CLI response
-"src/splitwire/__main__.py" = ["PLC0415", "E402"]
-# System admin tool requires subprocess execution
-"src/splitwire/core/shell.py" = ["S603", "S607"]
-"src/splitwire/utils/polkit.py" = ["S603", "S607"]
-"src/splitwire/services/*.py" = ["S603", "S607"]
+# GTK: gi.require_version() must precede gi.repository imports; unused signal args
+"src/splitwire/application.py" = ["E402", "ARG002", "PLC0415"]
+"src/splitwire/ui/*.py" = ["E402", "ARG002", "PLC0415", "S603", "S607", "S110"]
+"src/splitwire/ui/**/*.py" = ["E402", "ARG002", "PLC0415", "PLR2004", "S603", "S607", "PERF203"]
+# Entry point: lazy imports for fast CLI response; availability-check imports
+"src/splitwire/__main__.py" = ["PLC0415", "E402", "PLR2004", "F401"]
+# Subprocess execution; singleton pattern (PLW0603)
+"src/splitwire/core/shell.py" = ["S603", "S607", "PLC0415", "N806", "PLW0603"]
+"src/splitwire/utils/polkit.py" = ["S603", "S607", "PLR2004", "PLW1510", "ARG002", "PLW0603"]
+# Services: subprocess, lazy imports, signal args, singleton, trusted GitHub URLs
+"src/splitwire/services/*.py" = ["S603", "S607", "PLC0415", "ARG002", "PLW0603", "S310"]
+# Backup: subprocess, try-except in loops for per-file recovery, singleton
+"src/splitwire/core/backup.py" = ["PLC0415", "S603", "S607", "PLW1510", "PERF203", "PLW0603"]
+# Config/language singletons
+"src/splitwire/core/config.py" = ["PLW0603"]
+"src/splitwire/core/language.py" = ["PLW0603"]
+# Dependency checker uses subprocess for package management
+"src/splitwire/utils/deps.py" = ["S603", "S607", "PLW1510", "PLR2004"]
+# System detector uses subprocess for system inspection
+"src/splitwire/utils/system.py" = ["S603", "S607", "PLW1510", "PLR2004", "PLC0415"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15

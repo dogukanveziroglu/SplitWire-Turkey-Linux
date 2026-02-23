@@ -177,7 +177,9 @@ class SplitTunnelService(BaseService):
                         )
                     )
                 self._logger.debug(
-                    f"[TUNNEL] Config loaded: {len(self._config.apps)} apps, include_browsers={self._config.include_browsers}"
+                    "[TUNNEL] Config loaded: %d apps, include_browsers=%s",
+                    len(self._config.apps),
+                    self._config.include_browsers,
                 )
             except Exception as e:
                 self._logger.warning(f"[TUNNEL] Failed to load config: {e}")
@@ -491,9 +493,7 @@ class SplitTunnelService(BaseService):
 
         return True
 
-    def _build_app_list(
-        self, apps: list[str] | None, include_browsers: bool
-    ) -> list[TunneledApp]:
+    def _build_app_list(self, apps: list[str] | None, include_browsers: bool) -> list[TunneledApp]:
         """
         Build list of apps to tunnel.
 

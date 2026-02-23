@@ -61,9 +61,7 @@ class ByeDPIPage(BasePage):
         setup_group.add(self._btn_split_setup)
 
         # Options group
-        options_group = self.create_preferences_group(
-            title=get_text("byedpi", "options")
-        )
+        options_group = self.create_preferences_group(title=get_text("byedpi", "options"))
         self.append(options_group)
 
         # Browser tunneling switch
@@ -186,12 +184,8 @@ class ByeDPIPage(BasePage):
 
     def refresh_translations(self):
         """Refresh UI translations."""
-        self._btn_split_setup.set_label(
-            get_text("byedpi", "split_setup")
-        )
-        self._switch_browser.set_title(
-            get_text("main", "browser_tunneling")
-        )
+        self._btn_split_setup.set_label(get_text("byedpi", "split_setup"))
+        self._switch_browser.set_title(get_text("main", "browser_tunneling"))
         self._btn_remove.set_label(get_text("byedpi", "remove"))
 
     # Event handlers
@@ -244,9 +238,7 @@ class ByeDPIPage(BasePage):
         active = row.get_active()
         self._logger.info(f"[UI:ByeDPI] Browser tunneling changed: {active}")
         if active:
-            self._lbl_status.set_label(
-                get_text("byedpi", "browser_enabled")
-            )
+            self._lbl_status.set_label(get_text("byedpi", "browser_enabled"))
         else:
             self._lbl_status.set_label("")
 

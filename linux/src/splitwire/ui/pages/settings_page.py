@@ -33,9 +33,7 @@ class SettingsPage(BasePage):
     def _build_ui(self):
         """Build the settings page UI."""
         # Appearance group
-        appearance_group = self.create_preferences_group(
-            title=get_text("settings", "appearance")
-        )
+        appearance_group = self.create_preferences_group(title=get_text("settings", "appearance"))
         self.append(appearance_group)
 
         # Language selector
@@ -58,7 +56,7 @@ class SettingsPage(BasePage):
         # Set current language
         config = get_config()
         current_lang = config.language if config else "tr"
-        for i, (code, name, flag) in enumerate(languages):
+        for i, (code, _name, _flag) in enumerate(languages):
             if code == current_lang:
                 lang_row.set_selected(i)
                 break
@@ -85,7 +83,7 @@ class SettingsPage(BasePage):
 
         # Set current theme
         current_theme = config.theme if config else "system"
-        for i, (code, name) in enumerate(themes):
+        for i, (code, _name) in enumerate(themes):
             if code == current_theme:
                 theme_row.set_selected(i)
                 break
@@ -96,9 +94,7 @@ class SettingsPage(BasePage):
         appearance_group.add(theme_row)
 
         # DNS Settings group
-        dns_group = self.create_preferences_group(
-            title=get_text("settings", "dns")
-        )
+        dns_group = self.create_preferences_group(title=get_text("settings", "dns"))
         self.append(dns_group)
 
         # DNS preset selector
@@ -128,9 +124,7 @@ class SettingsPage(BasePage):
         dns_group.add(self._switch_doh)
 
         # About group
-        about_group = self.create_preferences_group(
-            title=get_text("settings", "about")
-        )
+        about_group = self.create_preferences_group(title=get_text("settings", "about"))
         self.append(about_group)
 
         # Version row
@@ -204,7 +198,7 @@ class SettingsPage(BasePage):
         languages = self._languages  # Use instance variable (GTK4 compatible)
 
         if selected < len(languages):
-            code, name, flag = languages[selected]
+            code, name, _flag = languages[selected]
             self._logger.info(f"[UI:Settings] Language changed to: {code}")
             app = self._window.get_application()
             if app:

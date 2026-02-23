@@ -9,14 +9,13 @@ Provides:
 
 import hashlib
 import json
+import logging
 import shutil
 import tarfile
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +73,6 @@ class BackupError(Exception):
     """Exception raised for backup-related errors."""
 
 
-
 class BackupManager:
     """
     Manages backups and rollback operations.
@@ -122,7 +120,7 @@ class BackupManager:
         """Generate unique backup ID."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         hash_input = f"{timestamp}_{id(self)}".encode()
-        short_hash = hashlib.md5(hash_input).hexdigest()[:8]
+        short_hash = hashlib.md5(hash_input).hexdigest()[:8]  # noqa: S324
         return f"{timestamp}_{short_hash}"
 
     def _get_backup_path(self, backup_id: str) -> Path:
@@ -184,7 +182,7 @@ class BackupManager:
             logger.error(f"[BACKUP] Failed to create archive: {e}")
             if backup_path.exists():
                 backup_path.unlink()
-            raise BackupError(f"Failed to create backup archive: {e}")
+            raise BackupError(f"Failed to create backup archive: {e}") from e
 
         # Get backup size
         backup_size = backup_path.stat().st_size
@@ -231,8 +229,7 @@ class BackupManager:
             # WireGuard configs
             wg_dir = self._data_dir / "wireguard"
             if wg_dir.exists():
-                for conf in wg_dir.glob("*.conf"):
-                    files.append(conf)
+                files.extend(wg_dir.glob("*.conf"))
 
         if backup_type in (BackupType.ZAPRET, BackupType.FULL):
             # Zapret configs
@@ -240,8 +237,7 @@ class BackupManager:
             if zapret_dir.exists():
                 # Only backup config files, not binaries
                 for pattern in ["*.conf", "*.config", "*.txt", "*.sh"]:
-                    for f in zapret_dir.glob(f"**/{pattern}"):
-                        files.append(f)
+                    files.extend(zapret_dir.glob(f"**/{pattern}"))
 
         if backup_type == BackupType.SERVICES:
             # Service state files
@@ -266,7 +262,6 @@ class BackupManager:
             BackupError: If restore fails
         """
         backup_path = self._get_backup_path(backup_id)
-        metadata_path = self._get_metadata_path(backup_id)
 
         if not backup_path.exists():
             logger.error(f"[BACKUP] Backup not found: {backup_id}")
@@ -306,7 +301,7 @@ class BackupManager:
 
         except Exception as e:
             logger.error(f"[BACKUP] Failed to restore backup: {e}")
-            raise BackupError(f"Failed to restore backup: {e}")
+            raise BackupError(f"Failed to restore backup: {e}") from e
 
         logger.info(f"[BACKUP] Restore completed: {len(restored_files)} files")
         return restored_files
@@ -386,9 +381,7 @@ class BackupManager:
         except (json.JSONDecodeError, KeyError):
             return None
 
-    def get_latest_backup(
-        self, backup_type: BackupType | None = None
-    ) -> BackupMetadata | None:
+    def get_latest_backup(self, backup_type: BackupType | None = None) -> BackupMetadata | None:
         """
         Get the most recent backup.
 
@@ -612,7 +605,10 @@ class SnapshotManager:
         for service in services:
             try:
                 result = subprocess.run(
-                    ["systemctl", "is-active", service], capture_output=True, text=True, timeout=5
+                    ["systemctl", "is-active", service],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 states[service] = result.stdout.strip()
             except Exception as e:

@@ -7,12 +7,11 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
+import logging
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
-
-import logging
 
 if TYPE_CHECKING:
     from splitwire.ui.window import SplitWireWindow

@@ -9,14 +9,14 @@ Provides comprehensive systemd integration for managing services:
 - Read journal logs
 """
 
+import logging
 import os
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-
-import logging
+from typing import ClassVar
 
 from splitwire.core import get_shell
 
@@ -116,7 +116,7 @@ class SystemdManager:
     USER_UNIT_DIR = Path.home() / ".config/systemd/user"
 
     # SplitWire service unit names
-    SPLITWIRE_SERVICES = {
+    SPLITWIRE_SERVICES: ClassVar[dict[str, str]] = {
         "wireguard": "splitwire-wg.service",
         "wireguard-refresh": "splitwire-wg-refresh.timer",
         "zapret": "splitwire-zapret.service",
@@ -302,10 +302,8 @@ class SystemdManager:
         """
         self._logger.info(f"Stopping: {unit_name}")
         result = self._shell.run(["sudo", "systemctl", "stop", unit_name], timeout=60)
-        if not result.success:
-            # Don't log error if service wasn't running
-            if "not loaded" not in result.stderr.lower():
-                self._logger.error(f"Failed to stop {unit_name}: {result.stderr}")
+        if not result.success and "not loaded" not in result.stderr.lower():
+            self._logger.error(f"Failed to stop {unit_name}: {result.stderr}")
         return result.success
 
     def restart(self, unit_name: str) -> bool:
@@ -368,10 +366,8 @@ class SystemdManager:
         """
         self._logger.info(f"Disabling: {unit_name}")
         result = self._shell.run(["sudo", "systemctl", "disable", unit_name], timeout=30)
-        if not result.success:
-            # Don't log error if already disabled
-            if "does not exist" not in result.stderr.lower():
-                self._logger.error(f"Failed to disable {unit_name}: {result.stderr}")
+        if not result.success and "does not exist" not in result.stderr.lower():
+            self._logger.error(f"Failed to disable {unit_name}: {result.stderr}")
         return result.success
 
     def mask(self, unit_name: str) -> bool:
@@ -404,7 +400,7 @@ class SystemdManager:
     # Status Monitoring
     # =========================================================================
 
-    def get_status(self, unit_name: str) -> SystemdUnitStatus:
+    def get_status(self, unit_name: str) -> SystemdUnitStatus:  # noqa: C901, PLR0912
         """
         Get detailed status of a systemd unit.
 
@@ -662,8 +658,12 @@ class SystemdManager:
         status_dict = {}
         for key, unit_name in self.SPLITWIRE_SERVICES.items():
             status_dict[key] = self.get_status(unit_name)
+            unit_status = status_dict[key]
             self._logger.debug(
-                f"[SYSTEMD] {key}: active={status_dict[key].active_state.value}, enabled={status_dict[key].enabled_state.value}"
+                "[SYSTEMD] %s: active=%s, enabled=%s",
+                key,
+                unit_status.active_state.value,
+                unit_status.enabled_state.value,
             )
         return status_dict
 
@@ -710,9 +710,8 @@ class SystemdManager:
         """
         success = True
         for unit_name in self.SPLITWIRE_SERVICES.values():
-            if self.is_active(unit_name):
-                if not self.stop(unit_name):
-                    success = False
+            if self.is_active(unit_name) and not self.stop(unit_name):
+                success = False
         return success
 
     def remove_all_splitwire_services(self) -> bool:
@@ -724,9 +723,8 @@ class SystemdManager:
         """
         success = True
         for unit_name in self.SPLITWIRE_SERVICES.values():
-            if self.unit_exists(unit_name):
-                if not self.remove_unit(unit_name):
-                    success = False
+            if self.unit_exists(unit_name) and not self.remove_unit(unit_name):
+                success = False
         return success
 
 

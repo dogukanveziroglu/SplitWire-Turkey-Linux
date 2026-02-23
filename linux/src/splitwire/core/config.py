@@ -6,12 +6,11 @@ Config is stored in ~/.config/splitwire/config.json
 """
 
 import json
+import logging
 import os
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +102,7 @@ class AppConfig:
     zapret: ZapretConfig = field(default_factory=ZapretConfig)
     byedpi: ByeDPIConfig = field(default_factory=ByeDPIConfig)
 
-    # State (not saved)
+    # State (not saved)  # noqa: ERA001
     first_run: bool = True
     version: str = "1.0.0"
 
@@ -200,7 +199,9 @@ class ConfigManager:
                 self._config = self._dict_to_config(data)
                 self._config.first_run = False
                 logger.debug(
-                    f"[CONFIG] Config loaded: theme={self._config.theme}, language={self._config.language}"
+                    "[CONFIG] Config loaded: theme=%s, language=%s",
+                    self._config.theme,
+                    self._config.language,
                 )
             except (json.JSONDecodeError, KeyError, TypeError) as e:
                 # Config file corrupted, use defaults

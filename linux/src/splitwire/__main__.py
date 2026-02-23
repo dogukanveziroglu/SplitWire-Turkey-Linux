@@ -25,9 +25,7 @@ def check_python_version() -> bool:
     """Check if Python version is compatible."""
     major, minor = sys.version_info[:2]
     if major < 3 or (major == 3 and minor < 10):
-        sys.stderr.write(
-            f"Error: Python 3.10+ required, found {major}.{minor}\n"
-        )
+        sys.stderr.write(f"Error: Python 3.10+ required, found {major}.{minor}\n")
         return False
     return True
 
@@ -36,9 +34,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         prog="splitwire",
-        description=(
-            "SplitWire - A privacy-focused network routing tool for Linux"
-        ),
+        description=("SplitWire - A privacy-focused network routing tool for Linux"),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -121,9 +117,7 @@ def check_dependencies() -> bool:
 
     # Return True if all required deps are installed
     missing_required = [
-        d
-        for d in system_deps + python_deps
-        if d.required and d.status.value == "missing"
+        d for d in system_deps + python_deps if d.required and d.status.value == "missing"
     ]
     return len(missing_required) == 0
 
@@ -177,13 +171,10 @@ def run_gui(args: argparse.Namespace) -> int:
 
         gi.require_version("Gtk", "4.0")
         gi.require_version("Adw", "1")
-        from gi.repository import Adw, Gtk  # noqa: F401
+        from gi.repository import Adw, Gtk
     except (ImportError, ValueError) as e:
         logger.error("GTK4/Libadwaita not available: %s", e)
-        logger.error(
-            "Install with: sudo apt install "
-            "gir1.2-gtk-4.0 gir1.2-adw-1 python3-gi"
-        )
+        logger.error("Install with: sudo apt install gir1.2-gtk-4.0 gir1.2-adw-1 python3-gi")
         return 1
 
     # Import and run the GTK4 application

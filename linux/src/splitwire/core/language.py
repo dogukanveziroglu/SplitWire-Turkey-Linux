@@ -6,18 +6,16 @@ Compatible with the Windows version's language file format.
 """
 
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
-
-import logging
+from typing import Any, ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class LanguageError(Exception):
     """Exception raised for language-related errors."""
-
 
 
 class LanguageManager:
@@ -33,7 +31,7 @@ class LanguageManager:
     """
 
     # Supported languages
-    LANGUAGES = {
+    LANGUAGES: ClassVar[dict[str, str]] = {
         "tr": "Türkçe",
         "en": "English",
         "ru": "Русский",
@@ -143,7 +141,7 @@ class LanguageManager:
             logger.error(f"[LANG] Failed to load language file {path}: {e}")
             return {}
 
-    @lru_cache(maxsize=512)
+    @lru_cache(maxsize=512)  # noqa: B019
     def get_text(self, *keys: str, default: str = "") -> str:
         """
         Get translated text for the given key(s).
@@ -161,10 +159,7 @@ class LanguageManager:
             Translated string
         """
         # Handle both get_text("a", "b") and get_text("a.b")
-        if len(keys) == 1 and "." in keys[0]:
-            key_path = keys[0].split(".")
-        else:
-            key_path = list(keys)
+        key_path = keys[0].split(".") if len(keys) == 1 and "." in keys[0] else list(keys)
 
         # Try current language first
         result = self._get_nested(self._translations, key_path)

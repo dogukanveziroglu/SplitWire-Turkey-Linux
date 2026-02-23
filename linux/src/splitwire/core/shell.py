@@ -9,6 +9,7 @@ Provides safe shell command execution with:
 """
 
 import asyncio
+import logging
 import os
 import shlex
 import subprocess
@@ -17,8 +18,6 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -144,10 +143,7 @@ class ShellExecutor:
         # Parse command
         if isinstance(command, str):
             cmd_str = command
-            if shell:
-                cmd = command
-            else:
-                cmd = shlex.split(command)
+            cmd = command if shell else shlex.split(command)
         else:
             cmd_str = " ".join(command)
             cmd = command
@@ -164,7 +160,8 @@ class ShellExecutor:
         run_timeout = timeout if timeout is not None else self._timeout
 
         # Log command execution
-        cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
+        _PREVIEW_LEN = 80
+        cmd_preview = cmd_str[:_PREVIEW_LEN] + "..." if len(cmd_str) > _PREVIEW_LEN else cmd_str
         logger.debug(f"[SHELL] Executing: {cmd_preview}")
 
         try:
@@ -178,6 +175,7 @@ class ShellExecutor:
                     env=run_env,
                     shell=shell,
                     input=input_data,
+                    check=False,
                 )
                 stdout = result.stdout
                 stderr = result.stderr
@@ -189,7 +187,8 @@ class ShellExecutor:
                     env=run_env,
                     shell=shell,
                     input=input_data,
-                    text=True if input_data else False,
+                    text=bool(input_data),
+                    check=False,
                 )
                 stdout = ""
                 stderr = ""
@@ -213,7 +212,10 @@ class ShellExecutor:
             else:
                 logger.error(f"[SHELL] Failed (exit={result.returncode}): {cmd_preview}")
                 if stderr:
-                    stderr_preview = stderr[:200] + "..." if len(stderr) > 200 else stderr
+                    _STDERR_LEN = 200
+                    stderr_preview = (
+                        stderr[:_STDERR_LEN] + "..." if len(stderr) > _STDERR_LEN else stderr
+                    )
                     logger.error(f"[SHELL] stderr: {stderr_preview}")
 
             if check and result.returncode != 0:
@@ -303,7 +305,8 @@ class ShellExecutor:
         run_timeout = timeout if timeout is not None else self._timeout
 
         # Log command execution
-        cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
+        _PREVIEW_LEN = 80
+        cmd_preview = cmd_str[:_PREVIEW_LEN] + "..." if len(cmd_str) > _PREVIEW_LEN else cmd_str
         logger.debug(f"[SHELL] Async executing: {cmd_preview}")
 
         try:
@@ -353,7 +356,10 @@ class ShellExecutor:
             else:
                 logger.error(f"[SHELL] Async failed (exit={process.returncode}): {cmd_preview}")
                 if stderr:
-                    stderr_preview = stderr[:200] + "..." if len(stderr) > 200 else stderr
+                    _STDERR_LEN = 200
+                    stderr_preview = (
+                        stderr[:_STDERR_LEN] + "..." if len(stderr) > _STDERR_LEN else stderr
+                    )
                     logger.error(f"[SHELL] stderr: {stderr_preview}")
 
             return CommandResult(
@@ -437,7 +443,8 @@ class ShellExecutor:
         stderr_lines = []
 
         # Log streaming command
-        cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
+        _PREVIEW_LEN = 80
+        cmd_preview = cmd_str[:_PREVIEW_LEN] + "..." if len(cmd_str) > _PREVIEW_LEN else cmd_str
         logger.debug(f"[SHELL] Streaming execution: {cmd_preview}")
 
         try:
@@ -464,10 +471,10 @@ class ShellExecutor:
                     pass  # Pipe closed during read (process killed)
                 finally:
                     if process.stdout:
-                        try:
+                        import contextlib
+
+                        with contextlib.suppress(OSError):
                             process.stdout.close()
-                        except OSError:
-                            pass
 
             reader_thread = threading.Thread(target=read_output)
             reader_thread.start()

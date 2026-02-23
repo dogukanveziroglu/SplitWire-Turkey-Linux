@@ -268,9 +268,10 @@ class DiscordService(BaseService):
         self._logger.info("[DISCORD] Detecting all Discord installations...")
         for version in DiscordVersion:
             self._installations[version] = self._detect_version(version)
-            if self._installations[version].method != InstallMethod.NOT_INSTALLED:
+            inst = self._installations[version]
+            if inst.method != InstallMethod.NOT_INSTALLED:
                 self._logger.debug(
-                    f"[DISCORD] Found {version.value}: method={self._installations[version].method.value}"
+                    "[DISCORD] Found %s: method=%s", version.value, inst.method.value
                 )
 
         self._webcord = self._detect_webcord()

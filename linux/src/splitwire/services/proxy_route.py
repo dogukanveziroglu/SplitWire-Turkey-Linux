@@ -124,7 +124,10 @@ class ProxyRouteService(BaseService):
                         )
                     )
                 self._logger.debug(
-                    f"[PROXY] Config loaded: proxy={self._config.proxy_host}:{self._config.proxy_port}, method={self._config.method.value}"
+                    "[PROXY] Config loaded: proxy=%s:%s, method=%s",
+                    self._config.proxy_host,
+                    self._config.proxy_port,
+                    self._config.method.value,
                 )
             except Exception as e:
                 self._logger.warning(f"[PROXY] Failed to load config: {e}")
@@ -201,12 +204,10 @@ class ProxyRouteService(BaseService):
             self._config.apps = proxy_apps
 
             # Setup routing based on method
-            if method == ProxyMethod.CGPROXY:
-                if not self._setup_cgproxy(proxy_apps):
-                    return False
-            elif method == ProxyMethod.REDSOCKS:
-                if not self._setup_redsocks(proxy_apps):
-                    return False
+            if (method == ProxyMethod.CGPROXY and not self._setup_cgproxy(proxy_apps)) or (
+                method == ProxyMethod.REDSOCKS and not self._setup_redsocks(proxy_apps)
+            ):
+                return False
 
             self._config.enabled = True
             self._save_config()
@@ -626,9 +627,7 @@ redsocks {{
 
         return True
 
-    def _build_app_list(
-        self, apps: list[str] | None, include_browsers: bool
-    ) -> list[ProxiedApp]:
+    def _build_app_list(self, apps: list[str] | None, include_browsers: bool) -> list[ProxiedApp]:
         """Build list of apps to route through proxy."""
         result = []
         added_paths = set()

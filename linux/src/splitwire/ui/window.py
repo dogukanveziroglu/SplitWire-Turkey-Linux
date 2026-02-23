@@ -10,9 +10,9 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 
-from gi.repository import Adw, Gio, GLib, Gtk
-
 import logging
+
+from gi.repository import Adw, Gio, GLib, Gtk
 
 from splitwire.core import get_text
 

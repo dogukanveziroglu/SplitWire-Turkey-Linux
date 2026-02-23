@@ -5,14 +5,13 @@ Provides abstract base class for all services (WireGuard, Zapret, ByeDPI, etc.)
 with common interface for installation, removal, and lifecycle management.
 """
 
+import logging
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-
-import logging
 
 from splitwire.core import CommandResult, CommandStatus, get_shell
 
@@ -83,9 +82,7 @@ class BaseService(ABC):
         self._display_name = display_name
         self._description = description
         self._service_type = service_type
-        self._logger = logging.getLogger(
-            f"splitwire.services.{name}"
-        )
+        self._logger = logging.getLogger(f"splitwire.services.{name}")
         self._shell = get_shell()
         self._status_callbacks: list[Callable[[ServiceStatus], None]] = []
 
@@ -123,7 +120,7 @@ class BaseService(ABC):
         for callback in self._status_callbacks:
             try:
                 callback(status)
-            except Exception as e:
+            except Exception as e:  # noqa: PERF203
                 self._logger.warning(f"Status callback error: {e}")
 
     # =========================================================================
@@ -306,11 +303,7 @@ class BaseService(ABC):
         Returns:
             CommandResult
         """
-        if isinstance(command, str):
-            cmd = f"sudo {command}"
-        else:
-            cmd = ["sudo"] + command
-
+        cmd = f"sudo {command}" if isinstance(command, str) else ["sudo", *command]
         return self._shell.run(cmd, **kwargs)
 
     def _check_binary_exists(self, binary: str) -> bool:

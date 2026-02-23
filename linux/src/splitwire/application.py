@@ -65,9 +65,7 @@ class SplitWireApp(Adw.Application):
         preferences_action = Gio.SimpleAction.new("preferences", None)
         preferences_action.connect("activate", self.on_preferences)
         self.add_action(preferences_action)
-        self.set_accels_for_action(
-            "app.preferences", ["<Control>comma"]
-        )
+        self.set_accels_for_action("app.preferences", ["<Control>comma"])
 
     def do_startup(self):
         """Called when the application starts."""
@@ -101,22 +99,16 @@ class SplitWireApp(Adw.Application):
             self._apply_theme(config.theme)
 
         except (OSError, ValueError, KeyError, TypeError) as e:
-            sys.stderr.write(
-                f"Error initializing core systems: {e}\n"
-            )
+            sys.stderr.write(f"Error initializing core systems: {e}\n")
 
     def _apply_theme(self, theme: str):
         """Apply the specified theme."""
         style_manager = Adw.StyleManager.get_default()
 
         if theme == "dark":
-            style_manager.set_color_scheme(
-                Adw.ColorScheme.FORCE_DARK
-            )
+            style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
         elif theme == "light":
-            style_manager.set_color_scheme(
-                Adw.ColorScheme.FORCE_LIGHT
-            )
+            style_manager.set_color_scheme(Adw.ColorScheme.FORCE_LIGHT)
         else:  # system
             style_manager.set_color_scheme(Adw.ColorScheme.DEFAULT)
 
@@ -286,9 +278,7 @@ class SplitWireApp(Adw.Application):
         self,
         title: str,
         body: str,
-        priority: Gio.NotificationPriority = (
-            Gio.NotificationPriority.NORMAL
-        ),
+        priority: Gio.NotificationPriority = (Gio.NotificationPriority.NORMAL),
     ):
         """Show a desktop notification."""
         notification = Gio.Notification.new(title)

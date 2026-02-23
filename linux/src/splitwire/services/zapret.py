@@ -74,9 +74,9 @@ class ZapretMode(Enum):
 class ScanMode(Enum):
     """Blockcheck scan mode."""
 
-    QUICK = "quick"  # Hızlı - basic scan
-    STANDARD = "standard"  # Standart - moderate scan
-    FULL = "full"  # Tam - comprehensive scan
+    QUICK = "quick"  # basic scan
+    STANDARD = "standard"  # moderate scan
+    FULL = "full"  # comprehensive scan
 
 
 @dataclass
@@ -132,25 +132,25 @@ DEFAULT_PRESETS: dict[str, ZapretPreset] = {
     ),
     "preset_split": ZapretPreset(
         name="Split Mode",
-        description="Paket bölme yöntemi",
+        description="Packet splitting method",
         nfqws_args="--dpi-desync=split2 --dpi-desync-split-pos=3",
         mode=ZapretMode.NFQWS,
     ),
     "preset_fake": ZapretPreset(
         name="Fake Mode",
-        description="Sahte paket yöntemi",
+        description="Fake packet method",
         nfqws_args="--dpi-desync=fake --dpi-desync-ttl=6",
         mode=ZapretMode.NFQWS,
     ),
     "preset_disorder": ZapretPreset(
         name="Disorder Mode",
-        description="Paket sırası karıştırma",
+        description="Packet order disruption",
         nfqws_args="--dpi-desync=disorder2 --dpi-desync-ttl=8",
         mode=ZapretMode.NFQWS,
     ),
     "preset_tpws": ZapretPreset(
         name="TPWS Mode",
-        description="Transparent proxy yöntemi",
+        description="Transparent proxy method",
         tpws_args="--split-pos=3 --disorder",
         mode=ZapretMode.TPWS,
     ),
@@ -292,7 +292,10 @@ class ZapretService(BaseService):
         tpws_exists = TPWS_BINARY.exists()
         installed = nfqws_exists or tpws_exists
         self._logger.debug(
-            f"[ZAPRET] Installation check: nfqws={nfqws_exists}, tpws={tpws_exists}, installed={installed}"
+            "[ZAPRET] Installation check: nfqws=%s, tpws=%s, installed=%s",
+            nfqws_exists,
+            tpws_exists,
+            installed,
         )
         return installed
 
@@ -305,7 +308,7 @@ class ZapretService(BaseService):
         Start Zapret service.
 
         Args:
-            one_shot: If True, run without installing service (Tek Seferlik)
+            one_shot: If True, run without installing service (one-time run)
 
         Returns:
             True if started successfully
@@ -332,16 +335,16 @@ class ZapretService(BaseService):
             # Start appropriate process(es)
             mode = preset.mode if preset else self._config.mode
 
-            if mode in [ZapretMode.NFQWS, ZapretMode.COMBINED]:
-                if not self._start_nfqws(preset, one_shot):
-                    self._remove_iptables_rules()
-                    return False
+            nfqws_modes = [ZapretMode.NFQWS, ZapretMode.COMBINED]
+            tpws_modes = [ZapretMode.TPWS, ZapretMode.COMBINED]
+            if mode in nfqws_modes and not self._start_nfqws(preset, one_shot):
+                self._remove_iptables_rules()
+                return False
 
-            if mode in [ZapretMode.TPWS, ZapretMode.COMBINED]:
-                if not self._start_tpws(preset, one_shot):
-                    self._stop_nfqws()
-                    self._remove_iptables_rules()
-                    return False
+            if mode in tpws_modes and not self._start_tpws(preset, one_shot):
+                self._stop_nfqws()
+                self._remove_iptables_rules()
+                return False
 
             self._config.enabled = True
             self._save_config()
@@ -398,7 +401,7 @@ class ZapretService(BaseService):
 
         # Build command arguments
         args = self._build_nfqws_args(preset)
-        cmd = [str(NFQWS_BINARY)] + args
+        cmd = [str(NFQWS_BINARY), *args]
 
         self._logger.debug(f"Starting nfqws: {' '.join(cmd)}")
 
@@ -452,10 +455,10 @@ class ZapretService(BaseService):
                     os.kill(pid, signal.SIGTERM)
                     time.sleep(0.5)
                     # Force kill if still running
-                    try:
+                    import contextlib
+
+                    with contextlib.suppress(ProcessLookupError):
                         os.kill(pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
                 except ProcessLookupError:
                     pass  # Already dead
 
@@ -503,9 +506,9 @@ class ZapretService(BaseService):
             )
 
         # Blacklist support
-        if (preset and preset.use_blacklist) or self._config.use_blacklist:
-            if BLACKLIST_FILE.exists():
-                args.extend(["--hostlist", str(BLACKLIST_FILE)])
+        use_blacklist = (preset and preset.use_blacklist) or self._config.use_blacklist
+        if use_blacklist and BLACKLIST_FILE.exists():
+            args.extend(["--hostlist", str(BLACKLIST_FILE)])
 
         return args
 
@@ -521,7 +524,7 @@ class ZapretService(BaseService):
 
         # Build command arguments
         args = self._build_tpws_args(preset)
-        cmd = [str(TPWS_BINARY)] + args
+        cmd = [str(TPWS_BINARY), *args]
 
         self._logger.debug(f"Starting tpws: {' '.join(cmd)}")
 
@@ -574,10 +577,10 @@ class ZapretService(BaseService):
                 try:
                     os.kill(pid, signal.SIGTERM)
                     time.sleep(0.5)
-                    try:
+                    import contextlib
+
+                    with contextlib.suppress(ProcessLookupError):
                         os.kill(pid, signal.SIGKILL)
-                    except ProcessLookupError:
-                        pass
                 except ProcessLookupError:
                     pass
 
@@ -625,9 +628,9 @@ class ZapretService(BaseService):
             )
 
         # Blacklist support
-        if (preset and preset.use_blacklist) or self._config.use_blacklist:
-            if BLACKLIST_FILE.exists():
-                args.extend(["--hostlist", str(BLACKLIST_FILE)])
+        use_blacklist = (preset and preset.use_blacklist) or self._config.use_blacklist
+        if use_blacklist and BLACKLIST_FILE.exists():
+            args.extend(["--hostlist", str(BLACKLIST_FILE)])
 
         return args
 
@@ -643,8 +646,8 @@ class ZapretService(BaseService):
             https_ports = self._config.https_ports or DEFAULT_HTTPS_PORTS
 
             # Build port string
-            http_ports_str = ",".join(str(p) for p in http_ports)
-            https_ports_str = ",".join(str(p) for p in https_ports)
+            _http_ports_str = ",".join(str(p) for p in http_ports)
+            _https_ports_str = ",".join(str(p) for p in https_ports)
 
             rules_added = []
 
@@ -675,7 +678,9 @@ class ZapretService(BaseService):
                         self._logger.debug(f"[ZAPRET] Added NFQUEUE rule for HTTP port {port}")
                     else:
                         self._logger.warning(
-                            f"[ZAPRET] Failed to add NFQUEUE rule for HTTP port {port}: {result.stderr}"
+                            "[ZAPRET] Failed to add NFQUEUE rule for HTTP port %s: %s",
+                            port,
+                            result.stderr,
                         )
 
                 # HTTPS
@@ -703,7 +708,9 @@ class ZapretService(BaseService):
                         self._logger.debug(f"[ZAPRET] Added NFQUEUE rule for HTTPS port {port}")
                     else:
                         self._logger.warning(
-                            f"[ZAPRET] Failed to add NFQUEUE rule for HTTPS port {port}: {result.stderr}"
+                            "[ZAPRET] Failed to add NFQUEUE rule for HTTPS port %s: %s",
+                            port,
+                            result.stderr,
                         )
 
             if mode in [ZapretMode.TPWS, ZapretMode.COMBINED]:
@@ -1111,7 +1118,7 @@ class ZapretService(BaseService):
         if self._shell.command_exists("apt-get"):
             cmd = ["apt-get", "update"]
             self._run_privileged(cmd, timeout=120)
-            cmd = ["apt-get", "install", "-y"] + packages
+            cmd = ["apt-get", "install", "-y", *packages]
         elif self._shell.command_exists("dnf"):
             # Fedora/RHEL
             packages = [
@@ -1124,7 +1131,7 @@ class ZapretService(BaseService):
                 "zlib-devel",
                 "iptables",
             ]
-            cmd = ["dnf", "install", "-y"] + packages
+            cmd = ["dnf", "install", "-y", *packages]
         elif self._shell.command_exists("pacman"):
             # Arch
             packages = [
@@ -1137,7 +1144,7 @@ class ZapretService(BaseService):
                 "zlib",
                 "iptables",
             ]
-            cmd = ["pacman", "-S", "--noconfirm"] + packages
+            cmd = ["pacman", "-S", "--noconfirm", *packages]
         else:
             self._logger.error("Unsupported package manager")
             return False
@@ -1235,8 +1242,8 @@ After=network.target
 
 [Service]
 Type=forking
-ExecStart=/usr/bin/python3 -c "from splitwire.services.zapret import get_zapret_service; get_zapret_service().start()"
-ExecStop=/usr/bin/python3 -c "from splitwire.services.zapret import get_zapret_service; get_zapret_service().stop()"
+ExecStart=/usr/bin/python3 -c "import splitwire.services.zapret as m;m.get_zapret_service().start()"
+ExecStop=/usr/bin/python3 -c "import splitwire.services.zapret as m;m.get_zapret_service().stop()"
 RemainAfterExit=yes
 Restart=on-failure
 RestartSec=10
