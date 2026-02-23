@@ -309,7 +309,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         except Exception:
             pass
 
-    def _on_theme_toggled(self, switch: Gtk.Switch, pspec) -> None:
+    def _on_theme_toggled(self, switch: Gtk.Switch, _pspec) -> None:
         """Handle theme toggle."""
         app = self.get_application()
         if app:
