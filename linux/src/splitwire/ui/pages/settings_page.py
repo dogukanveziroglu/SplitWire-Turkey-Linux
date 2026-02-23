@@ -256,6 +256,7 @@ class SettingsPage(BasePage):
         self.set_status(get_text("status", "checking"))
 
         def do_check():
+            """Fetch latest release tag from GitHub API."""
             import httpx
 
             try:
@@ -271,6 +272,7 @@ class SettingsPage(BasePage):
             return None
 
         def on_complete(result):
+            """Compare versions and notify user of update availability."""
             self.set_status("")
             if result:
                 current = "v1.0.0"
