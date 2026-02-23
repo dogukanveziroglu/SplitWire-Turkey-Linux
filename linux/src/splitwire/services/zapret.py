@@ -1291,29 +1291,3 @@ def get_zapret_service() -> ZapretService:
     if _zapret_service is None:
         _zapret_service = ZapretService()
     return _zapret_service
-
-
-# ============================================================================
-# Main for testing
-# ============================================================================
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("Zapret Service Test")
-    print("=" * 60)
-
-    service = get_zapret_service()
-
-    print(f"\nService: {service.display_name}")
-    print(f"Status: {service.status().value}")
-    print(f"Installed: {service.is_installed()}")
-
-    print("\nAvailable presets:")
-    for name, preset in service.get_presets().items():
-        print(f"  - {name}: {preset.name}")
-        print(f"    Mode: {preset.mode.value}")
-        print(f"    Args: {preset.nfqws_args or preset.tpws_args}")
-
-    print("\nBlacklist domains:")
-    for domain in service.get_blacklist():
-        print(f"  - {domain}")

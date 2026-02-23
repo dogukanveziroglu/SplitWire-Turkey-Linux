@@ -292,7 +292,3 @@ def main():
     """Main entry point for the application."""
     app = SplitWireApp()
     return app.run(sys.argv)
-
-
-if __name__ == "__main__":
-    sys.exit(main())

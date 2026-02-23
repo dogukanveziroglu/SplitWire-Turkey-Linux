@@ -826,39 +826,3 @@ def get_dns_service() -> DNSService:
     if _dns_service is None:
         _dns_service = DNSService()
     return _dns_service
-
-
-if __name__ == "__main__":
-    # Test the DNS service
-    print("=" * 50)
-    print("DNS Service Test")
-    print("=" * 50)
-
-    service = DNSService()
-
-    print(f"\nService name: {service.name}")
-    print(f"Display name: {service.display_name}")
-    print(f"Type: {service.service_type.value}")
-
-    print(f"\nDNS Manager: {service.get_dns_manager().value}")
-    print(f"Is installed: {service.is_installed()}")
-    print(f"Status: {service.status().value}")
-
-    print("\nDNS Presets:")
-    for name, preset in DNS_PRESETS.items():
-        print(f"  {name}: {preset.name}")
-        print(f"    Primary: {preset.primary}")
-        print(f"    DoH: {preset.doh_url or 'N/A'}")
-
-    print("\nCurrent DNS servers:")
-    for dns in service.get_current_dns():
-        print(f"  {dns}")
-
-    config = service.get_config()
-    print(f"\nConfig:")
-    print(f"  Preset: {config.preset_name}")
-    print(f"  DoH Mode: {config.doh_mode.value}")
-    print(f"  Auto Apply: {config.auto_apply_on_install}")
-    print(f"  Backup Exists: {config.backup_exists}")
-
-    print("\nTest completed!")

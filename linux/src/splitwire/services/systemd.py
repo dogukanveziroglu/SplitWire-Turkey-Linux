@@ -739,25 +739,3 @@ def get_systemd_manager() -> SystemdManager:
     if _systemd_manager is None:
         _systemd_manager = SystemdManager()
     return _systemd_manager
-
-
-if __name__ == "__main__":
-    # Test the systemd manager
-    print("=" * 50)
-    print("SystemdManager Test")
-    print("=" * 50)
-
-    manager = get_systemd_manager()
-
-    print("\nSplitWire services:")
-    for key, unit in manager.SPLITWIRE_SERVICES.items():
-        print(f"  {key}: {unit}")
-
-    print("\nChecking service status...")
-    for key, unit in manager.SPLITWIRE_SERVICES.items():
-        status = manager.get_status(unit)
-        print(f"  {unit}:")
-        print(f"    Active: {status.active_state.value}")
-        print(f"    Enabled: {status.enabled_state.value}")
-
-    print("\nTest completed!")

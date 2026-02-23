@@ -711,36 +711,3 @@ def get_proxy_route_service() -> ProxyRouteService:
     if _proxy_route_service is None:
         _proxy_route_service = ProxyRouteService()
     return _proxy_route_service
-
-
-if __name__ == "__main__":
-    # Test the proxy route service
-    print("=" * 50)
-    print("Proxy Route Service Test")
-    print("=" * 50)
-
-    service = ProxyRouteService()
-
-    print(f"\nService name: {service.name}")
-    print(f"Display name: {service.display_name}")
-    print(f"Type: {service.service_type.value}")
-
-    print(f"\nIs installed: {service.is_installed()}")
-    print(f"Status: {service.status().value}")
-
-    config = service.get_config()
-    print(f"\nConfig:")
-    print(f"  Method: {config.method.value}")
-    print(f"  Proxy: {config.proxy_host}:{config.proxy_port}")
-    print(f"  Include browsers: {config.include_browsers}")
-
-    print("\nAvailable apps:")
-    available = service.get_available_apps()
-    for app in available[:5]:
-        print(f"  {app.name}: {app.path}")
-    if len(available) > 5:
-        print(f"  ... and {len(available) - 5} more")
-
-    print("\nProxy methods:", [m.value for m in ProxyMethod])
-
-    print("\nTest completed!")

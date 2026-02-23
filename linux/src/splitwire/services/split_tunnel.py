@@ -644,35 +644,3 @@ def get_split_tunnel_service() -> SplitTunnelService:
     if _split_tunnel_service is None:
         _split_tunnel_service = SplitTunnelService()
     return _split_tunnel_service
-
-
-if __name__ == "__main__":
-    # Test the split tunnel service
-    print("=" * 50)
-    print("Split Tunnel Service Test")
-    print("=" * 50)
-
-    service = SplitTunnelService()
-
-    print(f"\nService name: {service.name}")
-    print(f"Display name: {service.display_name}")
-    print(f"Type: {service.service_type.value}")
-
-    print(f"\nIs installed: {service.is_installed()}")
-    print(f"Status: {service.status().value}")
-
-    print("\nKnown apps:")
-    for app_name in list(KNOWN_APPS.keys())[:5]:
-        print(f"  {app_name}")
-    print("  ...")
-
-    print("\nAvailable apps on this system:")
-    available = service.get_available_apps()
-    for app in available[:5]:
-        print(f"  {app.name}: {app.path}")
-    if len(available) > 5:
-        print(f"  ... and {len(available) - 5} more")
-
-    print("\nBrowser apps:", BROWSER_APPS)
-
-    print("\nTest completed!")

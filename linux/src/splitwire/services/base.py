@@ -453,32 +453,3 @@ class SystemdService(BaseService):
         # Check if unit file exists
         result = self._shell.run(["systemctl", "list-unit-files", unit], timeout=10)
         return unit in result.stdout
-
-
-if __name__ == "__main__":
-    # Test the base service classes
-    print("=" * 50)
-    print("BaseService Test")
-    print("=" * 50)
-
-    print("\nServiceStatus values:")
-    for status in ServiceStatus:
-        print(f"  {status.name}: {status.value}")
-
-    print("\nServiceType values:")
-    for stype in ServiceType:
-        print(f"  {stype.name}: {stype.value}")
-
-    print("\nServiceInfo example:")
-    info = ServiceInfo(
-        name="test",
-        display_name="Test Service",
-        description="A test service",
-        service_type=ServiceType.SYSTEM,
-        status=ServiceStatus.STOPPED,
-    )
-    print(f"  Name: {info.name}")
-    print(f"  Display: {info.display_name}")
-    print(f"  Status: {info.status.value}")
-
-    print("\nTest completed!")

@@ -884,33 +884,3 @@ def get_byedpi_service() -> ByeDPIService:
     if _byedpi_service is None:
         _byedpi_service = ByeDPIService()
     return _byedpi_service
-
-
-if __name__ == "__main__":
-    # Test the ByeDPI service
-    print("=" * 50)
-    print("ByeDPI Service Test")
-    print("=" * 50)
-
-    service = ByeDPIService()
-
-    print(f"\nService name: {service.name}")
-    print(f"Display name: {service.display_name}")
-    print(f"Type: {service.service_type.value}")
-
-    print(f"\nBinary installed: {service._is_binary_installed()}")
-    print(f"Is installed: {service.is_installed()}")
-    print(f"Status: {service.status().value}")
-
-    print("\nDefault presets:")
-    for name, preset in DEFAULT_PRESETS.items():
-        print(f"  {name}: {preset.name}")
-        print(f"    Args: {preset.args}")
-
-    config = service.get_config()
-    print(f"\nCurrent config:")
-    print(f"  Preset: {config.preset_name}")
-    print(f"  Proxy: {config.proxy_host}:{config.proxy_port}")
-    print(f"  Include browsers: {config.include_browsers}")
-
-    print("\nTest completed!")

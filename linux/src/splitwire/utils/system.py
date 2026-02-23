@@ -429,9 +429,3 @@ def print_system_info(info: SystemInfo) -> None:
         for issue in info.get_compatibility_issues():
             print(f"  - {issue}")
     print("=" * 50)
-
-
-if __name__ == "__main__":
-    # Test the system detector
-    info = get_system_info()
-    print_system_info(info)

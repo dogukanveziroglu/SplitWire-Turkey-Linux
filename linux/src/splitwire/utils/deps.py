@@ -482,9 +482,3 @@ def install_all_dependencies(interactive: bool = True) -> bool:
 
     print("\nAll dependencies satisfied!")
     return True
-
-
-if __name__ == "__main__":
-    # Test the dependency checker
-    system_deps, python_deps = check_dependencies()
-    print_dependency_status(system_deps, python_deps)

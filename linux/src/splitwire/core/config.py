@@ -334,35 +334,3 @@ def get_config() -> AppConfig:
 def save_config() -> bool:
     """Save the current configuration."""
     return get_config_manager().save()
-
-
-if __name__ == "__main__":
-    # Test the config manager
-    manager = ConfigManager()
-
-    print("=" * 50)
-    print("ConfigManager Test")
-    print("=" * 50)
-    print(f"Config dir: {manager.config_dir}")
-    print(f"Data dir: {manager.data_dir}")
-    print(f"Cache dir: {manager.cache_dir}")
-    print(f"Config file: {manager._config_file}")
-
-    # Load config
-    config = manager.load()
-    print(f"\nLoaded config:")
-    print(f"  Theme: {config.theme}")
-    print(f"  Language: {config.language}")
-    print(f"  First run: {config.first_run}")
-    print(f"  DNS enabled: {config.dns.enabled}")
-    print(f"  WireGuard split tunnel: {config.wireguard.split_tunnel_enabled}")
-
-    # Modify and save
-    config.theme = Theme.DARK.value
-    manager.save()
-    print("\nConfig saved!")
-
-    # Reload to verify
-    manager2 = ConfigManager()
-    config2 = manager2.load()
-    print(f"Reloaded theme: {config2.theme}")

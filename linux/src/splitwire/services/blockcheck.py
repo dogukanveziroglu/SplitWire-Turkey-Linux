@@ -594,33 +594,3 @@ def get_blockcheck_service() -> BlockcheckService:
     if _blockcheck_service is None:
         _blockcheck_service = BlockcheckService()
     return _blockcheck_service
-
-
-# ============================================================================
-# Main for testing
-# ============================================================================
-
-if __name__ == "__main__":
-    print("=" * 60)
-    print("Blockcheck Service Test")
-    print("=" * 60)
-
-    service = get_blockcheck_service()
-
-    print(f"\nBlockcheck available: {service.is_available()}")
-
-    def progress_callback(progress: ScanProgress):
-        print(f"  [{progress.percent}%] {progress.current_test}")
-
-    service.add_progress_callback(progress_callback)
-
-    print("\nStarting quick scan...")
-    if service.start_scan(mode=ScanMode.QUICK, async_mode=False):
-        result = service.get_last_result()
-        if result:
-            print(f"\nScan completed in {result.duration_seconds:.1f}s")
-            print(f"Success: {result.success}")
-            if result.recommended_args:
-                print(f"Recommended: {result.recommended_mode} {result.recommended_args}")
-    else:
-        print("Scan failed or blockcheck not available")

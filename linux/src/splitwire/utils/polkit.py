@@ -446,25 +446,3 @@ def can_elevate() -> bool:
 def is_root() -> bool:
     """Check if running as root (convenience function)."""
     return get_polkit_helper().is_root
-
-
-if __name__ == "__main__":
-    # Test the polkit helper
-    helper = PolkitHelper()
-
-    print("=" * 50)
-    print("Polkit Helper Test")
-    print("=" * 50)
-    print(f"Running as root: {helper.is_root}")
-    print(f"Elevation method: {helper.elevation_method.value}")
-    print(f"Can elevate: {helper.can_elevate()}")
-    print(f"Policy installed: {helper.is_policy_installed()}")
-
-    if not helper.is_root and helper.can_elevate():
-        print("\nTesting elevated command (whoami)...")
-        result = helper.run_elevated(["whoami"])
-        print(f"Success: {result.success}")
-        print(f"Return code: {result.returncode}")
-        print(f"Output: {result.stdout}")
-        if result.cancelled:
-            print("(User cancelled authentication)")
