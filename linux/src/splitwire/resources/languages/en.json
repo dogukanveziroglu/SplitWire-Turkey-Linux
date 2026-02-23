@@ -33,7 +33,6 @@
   },
   "tabs": {
     "wireguard": "WireGuard",
-    "zapret": "Zapret",
     "byedpi": "ByeDPI",
     "settings": "Settings",
     "advanced": "Advanced",
@@ -79,32 +78,6 @@
     "latest_handshake": "Latest Handshake",
     "wgcf_generate": "Generate WARP Config",
     "wgcf_generating": "Generating WARP configuration..."
-  },
-  "zapret": {
-    "title": "Zapret Packet Processing",
-    "description": "Traffic processing using nfqws/tpws",
-    "mode": "Mode",
-    "mode_nfqws": "nfqws (netfilter queue)",
-    "mode_tpws": "tpws (transparent proxy)",
-    "strategy": "Strategy",
-    "custom_args": "Custom Arguments",
-    "auto_setup": "Automatic Setup",
-    "auto_install": "Zapret Automatic Install",
-    "auto_install_desc": "Find optimal parameters using blockcheck",
-    "preset": "Preset",
-    "presets": "Presets",
-    "edit_preset": "Edit Preset",
-    "install_service": "Install Preset Service",
-    "run_once": "Run Once with Preset",
-    "service_status": "Service Status",
-    "running": "Running",
-    "stopped": "Stopped",
-    "not_installed": "Not Installed",
-    "scan_level": "Scan Level",
-    "scan_quick": "Quick",
-    "scan_standard": "Standard",
-    "scan_full": "Full",
-    "remove": "Remove Zapret"
   },
   "byedpi": {
     "title": "ByeDPI/ciadpi Proxy",
@@ -189,7 +162,6 @@
     "github": "GitHub Repository",
     "license": "License: MIT",
     "credits": "Credits",
-    "credits_zapret": "Zapret by bol-van",
     "credits_byedpi": "ByeDPI/ciadpi by hufrea"
   },
   "status": {
@@ -250,7 +222,6 @@
     "wireguard_connect": "Connect to VPN",
     "wireguard_disconnect": "Disconnect from VPN",
     "split_tunnel": "Enable split tunneling to route only selected apps through VPN",
-    "zapret_auto": "Automatically find the best packet processing parameters for your network",
     "byedpi_proxy": "Route app traffic through local SOCKS proxy for traffic processing",
     "dns_doh": "Encrypt DNS queries using DNS over HTTPS",
     "standard_install": "Standard setup with WireGuard/WGCF",
@@ -274,8 +245,6 @@
   "help": {
     "wireguard_title": "WireGuard Help",
     "wireguard_content": "WireGuard is a modern VPN protocol. Select a configuration file and click Connect to establish a VPN connection. Enable split tunneling to route only selected applications through the VPN.",
-    "zapret_title": "Zapret Help",
-    "zapret_content": "Zapret performs packet processing using packet manipulation techniques. Use Automatic Installation to find optimal parameters, or select a preset for manual configuration.",
     "byedpi_title": "ByeDPI Help",
     "byedpi_content": "ByeDPI creates a local SOCKS proxy that performs traffic processing. Selected applications will have their traffic routed through this proxy."
   }

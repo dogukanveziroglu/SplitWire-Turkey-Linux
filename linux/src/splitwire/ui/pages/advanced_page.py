@@ -17,7 +17,6 @@ from splitwire.core import get_text
 from splitwire.services import (
     get_wireguard_service,
     get_split_tunnel_service,
-    # get_zapret_service,  # Disabled
     get_byedpi_service,
     get_proxy_route_service,
     get_dns_service,
@@ -42,11 +41,6 @@ class AdvancedPage(BasePage):
                 "name": "Split Tunnel (cgproxy)",
                 "service": get_split_tunnel_service(),
             },
-            # Zapret disabled
-            # "zapret": {
-            #     "name": "Zapret",
-            #     "service": get_zapret_service(),
-            # },
             "byedpi": {
                 "name": "ByeDPI",
                 "service": get_byedpi_service(),

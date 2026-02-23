@@ -6,7 +6,6 @@
   },
   "tabs": {
     "wireguard": "WireGuard",
-    "zapret": "Zapret",
     "byedpi": "ByeDPI",
     "settings": "Configuracion",
     "advanced": "Avanzado",
@@ -52,25 +51,6 @@
     "latest_handshake": "Ultimo handshake",
     "wgcf_generate": "Generar configuracion WARP",
     "wgcf_generating": "Generando configuracion WARP..."
-  },
-  "zapret": {
-    "title": "Zapret Procesamiento de Paquetes",
-    "description": "Procesamiento de trafico usando nfqws/tpws",
-    "mode": "Modo",
-    "mode_nfqws": "nfqws (cola netfilter)",
-    "mode_tpws": "tpws (proxy transparente)",
-    "strategy": "Estrategia",
-    "custom_args": "Argumentos personalizados",
-    "auto_install": "Instalacion automatica",
-    "auto_install_desc": "Encontrar parametros optimos usando blockcheck",
-    "preset": "Preajuste",
-    "edit_preset": "Editar preajuste",
-    "install_service": "Instalar servicio",
-    "run_once": "Ejecutar una vez",
-    "service_status": "Estado del servicio",
-    "running": "Ejecutando",
-    "stopped": "Detenido",
-    "not_installed": "No instalado"
   },
   "byedpi": {
     "title": "ByeDPI/ciadpi Proxy",
@@ -128,7 +108,6 @@
     "github": "Repositorio GitHub",
     "license": "Licencia: MIT",
     "credits": "Creditos",
-    "credits_zapret": "Zapret - bol-van",
     "credits_byedpi": "ByeDPI/ciadpi - hufrea"
   },
   "status": {
@@ -181,15 +160,12 @@
     "wireguard_connect": "Conectar a VPN",
     "wireguard_disconnect": "Desconectar de VPN",
     "split_tunnel": "Habilitar tunelizacion dividida para enrutar solo las aplicaciones seleccionadas a traves de VPN",
-    "zapret_auto": "Encontrar automaticamente los mejores parametros de procesamiento de paquetes para su red",
     "byedpi_proxy": "Enrutar el trafico de la aplicacion a traves del proxy SOCKS local para procesamiento de trafico",
     "dns_doh": "Cifrar las consultas DNS usando DNS sobre HTTPS"
   },
   "help": {
     "wireguard_title": "Ayuda de WireGuard",
     "wireguard_content": "WireGuard es un protocolo VPN moderno. Seleccione un archivo de configuracion y haga clic en Conectar para establecer una conexion VPN. Habilite la tunelizacion dividida para enrutar solo las aplicaciones seleccionadas a traves de VPN.",
-    "zapret_title": "Ayuda de Zapret",
-    "zapret_content": "Zapret realiza procesamiento de paquetes usando manipulacion de paquetes. Use la Instalacion Automatica para encontrar parametros optimos, o seleccione un preajuste para configuracion manual.",
     "byedpi_title": "Ayuda de ByeDPI",
     "byedpi_content": "ByeDPI crea un proxy SOCKS local que realiza procesamiento de trafico. El trafico de las aplicaciones seleccionadas sera enrutado a traves de este proxy."
   }

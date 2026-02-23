@@ -213,9 +213,6 @@ class SplitWireWindow(Adw.ApplicationWindow):
         from splitwire.ui.pages.main_page import MainPage
         from splitwire.ui.pages.byedpi_page import ByeDPIPage
 
-        # Zapret/GoodbyeDPI disabled
-        # from splitwire.ui.pages.zapret_page import ZapretPage
-        # from splitwire.ui.pages.goodbyedpi_page import GoodbyeDPIPage
         from splitwire.ui.pages.repair_page import RepairPage
         from splitwire.ui.pages.advanced_page import AdvancedPage
         from splitwire.ui.pages.settings_page import SettingsPage
@@ -233,21 +230,6 @@ class SplitWireWindow(Adw.ApplicationWindow):
             byedpi_page, "byedpi", "ByeDPI", "network-transmit-receive-symbolic"
         )
         self._pages["byedpi"] = byedpi_page
-
-        # Zapret/GoodbyeDPI pages disabled
-        # Keeping code for potential future use
-        #
-        # zapret_page = ZapretPage(window=self)
-        # self._stack.add_titled_with_icon(
-        #     zapret_page, "zapret", "Zapret", "security-high-symbolic"
-        # )
-        # self._pages["zapret"] = zapret_page
-        #
-        # goodbyedpi_page = GoodbyeDPIPage(window=self)
-        # self._stack.add_titled_with_icon(
-        #     goodbyedpi_page, "goodbyedpi", "GoodbyeDPI", "security-medium-symbolic"
-        # )
-        # self._pages["goodbyedpi"] = goodbyedpi_page
 
         # Repair page (Discord)
         repair_page = RepairPage(window=self)

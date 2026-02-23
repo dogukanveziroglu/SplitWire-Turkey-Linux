@@ -6,7 +6,6 @@
   },
   "tabs": {
     "wireguard": "WireGuard",
-    "zapret": "Zapret",
     "byedpi": "ByeDPI",
     "settings": "Nastroyki",
     "advanced": "Dopolnitel'no",
@@ -52,25 +51,6 @@
     "latest_handshake": "Posledneye rukopozhatiye",
     "wgcf_generate": "Sozdat' konfigurasiyu WARP",
     "wgcf_generating": "Sozdaniye konfiguratsii WARP..."
-  },
-  "zapret": {
-    "title": "Zapret Obrabotka Paketov",
-    "description": "Obrabotka trafika s pomoshch'yu nfqws/tpws",
-    "mode": "Rezhim",
-    "mode_nfqws": "nfqws (ochered' netfilter)",
-    "mode_tpws": "tpws (prozrachnyy proksi)",
-    "strategy": "Strategiya",
-    "custom_args": "Pol'zovatel'skiye argumenty",
-    "auto_install": "Avtomaticheskaya ustanovka",
-    "auto_install_desc": "Nayti optimal'nyye parametry s pomoshch'yu blockcheck",
-    "preset": "Preset",
-    "edit_preset": "Redaktirovat' preset",
-    "install_service": "Ustanovit' sluzhbu",
-    "run_once": "Zapustit' odin raz",
-    "service_status": "Status sluzhby",
-    "running": "Rabotayet",
-    "stopped": "Ostanovleno",
-    "not_installed": "Ne ustanovleno"
   },
   "byedpi": {
     "title": "ByeDPI/ciadpi Proksi",
@@ -128,7 +108,6 @@
     "github": "Repozitoriy GitHub",
     "license": "Litsenziya: MIT",
     "credits": "Blagodarnosti",
-    "credits_zapret": "Zapret - bol-van",
     "credits_byedpi": "ByeDPI/ciadpi - hufrea"
   },
   "status": {
@@ -181,15 +160,12 @@
     "wireguard_connect": "Podklyuchit'sya k VPN",
     "wireguard_disconnect": "Otklyuchit'sya ot VPN",
     "split_tunnel": "Vklyuchit' razdel'noye tunnelirovaniye dlya napravleniya tol'ko vybrannykh prilozheniy cherez VPN",
-    "zapret_auto": "Avtomaticheski nayti luchshiye parametry obrabotki paketov dlya vashey seti",
     "byedpi_proxy": "Napravlyat' trafik prilozheniya cherez lokal'nyy SOCKS proksi dlya obrabotki trafika",
     "dns_doh": "Shifrovat' DNS-zaprosy s pomoshch'yu DNS cherez HTTPS"
   },
   "help": {
     "wireguard_title": "Pomoshch' WireGuard",
     "wireguard_content": "WireGuard - eto sovremennyy protokol VPN. Vyberite fayl konfiguratsii i nazhmite Podklyuchit' dlya ustanovleniya VPN-soyedineniya. Vklyuchite razdel'noye tunnelirovaniye dlya napravleniya tol'ko vybrannykh prilozheniy cherez VPN.",
-    "zapret_title": "Pomoshch' Zapret",
-    "zapret_content": "Zapret vypolnyayet obrabotku paketov s pomoshch'yu manipulyatsii paketami. Ispol'zuyte Avtomaticheskuyu ustanovku dlya poiska optimal'nykh parametrov ili vyberite preset dlya ruchnoy nastroyki.",
     "byedpi_title": "Pomoshch' ByeDPI",
     "byedpi_content": "ByeDPI sozdayet lokal'nyy SOCKS proksi, kotoryy vypolnyayet obrabotku trafika. Trafik vybrannykh prilozheniy budet napravlyat'sya cherez etot proksi."
   }
