@@ -106,12 +106,9 @@ class LanguageManager:
         """Load translations for current language."""
         _logger.info(f"[LANG] Loading language: {self._language}")
 
-        # Always load fallback (English) first
-        if self._language != self.DEFAULT_LANGUAGE:
-            fallback_file = self._resources_dir / f"{self.DEFAULT_LANGUAGE}.json"
-            self._fallback_translations = self._load_json_file(fallback_file)
-        else:
-            self._fallback_translations = {}
+        # Always load fallback (English) regardless of current language
+        fallback_file = self._resources_dir / f"{self.DEFAULT_LANGUAGE}.json"
+        self._fallback_translations = self._load_json_file(fallback_file)
 
         # Load current language
         lang_file = self._resources_dir / f"{self._language}.json"
@@ -175,12 +172,14 @@ class LanguageManager:
         if result is not None:
             return result
 
-        # Fall back to default language
+        # Fall back to English
         result = self._get_nested(self._fallback_translations, key_path)
         if result is not None:
+            key_str = ".".join(key_path)
+            _logger.warning(f"[LANG] Fallback to English for key: {key_str}")
             return result
 
-        # Log missing translation
+        # Missing from all languages -- return key path as bug indicator
         key_str = ".".join(key_path)
         _logger.warning(f"[LANG] Missing translation: {key_str}")
 

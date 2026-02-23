@@ -55,19 +55,8 @@ class TestLanguageManager:
 
     @pytest.fixture
     def lang_manager(self, temp_lang_dir):
-        """Create a LanguageManager with test translations."""
-        manager = LanguageManager.__new__(LanguageManager)
-        manager._language = "en"
-        manager._translations = {}
-        manager._fallback = {}
-        manager._lang_dir = temp_lang_dir
-
-        # Load translations
-        with open(temp_lang_dir / "en.json") as f:
-            manager._translations = json.load(f)
-            manager._fallback = manager._translations.copy()
-
-        return manager
+        """Create a LanguageManager with English test translations."""
+        return LanguageManager(language="en", resources_dir=temp_lang_dir)
 
     def test_get_text_simple(self, lang_manager):
         """Test getting simple translation."""
@@ -99,44 +88,110 @@ class TestLanguageManager:
 
     def test_language_switch(self, temp_lang_dir):
         """Test switching languages."""
-        manager = LanguageManager.__new__(LanguageManager)
-        manager._lang_dir = temp_lang_dir
-        manager._translations = {}
-        manager._fallback = {}
-
-        # Load English
-        with open(temp_lang_dir / "en.json") as f:
-            manager._translations = json.load(f)
-            manager._fallback = manager._translations.copy()
-        manager._language = "en"
-
+        manager = LanguageManager(language="en", resources_dir=temp_lang_dir)
         assert manager.get_text("buttons", "install") == "Install"
 
         # Switch to Turkish
-        with open(temp_lang_dir / "tr.json") as f:
-            manager._translations = json.load(f)
-        manager._language = "tr"
-
+        manager.set_language("tr")
         assert manager.get_text("buttons", "install") == "Kur"
 
     def test_fallback_to_english(self, temp_lang_dir):
         """Test fallback to English when key missing in current language."""
-        manager = LanguageManager.__new__(LanguageManager)
-        manager._lang_dir = temp_lang_dir
-
-        # Load English as fallback
-        with open(temp_lang_dir / "en.json") as f:
-            manager._fallback = json.load(f)
-
-        # Load Turkish (which doesn't have 'nested' key)
-        with open(temp_lang_dir / "tr.json") as f:
-            manager._translations = json.load(f)
-        manager._language = "tr"
+        manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
 
         # Turkish doesn't have nested.level1.level2.key, should fall back
-        # Since our implementation uses fallback, test the behavior
-        result = manager._fallback.get("nested", {}).get("level1", {}).get("level2", {}).get("key")
+        result = manager.get_text("nested", "level1", "level2", "key")
         assert result == "Deep value"
+
+
+class TestFallbackChain:
+    """Tests for the language manager fallback chain behavior."""
+
+    @pytest.fixture
+    def temp_lang_dir(self):
+        """Create a temporary language directory with test files."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lang_dir = Path(tmpdir)
+
+            # English: has all keys including "nested" and "en_only"
+            en_data = {
+                "app": {"name": "SplitWire-Turkey"},
+                "buttons": {"install": "Install", "remove": "Remove"},
+                "nested": {"level1": {"key": "English deep value"}},
+                "en_only": {"special": "English-only key"},
+            }
+            with open(lang_dir / "en.json", "w") as f:
+                json.dump(en_data, f)
+
+            # Turkish: missing "nested" and "en_only" sections
+            tr_data = {
+                "app": {"name": "SplitWire-Turkey"},
+                "buttons": {"install": "Kur", "remove": "Kaldir"},
+            }
+            with open(lang_dir / "tr.json", "w") as f:
+                json.dump(tr_data, f)
+
+            yield lang_dir
+
+    def test_fallback_returns_english_for_missing_key(self, temp_lang_dir):
+        """Test that get_text returns English fallback for missing key."""
+        manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
+        result = manager.get_text("en_only", "special")
+        assert result == "English-only key"
+
+    def test_fallback_returns_key_path_when_missing_everywhere(
+        self, temp_lang_dir
+    ):
+        """Test that get_text returns key path when missing from all."""
+        manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
+        result = manager.get_text("totally", "missing")
+        assert result == "totally.missing"
+
+    def test_fallback_works_when_language_is_english(self, temp_lang_dir):
+        """Test that fallback works when current language IS English."""
+        manager = LanguageManager(language="en", resources_dir=temp_lang_dir)
+        # Key exists in en.json -- should return it
+        result = manager.get_text("en_only", "special")
+        assert result == "English-only key"
+
+    def test_fallback_english_never_returns_empty(self, temp_lang_dir):
+        """Test that get_text never returns empty string."""
+        manager = LanguageManager(language="en", resources_dir=temp_lang_dir)
+        result = manager.get_text("nonexistent", "key")
+        assert result != ""
+        assert result == "nonexistent.key"
+
+    def test_fallback_warning_logged_on_english_fallback(self, temp_lang_dir):
+        """Test that logger.warning fires when falling back to English."""
+        manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
+        with patch("splitwire.core.language._logger") as mock_logger:
+            manager.get_text("en_only", "special")
+            mock_logger.warning.assert_any_call(
+                "[LANG] Fallback to English for key: en_only.special"
+            )
+
+    def test_missing_key_warning_logged(self, temp_lang_dir):
+        """Test that logger.warning fires for completely missing key."""
+        manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
+        with patch("splitwire.core.language._logger") as mock_logger:
+            manager.get_text("totally", "missing")
+            mock_logger.warning.assert_any_call(
+                "[LANG] Missing translation: totally.missing"
+            )
+
+    def test_no_fallback_warning_when_key_exists_in_current_lang(
+        self, temp_lang_dir
+    ):
+        """Test no fallback warning when key exists in current language."""
+        manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
+        with patch("splitwire.core.language._logger") as mock_logger:
+            result = manager.get_text("buttons", "install")
+            assert result == "Kur"
+            # Should NOT have fallback warning for this key
+            for call_args in mock_logger.warning.call_args_list:
+                assert "Fallback to English for key: buttons.install" not in str(
+                    call_args
+                )
 
 
 class TestLanguageError:
