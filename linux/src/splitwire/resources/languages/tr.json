@@ -17,7 +17,8 @@
     "custom_setup": "Özel Kurulum",
     "generate_config": "Özel Config Oluştur",
     "remove_service": "Hizmeti Kaldır",
-    "about": "Hakkında"
+    "about": "Hakkında",
+    "full_tunnel": "Tum Trafigi VPN Uzerinden Yonlendir"
   },
   "repair": {
     "actions": "İşlemler",
@@ -63,7 +64,8 @@
     "clear_all": "Tumunu Temizle",
     "reset": "Varsayilanlara Sifirla",
     "check_deps": "Bagimliliklari Kontrol Et",
-    "install_deps": "Bagimliliklari Kur"
+    "install_deps": "Bagimliliklari Kur",
+    "launch": "Baslat"
   },
   "wireguard": {
     "title": "WireGuard VPN",
@@ -225,7 +227,10 @@
     "permission_denied": "Erisim reddedildi",
     "network_error": "Ag hatasi: {0}",
     "file_not_found": "Dosya bulunamadi: {0}",
-    "invalid_config": "Gecersiz yapilandirma: {0}"
+    "invalid_config": "Gecersiz yapilandirma: {0}",
+    "wgcf_register_failed": "WGCF kaydı başarısız",
+    "config_generate_failed": "Config olusturma basarisiz",
+    "service_start_failed": "Hizmet baslatma basarisiz"
   },
   "tooltips": {
     "wireguard_connect": "VPN'e bağlan",
@@ -249,12 +254,15 @@
     "webcord_install": "Alternatif Discord istemcisi kur",
     "clean_install_ptb": "Mevcut Discord'u kaldır ve PTB kur",
     "webcord_shortcut": "Masaüstü kısayolu oluştur",
-    "auto_dns": "WireGuard ve hizmet kurulumlarinda DNS'i otomatik ayarla"
+    "auto_dns": "WireGuard ve hizmet kurulumlarinda DNS'i otomatik ayarla",
+    "full_tunnel": "Tum ag trafigini VPN tuneli uzerinden yonlendir"
   },
   "help": {
     "wireguard_title": "WireGuard Yardım",
     "wireguard_content": "WireGuard modern bir VPN protokoludur. Bir yapilandirma dosyasi secin ve VPN baglantisi kurmak icin Baglan'a tiklayin. Sadece secili uygulamalari VPN uzerinden yonlendirmek icin bolunmus tunellemeyi etkinlestirin.",
     "byedpi_title": "ByeDPI Yardim",
-    "byedpi_content": "ByeDPI, trafik isleme yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir."
+    "byedpi_content": "ByeDPI, trafik isleme yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir.",
+    "wireguard_body": "WireGuard modern bir VPN protokoludur. Bir yapilandirma dosyasi secin ve VPN baglantisi kurmak icin Baglan'a tiklayin. Sadece secili uygulamalari VPN uzerinden yonlendirmek icin bolunmus tunellemeyi etkinlestirin.",
+    "byedpi_body": "ByeDPI, trafik isleme yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir."
   }
 }
