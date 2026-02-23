@@ -120,7 +120,7 @@ class BackupManager:
         """Generate unique backup ID."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         hash_input = f"{timestamp}_{id(self)}".encode()
-        short_hash = hashlib.md5(hash_input).hexdigest()[:8]  # noqa: S324
+        short_hash = hashlib.md5(hash_input).hexdigest()[:8]  # noqa: S324 -- non-cryptographic ID
         return f"{timestamp}_{short_hash}"
 
     def _get_backup_path(self, backup_id: str) -> Path:

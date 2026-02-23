@@ -502,7 +502,7 @@ class BlockcheckService:
         for callback in self._progress_callbacks:
             try:
                 callback(self._progress)
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:  # noqa: PERF203 -- per-callback error isolation
                 self._logger.warning(f"Progress callback error: {e}")
 
     def _save_result(self, result: BlockcheckResult) -> None:

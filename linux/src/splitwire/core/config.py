@@ -102,7 +102,7 @@ class AppConfig:
     zapret: ZapretConfig = field(default_factory=ZapretConfig)
     byedpi: ByeDPIConfig = field(default_factory=ByeDPIConfig)
 
-    # State (not saved)  # noqa: ERA001
+    # State (not saved)  # noqa: ERA001 -- section header, not dead code
     first_run: bool = True
     version: str = "1.0.0"
 

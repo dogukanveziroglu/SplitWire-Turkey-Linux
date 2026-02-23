@@ -645,7 +645,7 @@ class WireGuardService(BaseService):
 
             # Save binary
             WGCF_BINARY.write_bytes(binary_data)
-            os.chmod(WGCF_BINARY, 0o755)  # noqa: S103
+            os.chmod(WGCF_BINARY, 0o755)  # noqa: S103 -- binary needs execute permission
 
             self._logger.info("wgcf downloaded successfully")
             return True

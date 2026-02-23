@@ -141,7 +141,7 @@ class LanguageManager:
             logger.error(f"[LANG] Failed to load language file {path}: {e}")
             return {}
 
-    @lru_cache(maxsize=512)  # noqa: B019
+    @lru_cache(maxsize=512)  # noqa: B019 -- singleton instance, no leak risk
     def get_text(self, *keys: str, default: str = "") -> str:
         """
         Get translated text for the given key(s).

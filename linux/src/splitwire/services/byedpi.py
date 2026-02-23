@@ -545,7 +545,7 @@ class ByeDPIService(BaseService):
         )
         return exists and executable
 
-    def _download_binary(self) -> bool:  # noqa: C901, PLR0912
+    def _download_binary(self) -> bool:  # noqa: C901, PLR0912 -- download with platform/error branching
         """Download ciadpi binary from GitHub releases."""
         import tarfile
 
@@ -609,7 +609,7 @@ class ByeDPIService(BaseService):
                 # Extract from tar.gz archive
                 with tempfile.TemporaryDirectory() as extract_dir:
                     with tarfile.open(tmp_path, "r:gz") as tar:
-                        tar.extractall(extract_dir)  # noqa: S202
+                        tar.extractall(extract_dir)  # noqa: S202 -- trusted GitHub release archive
 
                     # Find the ciadpi binary in extracted files (name may include arch suffix)
                     binary_found = False
@@ -715,7 +715,7 @@ class ByeDPIService(BaseService):
                         try:
                             os.kill(pid, 0)
                             time.sleep(0.1)
-                        except ProcessLookupError:  # noqa: PERF203
+                        except ProcessLookupError:  # noqa: PERF203 -- poll loop needs per-iteration check
                             break
                     else:
                         # Force kill if still running

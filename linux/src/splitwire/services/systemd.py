@@ -400,7 +400,7 @@ class SystemdManager:
     # Status Monitoring
     # =========================================================================
 
-    def get_status(self, unit_name: str) -> SystemdUnitStatus:  # noqa: C901, PLR0912
+    def get_status(self, unit_name: str) -> SystemdUnitStatus:  # noqa: C901, PLR0912 -- systemd status parsing with many fields
         """
         Get detailed status of a systemd unit.
 

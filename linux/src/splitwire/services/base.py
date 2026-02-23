@@ -120,7 +120,7 @@ class BaseService(ABC):
         for callback in self._status_callbacks:
             try:
                 callback(status)
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:  # noqa: PERF203 -- per-callback error isolation
                 self._logger.warning(f"Status callback error: {e}")
 
     # =========================================================================
