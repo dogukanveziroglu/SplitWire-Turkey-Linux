@@ -22,7 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 def check_python_version() -> bool:
-    """Check if Python version is compatible."""
+    """Check if the running Python version is 3.10+.
+
+    Returns:
+        True if compatible, False with stderr message otherwise.
+    """
     major, minor = sys.version_info[:2]
     if major < 3 or (major == 3 and minor < 10):
         sys.stderr.write(f"Error: Python 3.10+ required, found {major}.{minor}\n")
@@ -31,7 +35,11 @@ def check_python_version() -> bool:
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
+    """Parse command line arguments.
+
+    Returns:
+        Namespace with parsed CLI flags and options.
+    """
     parser = argparse.ArgumentParser(
         prog="splitwire",
         description=("SplitWire - A privacy-focused network routing tool for Linux"),
@@ -98,7 +106,7 @@ For more information, visit: https://github.com/cagritaskn/SplitWire-Turkey
 
 
 def show_version() -> None:
-    """Display version information."""
+    """Display version information to the logger."""
     from splitwire.core import get_config
 
     config = get_config()
@@ -109,7 +117,11 @@ def show_version() -> None:
 
 
 def check_dependencies() -> bool:
-    """Check and display dependency status."""
+    """Check and display dependency status.
+
+    Returns:
+        True if all required dependencies are installed.
+    """
     from splitwire.utils import check_dependencies, print_dependency_status
 
     system_deps, python_deps = check_dependencies()
@@ -123,7 +135,7 @@ def check_dependencies() -> bool:
 
 
 def check_system() -> None:
-    """Display system information."""
+    """Detect and display system information."""
     from splitwire.utils import get_system_info, print_system_info
 
     info = get_system_info()
@@ -131,7 +143,11 @@ def check_system() -> None:
 
 
 def install_dependencies() -> bool:
-    """Install missing dependencies."""
+    """Install missing dependencies interactively.
+
+    Returns:
+        True if all dependencies are satisfied after install.
+    """
     from splitwire.utils import install_all_dependencies
 
     return install_all_dependencies(interactive=True)

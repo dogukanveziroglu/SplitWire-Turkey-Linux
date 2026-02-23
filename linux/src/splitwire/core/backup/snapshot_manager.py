@@ -18,18 +18,23 @@ logger = logging.getLogger(__name__)
 
 
 class SnapshotManager:
-    """
-    Manages system snapshots for rollback capability.
+    """Manages system state snapshots for rollback capability.
 
-    Used to capture state before potentially destructive operations.
+    Captures files, service states, and DNS configuration
+    before potentially destructive operations.
+
+    Attributes:
+        _snapshot_dir: Directory for storing snapshot data.
+        _current_snapshot: Most recently created snapshot.
     """
 
-    def __init__(self, snapshot_dir: Path | None = None):
-        """
-        Initialize snapshot manager.
+    TIMEOUT_SERVICE_CHECK = 5  # systemctl is-active
+
+    def __init__(self, snapshot_dir: Path | None = None) -> None:
+        """Initialize snapshot manager.
 
         Args:
-            snapshot_dir: Override snapshot directory
+            snapshot_dir: Override snapshot storage directory.
         """
         if snapshot_dir:
             self._snapshot_dir = snapshot_dir
@@ -40,25 +45,26 @@ class SnapshotManager:
         self._snapshot_dir.mkdir(parents=True, exist_ok=True)
         self._current_snapshot: SystemSnapshot | None = None
 
-    def create_snapshot(
-        self, operation: str, files: list[str]
-    ) -> SystemSnapshot:
-        """
-        Create a snapshot before an operation.
+    def create_snapshot(self, operation: str, files: list[str]) -> SystemSnapshot:
+        """Create a snapshot before an operation.
 
         Args:
-            operation: Description of operation being performed
-            files: Files that may be modified
+            operation: Description of the triggering operation.
+            files: Paths of files that may be modified.
 
         Returns:
-            Created snapshot
+            The created SystemSnapshot with backed-up state.
+
+        Example:
+            >>> mgr = SnapshotManager()
+            >>> snap = mgr.create_snapshot("dns-change", [])
+            >>> isinstance(snap.id, str)
+            True
         """
         snapshot_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         snapshot_path = self._snapshot_dir / snapshot_id
 
-        logger.info(
-            "[SNAPSHOT] Creating snapshot for operation: %s", operation
-        )
+        logger.info("[SNAPSHOT] Creating snapshot for operation: %s", operation)
 
         # Create snapshot directory
         snapshot_path.mkdir(parents=True, exist_ok=True)
@@ -94,9 +100,7 @@ class SnapshotManager:
         return snapshot
 
     @staticmethod
-    def _backup_files(
-        files: list[str], snapshot_path: Path
-    ) -> list[str]:
+    def _backup_files(files: list[str], snapshot_path: Path) -> list[str]:
         """Backup the given files into the snapshot directory."""
         backed_up: list[str] = []
         for file_path in files:
@@ -109,33 +113,31 @@ class SnapshotManager:
         return backed_up
 
     def rollback(self, snapshot_id: str | None = None) -> bool:
-        """
-        Rollback to a snapshot.
+        """Rollback to a previous snapshot state.
 
         Args:
-            snapshot_id: ID of snapshot to rollback to (default: current)
+            snapshot_id: Snapshot ID to restore (uses current if None).
 
         Returns:
-            True if rollback succeeded
+            True if rollback succeeded, False otherwise.
+
+        Example:
+            >>> mgr = SnapshotManager()
+            >>> mgr.rollback("20240101_120000_000000")
+            False
         """
         if snapshot_id is None and self._current_snapshot is not None:
             snapshot_id = self._current_snapshot.id
 
         if snapshot_id is None:
-            logger.warning(
-                "[SNAPSHOT] No snapshot ID provided for rollback"
-            )
+            logger.warning("[SNAPSHOT] No snapshot ID provided for rollback")
             return False
 
-        logger.info(
-            "[SNAPSHOT] Rolling back to snapshot: %s", snapshot_id
-        )
+        logger.info("[SNAPSHOT] Rolling back to snapshot: %s", snapshot_id)
         snapshot_path = self._snapshot_dir / snapshot_id
 
         if not snapshot_path.exists():
-            logger.error(
-                "[SNAPSHOT] Snapshot not found: %s", snapshot_id
-            )
+            logger.error("[SNAPSHOT] Snapshot not found: %s", snapshot_id)
             return False
 
         meta_path = snapshot_path / "snapshot.json"
@@ -147,19 +149,13 @@ class SnapshotManager:
             return False
 
         try:
-            return self._restore_snapshot_files(
-                snapshot_path, meta_path
-            )
+            return self._restore_snapshot_files(snapshot_path, meta_path)
         except Exception as e:
-            logger.error(
-                "[SNAPSHOT] Failed to rollback snapshot: %s", e
-            )
+            logger.error("[SNAPSHOT] Failed to rollback snapshot: %s", e)
             return False
 
     @staticmethod
-    def _restore_snapshot_files(
-        snapshot_path: Path, meta_path: Path
-    ) -> bool:
+    def _restore_snapshot_files(snapshot_path: Path, meta_path: Path) -> bool:
         """Restore files from a snapshot directory."""
         with open(meta_path, encoding="utf-8") as f:
             snapshot_data = json.load(f)
@@ -171,9 +167,7 @@ class SnapshotManager:
 
             if backup.exists():
                 shutil.copy2(str(backup), str(original))
-                logger.debug(
-                    "[SNAPSHOT] Restored: %s", original_path
-                )
+                logger.debug("[SNAPSHOT] Restored: %s", original_path)
                 restored_count += 1
 
         logger.info(
@@ -182,17 +176,14 @@ class SnapshotManager:
         )
         return True
 
-    def cleanup_snapshot(
-        self, snapshot_id: str | None = None
-    ) -> bool:
-        """
-        Remove a snapshot after successful operation.
+    def cleanup_snapshot(self, snapshot_id: str | None = None) -> bool:
+        """Remove a snapshot directory after a successful operation.
 
         Args:
-            snapshot_id: ID of snapshot to cleanup (default: current)
+            snapshot_id: Snapshot to remove (uses current if None).
 
         Returns:
-            True if cleanup succeeded
+            True if the snapshot was found and removed.
         """
         if snapshot_id is None and self._current_snapshot is not None:
             snapshot_id = self._current_snapshot.id
@@ -221,13 +212,11 @@ class SnapshotManager:
                     ["systemctl", "is-active", service],
                     capture_output=True,
                     text=True,
-                    timeout=5,
+                    timeout=SnapshotManager.TIMEOUT_SERVICE_CHECK,
                 )
                 states[service] = result.stdout.strip()
             except Exception as e:
-                logger.debug(
-                    "Failed to get state of %s: %s", service, e
-                )
+                logger.debug("Failed to get state of %s: %s", service, e)
                 states[service] = "unknown"
 
         return states

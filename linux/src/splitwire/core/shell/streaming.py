@@ -35,19 +35,25 @@ def run_with_output(
     run_cwd: Path | None,
     run_env: dict[str, str],
 ) -> CommandResult:
-    """
-    Run a command with real-time output streaming.
+    """Run a command with real-time output streaming.
+
+    Each stdout line is passed to *callback* as it arrives.
 
     Args:
-        cmd: Parsed command list
-        cmd_str: Display string for the command
-        callback: Function to call with each line of output
-        run_timeout: Timeout in seconds
-        run_cwd: Working directory
-        run_env: Environment variables
+        cmd: Parsed command argument list.
+        cmd_str: Display string for logging.
+        callback: Called with each output line (stripped).
+        run_timeout: Timeout in seconds.
+        run_cwd: Working directory for the process.
+        run_env: Full environment variable mapping.
 
     Returns:
-        CommandResult with execution details
+        CommandResult with execution details.
+
+    Example:
+        >>> lines: list[str] = []
+        >>> run_with_output(["echo", "hi"], "echo hi",
+        ...     lines.append, 10, None, {})
     """
     start_time = time.time()
     stdout_lines: list[str] = []
@@ -65,8 +71,13 @@ def run_with_output(
             bufsize=1,
         )
         return _collect_output(
-            process, callback, stdout_lines,
-            cmd_str, run_timeout, start_time, preview,
+            process,
+            callback,
+            stdout_lines,
+            cmd_str,
+            run_timeout,
+            start_time,
+            preview,
         )
     except FileNotFoundError:
         logger.error("[SHELL] Command not found: %s", cmd[0])
@@ -91,8 +102,13 @@ def run_with_output(
 
 
 def _collect_output(
-    process, callback, stdout_lines,
-    cmd_str, run_timeout, start_time, preview,
+    process: subprocess.Popen[str],
+    callback: Callable[[str], None],
+    stdout_lines: list[str],
+    cmd_str: str,
+    run_timeout: int,
+    start_time: float,
+    preview: str,
 ) -> CommandResult:
     """Collect streaming output and build result."""
     reader = threading.Thread(
@@ -104,27 +120,30 @@ def _collect_output(
 
     if reader.is_alive():
         return _handle_timeout(
-            process, reader, stdout_lines,
-            cmd_str, run_timeout, start_time, preview,
+            process,
+            reader,
+            stdout_lines,
+            cmd_str,
+            run_timeout,
+            start_time,
+            preview,
         )
 
     returncode = process.wait()
     duration = time.time() - start_time
-    status = (
-        CommandStatus.SUCCESS
-        if returncode == 0
-        else CommandStatus.FAILED
-    )
+    status = CommandStatus.SUCCESS if returncode == 0 else CommandStatus.FAILED
 
     if returncode == 0:
         logger.debug(
             "[SHELL] Streaming success (exit=0, %.2fs): %s",
-            duration, preview,
+            duration,
+            preview,
         )
     else:
         logger.error(
             "[SHELL] Streaming failed (exit=%d): %s",
-            returncode, preview,
+            returncode,
+            preview,
         )
 
     return CommandResult(
@@ -137,7 +156,11 @@ def _collect_output(
     )
 
 
-def _read_lines(process, stdout_lines, callback):
+def _read_lines(
+    process: subprocess.Popen[str],
+    stdout_lines: list[str],
+    callback: Callable[[str], None],
+) -> None:
     """Read lines from process stdout in a thread."""
     if process.stdout is None:
         return
@@ -155,8 +178,13 @@ def _read_lines(process, stdout_lines, callback):
 
 
 def _handle_timeout(
-    process, reader, stdout_lines,
-    cmd_str, run_timeout, start_time, preview,
+    process: subprocess.Popen[str],
+    reader: threading.Thread,
+    stdout_lines: list[str],
+    cmd_str: str,
+    run_timeout: int,
+    start_time: float,
+    preview: str,
 ) -> CommandResult:
     """Terminate a streaming process that exceeded timeout."""
     process.terminate()
@@ -166,7 +194,8 @@ def _handle_timeout(
         reader.join()
     logger.warning(
         "[SHELL] Streaming timeout after %ds: %s",
-        run_timeout, preview,
+        run_timeout,
+        preview,
     )
     return CommandResult(
         status=CommandStatus.TIMEOUT,

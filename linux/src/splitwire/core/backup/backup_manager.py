@@ -18,27 +18,32 @@ logger = logging.getLogger(__name__)
 
 
 class BackupManager:
-    """
-    Manages backups and rollback operations.
+    """Manages backup creation, restoration, and cleanup.
 
-    Backups are stored in ~/.local/share/splitwire/backups/
+    Backups are compressed tarballs stored in
+    ``~/.local/share/splitwire/backups/``.
+
+    Attributes:
+        APP_VERSION: Version recorded in backup metadata.
+        MAX_BACKUPS: Limit before old backups are pruned.
+        METADATA_FILE: Default metadata filename.
+        backup_dir: Directory where backups are stored.
     """
 
     APP_VERSION = "1.0.0"
-    MAX_BACKUPS = 10  # Maximum number of backups to keep
+    MAX_BACKUPS = 10
     METADATA_FILE = "backup_metadata.json"
 
     def __init__(
         self,
         backup_dir: Path | None = None,
         config_dir: Path | None = None,
-    ):
-        """
-        Initialize backup manager.
+    ) -> None:
+        """Initialize backup manager.
 
         Args:
-            backup_dir: Override backup directory
-            config_dir: Override config directory (for determining what to backup)
+            backup_dir: Override backup storage directory.
+            config_dir: Override config directory to back up.
         """
         # Determine directories
         if backup_dir:
@@ -84,18 +89,23 @@ class BackupManager:
         backup_type: BackupType = BackupType.CONFIG,
         description: str = "",
     ) -> BackupMetadata:
-        """
-        Create a new backup.
+        """Create a new backup archive.
 
         Args:
-            backup_type: Type of backup to create
-            description: Human-readable description
+            backup_type: Category of content to include.
+            description: Human-readable description.
 
         Returns:
-            Backup metadata
+            Metadata for the created backup.
 
         Raises:
-            BackupError: If backup fails
+            BackupError: If no files found or archive fails.
+
+        Example:
+            >>> mgr = BackupManager()
+            >>> meta = mgr.create_backup(BackupType.CONFIG)
+            >>> meta.type == BackupType.CONFIG
+            True
         """
         backup_id = self._generate_backup_id()
         backup_path = self._get_backup_path(backup_id)
@@ -115,9 +125,7 @@ class BackupManager:
                 "[BACKUP] No files found for backup type: %s",
                 backup_type.value,
             )
-            raise BackupError(
-                f"No files found for backup type: {backup_type.value}"
-            )
+            raise BackupError(f"No files found for backup type: {backup_type.value}")
 
         logger.debug("[BACKUP] Files to backup: %d", len(files_to_backup))
 
@@ -149,9 +157,7 @@ class BackupManager:
         )
         return metadata
 
-    def _create_archive(
-        self, backup_path: Path, files: list[Path]
-    ) -> None:
+    def _create_archive(self, backup_path: Path, files: list[Path]) -> None:
         """Create a compressed tar archive of the given files."""
         try:
             with tarfile.open(backup_path, "w:gz") as tar:
@@ -165,9 +171,7 @@ class BackupManager:
             logger.error("[BACKUP] Failed to create archive: %s", e)
             if backup_path.exists():
                 backup_path.unlink()
-            raise BackupError(
-                f"Failed to create backup archive: {e}"
-            ) from e
+            raise BackupError(f"Failed to create backup archive: {e}") from e
 
     @staticmethod
     def _to_archive_name(path: Path) -> str:
@@ -175,22 +179,20 @@ class BackupManager:
         home_str = str(Path.home())
         path_str = str(path)
         if path_str.startswith(home_str):
-            return "__USER_HOME__" + path_str[len(home_str):]
+            return "__USER_HOME__" + path_str[len(home_str) :]
         return path_str
 
     @staticmethod
     def _from_archive_name(name: str) -> str:
         """Convert an archive name back to a real filesystem path."""
         if name.startswith("__USER_HOME__"):
-            return str(Path.home()) + name[len("__USER_HOME__"):]
+            return str(Path.home()) + name[len("__USER_HOME__") :]
         if name.startswith("HOME"):
             # Legacy support for old backups
             return str(Path.home()) + name[4:]
         return name
 
-    def _get_files_for_backup(
-        self, backup_type: BackupType
-    ) -> list[Path]:
+    def _get_files_for_backup(self, backup_type: BackupType) -> list[Path]:
         """Get list of files to backup for a given type."""
         files: list[Path] = []
 
@@ -222,29 +224,30 @@ class BackupManager:
 
         return files
 
-    def _save_metadata(
-        self, backup_id: str, metadata: BackupMetadata
-    ) -> None:
+    def _save_metadata(self, backup_id: str, metadata: BackupMetadata) -> None:
         """Save backup metadata to disk."""
         metadata_path = self._get_metadata_path(backup_id)
         with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(metadata.to_dict(), f, indent=2)
 
-    def restore_backup(
-        self, backup_id: str, dry_run: bool = False
-    ) -> list[str]:
-        """
-        Restore a backup.
+    def restore_backup(self, backup_id: str, dry_run: bool = False) -> list[str]:
+        """Restore files from a backup archive.
 
         Args:
-            backup_id: ID of backup to restore
-            dry_run: If True, only list files that would be restored
+            backup_id: Unique identifier of the backup.
+            dry_run: If True, only list files without extracting.
 
         Returns:
-            List of restored file paths
+            List of restored (or would-be-restored) file paths.
 
         Raises:
-            BackupError: If restore fails
+            BackupError: If backup or its metadata is not found.
+
+        Example:
+            >>> mgr = BackupManager()
+            >>> files = mgr.restore_backup("20240101_120000_abc")
+            >>> isinstance(files, list)
+            True
         """
         backup_path = self._get_backup_path(backup_id)
 
@@ -254,12 +257,8 @@ class BackupManager:
 
         metadata = self.get_backup_metadata(backup_id)
         if metadata is None:
-            logger.error(
-                "[BACKUP] Backup metadata not found: %s", backup_id
-            )
-            raise BackupError(
-                f"Backup metadata not found: {backup_id}"
-            )
+            logger.error("[BACKUP] Backup metadata not found: %s", backup_id)
+            raise BackupError(f"Backup metadata not found: {backup_id}")
 
         logger.info(
             "[BACKUP] Restoring backup: %s (dry_run=%s)",
@@ -268,23 +267,15 @@ class BackupManager:
         )
 
         try:
-            restored = self._extract_archive(
-                backup_path, dry_run=dry_run
-            )
+            restored = self._extract_archive(backup_path, dry_run=dry_run)
         except Exception as e:
             logger.error("[BACKUP] Failed to restore backup: %s", e)
-            raise BackupError(
-                f"Failed to restore backup: {e}"
-            ) from e
+            raise BackupError(f"Failed to restore backup: {e}") from e
 
-        logger.info(
-            "[BACKUP] Restore completed: %d files", len(restored)
-        )
+        logger.info("[BACKUP] Restore completed: %d files", len(restored))
         return restored
 
-    def _extract_archive(
-        self, backup_path: Path, *, dry_run: bool = False
-    ) -> list[str]:
+    def _extract_archive(self, backup_path: Path, *, dry_run: bool = False) -> list[str]:
         """Extract files from a backup archive."""
         restored_files: list[str] = []
 
@@ -294,9 +285,7 @@ class BackupManager:
                 restored_files.append(real_path)
 
                 if not dry_run:
-                    Path(real_path).parent.mkdir(
-                        parents=True, exist_ok=True
-                    )
+                    Path(real_path).parent.mkdir(parents=True, exist_ok=True)
                     member.name = real_path
                     tar.extract(member, path="/")
                     logger.debug("[BACKUP] Restored: %s", real_path)
@@ -304,14 +293,13 @@ class BackupManager:
         return restored_files
 
     def delete_backup(self, backup_id: str) -> bool:
-        """
-        Delete a backup.
+        """Delete a backup archive and its metadata.
 
         Args:
-            backup_id: ID of backup to delete
+            backup_id: Unique identifier of the backup.
 
         Returns:
-            True if deleted successfully
+            True if any file was deleted, False if not found.
         """
         backup_path = self._get_backup_path(backup_id)
         metadata_path = self._get_metadata_path(backup_id)
@@ -326,17 +314,20 @@ class BackupManager:
 
         return deleted
 
-    def list_backups(
-        self, backup_type: BackupType | None = None
-    ) -> list[BackupMetadata]:
-        """
-        List all backups.
+    def list_backups(self, backup_type: BackupType | None = None) -> list[BackupMetadata]:
+        """List all backups, optionally filtered by type.
 
         Args:
-            backup_type: Filter by type (optional)
+            backup_type: Only return backups of this type.
 
         Returns:
-            List of backup metadata, sorted by timestamp (newest first)
+            Metadata list sorted by timestamp (newest first).
+
+        Example:
+            >>> mgr = BackupManager()
+            >>> backups = mgr.list_backups()
+            >>> isinstance(backups, list)
+            True
         """
         backups: list[BackupMetadata] = []
 
@@ -353,17 +344,14 @@ class BackupManager:
         backups.sort(key=lambda x: x.timestamp, reverse=True)
         return backups
 
-    def get_backup_metadata(
-        self, backup_id: str
-    ) -> BackupMetadata | None:
-        """
-        Get metadata for a specific backup.
+    def get_backup_metadata(self, backup_id: str) -> BackupMetadata | None:
+        """Get metadata for a specific backup.
 
         Args:
-            backup_id: Backup ID
+            backup_id: Unique backup identifier.
 
         Returns:
-            Backup metadata or None if not found
+            BackupMetadata or None if not found or corrupt.
         """
         metadata_path = self._get_metadata_path(backup_id)
 
@@ -377,17 +365,14 @@ class BackupManager:
         except (json.JSONDecodeError, KeyError):
             return None
 
-    def get_latest_backup(
-        self, backup_type: BackupType | None = None
-    ) -> BackupMetadata | None:
-        """
-        Get the most recent backup.
+    def get_latest_backup(self, backup_type: BackupType | None = None) -> BackupMetadata | None:
+        """Get the most recent backup metadata.
 
         Args:
-            backup_type: Filter by type (optional)
+            backup_type: Only consider backups of this type.
 
         Returns:
-            Latest backup metadata or None
+            Latest BackupMetadata or None if no backups exist.
         """
         backups = self.list_backups(backup_type)
         return backups[0] if backups else None
@@ -405,17 +390,16 @@ class BackupManager:
             return 0
 
         removed = 0
-        for backup in backups[self.MAX_BACKUPS:]:
+        for backup in backups[self.MAX_BACKUPS :]:
             if self.delete_backup(backup.id):
                 removed += 1
         return removed
 
     def get_total_backup_size(self) -> int:
-        """
-        Get total size of all backups in bytes.
+        """Get combined size of all backup archives.
 
         Returns:
-            Total size in bytes
+            Total size in bytes of all tar.gz files.
         """
         total = 0
         for backup_file in self._backup_dir.glob("*.tar.gz"):

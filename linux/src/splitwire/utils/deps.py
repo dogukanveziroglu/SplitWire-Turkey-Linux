@@ -15,7 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class DependencyStatus(Enum):
-    """Status of a dependency."""
+    """Status of a checked dependency.
+
+    Attributes:
+        INSTALLED: Dependency is present and working.
+        MISSING: Dependency is not installed.
+        OUTDATED: Dependency needs an update.
+        UNKNOWN: Status could not be determined.
+    """
 
     INSTALLED = "installed"
     MISSING = "missing"
@@ -24,7 +31,14 @@ class DependencyStatus(Enum):
 
 
 class PackageManager(Enum):
-    """Available package managers."""
+    """Available system package managers.
+
+    Attributes:
+        APT: Debian/Ubuntu apt.
+        SNAP: Snap package manager.
+        FLATPAK: Flatpak package manager.
+        PIP: Python pip.
+    """
 
     APT = "apt"
     SNAP = "snap"
@@ -34,10 +48,21 @@ class PackageManager(Enum):
 
 @dataclass
 class Dependency:
-    """Represents a system or Python dependency."""
+    """Represents a system or Python dependency.
+
+    Attributes:
+        name: Human-readable dependency name.
+        package_name: Package manager package name.
+        description: Short description of what it provides.
+        required: Whether the app needs this to function.
+        status: Current installation status.
+        version: Detected version string (if known).
+        check_command: Command to verify installation.
+        install_command: Command to install the package.
+    """
 
     name: str
-    package_name: str  # apt package name
+    package_name: str
     description: str
     required: bool = True
     status: DependencyStatus = DependencyStatus.UNKNOWN
@@ -46,6 +71,11 @@ class Dependency:
     install_command: list[str] = field(default_factory=list)
 
     def __str__(self) -> str:
+        """Return a formatted status string for display.
+
+        Returns:
+            Status icon, required flag, name, and description.
+        """
         status_icon = {
             DependencyStatus.INSTALLED: "[OK]",
             DependencyStatus.MISSING: "[!!]",
@@ -179,9 +209,15 @@ PYTHON_DEPENDENCIES: list[Dependency] = [
 
 
 class DependencyChecker:
-    """Checks and manages system and Python dependencies."""
+    """Checks and manages system and Python dependencies.
 
-    def __init__(self):
+    Attributes:
+        system_deps: List of system-level dependencies.
+        python_deps: List of Python package dependencies.
+    """
+
+    def __init__(self) -> None:
+        """Initialize checker with copies of dependency lists."""
         self.system_deps = [Dependency(**d.__dict__) for d in SYSTEM_DEPENDENCIES]
         self.python_deps = [Dependency(**d.__dict__) for d in PYTHON_DEPENDENCIES]
         self._apt_available: bool | None = None
@@ -206,18 +242,27 @@ class DependencyChecker:
         return self._apt_available
 
     def check_all(self) -> tuple[list[Dependency], list[Dependency]]:
-        """
-        Check all dependencies.
+        """Check all system and Python dependencies.
 
         Returns:
-            Tuple of (system_deps, python_deps) with updated status
+            Tuple of (system_deps, python_deps) with updated status.
+
+        Example:
+            >>> checker = DependencyChecker()
+            >>> sys_deps, py_deps = checker.check_all()
+            >>> isinstance(sys_deps, list)
+            True
         """
         self.check_system_dependencies()
         self.check_python_dependencies()
         return self.system_deps, self.python_deps
 
     def check_system_dependencies(self) -> list[Dependency]:
-        """Check all system dependencies."""
+        """Check all system dependencies and update their status.
+
+        Returns:
+            List of system dependencies with updated status.
+        """
         logger.info("[DEPS] Checking system dependencies...")
         for dep in self.system_deps:
             if dep.check_command:
@@ -236,7 +281,11 @@ class DependencyChecker:
         return self.system_deps
 
     def check_python_dependencies(self) -> list[Dependency]:
-        """Check all Python dependencies."""
+        """Check all Python dependencies and update their status.
+
+        Returns:
+            List of Python dependencies with updated status.
+        """
         logger.info("[DEPS] Checking Python dependencies...")
         for dep in self.python_deps:
             if dep.check_command:
@@ -255,15 +304,28 @@ class DependencyChecker:
         return self.python_deps
 
     def get_missing_system_deps(self) -> list[Dependency]:
-        """Get list of missing system dependencies."""
+        """Get list of missing system dependencies.
+
+        Returns:
+            Dependencies with MISSING status.
+        """
         return [d for d in self.system_deps if d.status == DependencyStatus.MISSING]
 
     def get_missing_python_deps(self) -> list[Dependency]:
-        """Get list of missing Python dependencies."""
+        """Get list of missing Python dependencies.
+
+        Returns:
+            Dependencies with MISSING status.
+        """
         return [d for d in self.python_deps if d.status == DependencyStatus.MISSING]
 
     def get_missing_required_deps(self) -> list[Dependency]:
-        """Get list of missing required dependencies (both system and Python)."""
+        """Get all missing required dependencies.
+
+        Returns:
+            Combined system and Python deps that are required
+            but have MISSING status.
+        """
         missing = []
         missing.extend(
             [d for d in self.system_deps if d.status == DependencyStatus.MISSING and d.required]
@@ -274,7 +336,11 @@ class DependencyChecker:
         return missing
 
     def get_apt_install_command(self) -> list[str]:
-        """Get the apt install command for missing system dependencies."""
+        """Get the apt install command for missing system packages.
+
+        Returns:
+            Command list for ``sudo apt install``, or empty list.
+        """
         missing = self.get_missing_system_deps()
         if not missing:
             return []
@@ -283,7 +349,11 @@ class DependencyChecker:
         return ["sudo", "apt", "install", "-y", *packages]
 
     def get_pip_install_command(self) -> list[str]:
-        """Get the pip install command for missing Python dependencies."""
+        """Get the pip install command for missing Python packages.
+
+        Returns:
+            Command list for ``pip install``, or empty list.
+        """
         missing = self.get_missing_python_deps()
         if not missing:
             return []
@@ -397,7 +467,11 @@ class DependencyChecker:
 
 
 def check_dependencies() -> tuple[list[Dependency], list[Dependency]]:
-    """Check all dependencies (convenience function)."""
+    """Check all dependencies and return their status.
+
+    Returns:
+        Tuple of (system_deps, python_deps) with updated status.
+    """
     checker = DependencyChecker()
     return checker.check_all()
 
@@ -406,7 +480,12 @@ def print_dependency_status(
     system_deps: list[Dependency],
     python_deps: list[Dependency],
 ) -> None:
-    """Log dependency status in a formatted way."""
+    """Log dependency status in a formatted table.
+
+    Args:
+        system_deps: System dependencies with checked status.
+        python_deps: Python dependencies with checked status.
+    """
     logger.info("=" * 50)
     logger.info("SplitWire-Turkey Dependency Check")
     logger.info("=" * 50)

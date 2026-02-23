@@ -26,25 +26,50 @@ _shell: ShellExecutor | None = None
 
 
 def get_shell() -> ShellExecutor:
-    """Get the global ShellExecutor instance."""
+    """Get the global ShellExecutor singleton.
+
+    Returns:
+        The shared ShellExecutor instance.
+    """
     global _shell
     if _shell is None:
         _shell = ShellExecutor()
     return _shell
 
 
-def run(command: str | list[str], **kwargs) -> CommandResult:
-    """Run a command (convenience function)."""
+def run(command: str | list[str], **kwargs: object) -> CommandResult:
+    """Run a command via the global executor.
+
+    Args:
+        command: Command string or argument list.
+        **kwargs: Passed to ShellExecutor.run().
+
+    Returns:
+        CommandResult with execution details.
+    """
     return get_shell().run(command, **kwargs)
 
 
-async def run_async(
-    command: str | list[str], **kwargs
-) -> CommandResult:
-    """Run a command asynchronously (convenience function)."""
+async def run_async(command: str | list[str], **kwargs: object) -> CommandResult:
+    """Run a command asynchronously via the global executor.
+
+    Args:
+        command: Command string or argument list.
+        **kwargs: Passed to ShellExecutor.run_async().
+
+    Returns:
+        CommandResult with execution details.
+    """
     return await get_shell().run_async(command, **kwargs)
 
 
 def command_exists(command: str) -> bool:
-    """Check if a command exists (convenience function)."""
+    """Check if a command exists in PATH.
+
+    Args:
+        command: Command name to look up.
+
+    Returns:
+        True if the command is found.
+    """
     return get_shell().command_exists(command)

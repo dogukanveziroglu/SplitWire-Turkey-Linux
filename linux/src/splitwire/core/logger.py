@@ -34,7 +34,12 @@ APP_NAME = "splitwire"
 
 
 class ColoredFormatter(logging.Formatter):
-    """Formatter that adds colors to console output."""
+    """Formatter that adds ANSI color codes to console log output.
+
+    Attributes:
+        COLORS: Mapping of log level names to ANSI color codes.
+        RESET: ANSI reset escape sequence.
+    """
 
     # ANSI color codes
     COLORS: ClassVar[dict[str, str]] = {
@@ -47,7 +52,14 @@ class ColoredFormatter(logging.Formatter):
     RESET = "\033[0m"
 
     def format(self, record: logging.LogRecord) -> str:
-        """Format the log record with color codes on levelname."""
+        """Format the log record with ANSI color on levelname.
+
+        Args:
+            record: Log record to format.
+
+        Returns:
+            Formatted log string with color escapes.
+        """
         levelname = record.levelname
         if levelname in self.COLORS:
             record.levelname = f"{self.COLORS[levelname]}{levelname}{self.RESET}"
@@ -63,16 +75,19 @@ def setup_logging(
     debug: bool = False,
     log_dir: Path | None = None,
 ) -> None:
-    """
-    Configure the root 'splitwire' logger with file and console handlers.
+    """Configure the root 'splitwire' logger.
 
-    Must be called once early in application startup (after argument parsing,
-    before any other module work). All modules using ``logging.getLogger(__name__)``
-    under the ``splitwire`` namespace will inherit this configuration.
+    Must be called once early in application startup. All modules
+    using ``logging.getLogger(__name__)`` under the ``splitwire``
+    namespace inherit this configuration.
 
     Args:
-        debug: Enable DEBUG level logging (default: INFO)
-        log_dir: Override log directory (default: ~/.cache/splitwire/logs)
+        debug: Enable DEBUG level logging (default INFO).
+        log_dir: Override log directory
+            (default: ~/.cache/splitwire/logs).
+
+    Example:
+        >>> setup_logging(debug=True)
     """
     if log_dir is None:
         log_dir = Path.home() / ".cache" / APP_NAME / "logs"
@@ -104,18 +119,24 @@ def setup_logging(
 
 
 class SplitWireLogger:
-    """
-    Utility class for log management operations.
+    """Utility class for log file management operations.
 
     Provides helpers to read, clear, and measure log files.
     Does NOT proxy logging calls -- modules use stdlib
     ``logging.getLogger(__name__)`` directly.
 
-    Args:
-        log_dir: Log directory (default: ~/.cache/splitwire/logs)
+    Attributes:
+        log_dir: Directory containing log files.
+        log_file: Path to the main log file.
     """
 
-    def __init__(self, log_dir: Path | None = None):
+    def __init__(self, log_dir: Path | None = None) -> None:
+        """Initialize logger utility.
+
+        Args:
+            log_dir: Override log directory
+                (default: ~/.cache/splitwire/logs).
+        """
         if log_dir is None:
             log_dir = Path.home() / ".cache" / APP_NAME / "logs"
         self._log_dir = log_dir
@@ -131,14 +152,19 @@ class SplitWireLogger:
         return self._log_dir / "splitwire.log"
 
     def get_recent_logs(self, lines: int = 100) -> list[str]:
-        """
-        Get recent log entries.
+        """Get the most recent log entries from the main log.
 
         Args:
-            lines: Number of lines to retrieve
+            lines: Maximum number of lines to retrieve.
 
         Returns:
-            List of log lines
+            List of log line strings (may be fewer than requested).
+
+        Example:
+            >>> logger_util = SplitWireLogger()
+            >>> recent = logger_util.get_recent_logs(10)
+            >>> isinstance(recent, list)
+            True
         """
         if not self.log_file.exists():
             return []
@@ -151,11 +177,10 @@ class SplitWireLogger:
             return []
 
     def clear_logs(self) -> bool:
-        """
-        Clear all log files.
+        """Clear all log files from the log directory.
 
         Returns:
-            True if successful
+            True if all files removed, False on error.
         """
         try:
             for log_file in self._log_dir.glob("*.log*"):
@@ -165,11 +190,10 @@ class SplitWireLogger:
             return False
 
     def get_log_size(self) -> int:
-        """
-        Get total size of log files in bytes.
+        """Get total size of all log files in bytes.
 
         Returns:
-            Total size in bytes
+            Combined size of all *.log* files in bytes.
         """
         total = 0
         for log_file in self._log_dir.glob("*.log*"):

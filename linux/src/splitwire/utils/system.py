@@ -16,7 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 class FirewallBackend(Enum):
-    """Detected firewall backend."""
+    """Detected firewall backend on the system.
+
+    Attributes:
+        IPTABLES: Legacy iptables.
+        NFTABLES: nftables (modern replacement).
+        FIREWALLD: firewalld service.
+        UNKNOWN: Could not be determined.
+    """
 
     IPTABLES = "iptables"
     NFTABLES = "nftables"
@@ -25,7 +32,14 @@ class FirewallBackend(Enum):
 
 
 class InitSystem(Enum):
-    """Detected init system."""
+    """Detected init system.
+
+    Attributes:
+        SYSTEMD: systemd init.
+        OPENRC: OpenRC init.
+        SYSVINIT: Traditional SysV init.
+        UNKNOWN: Could not be determined.
+    """
 
     SYSTEMD = "systemd"
     OPENRC = "openrc"
@@ -34,7 +48,15 @@ class InitSystem(Enum):
 
 
 class DetectedDNSBackend(Enum):
-    """Detected DNS backend on the system."""
+    """Detected DNS resolution backend on the system.
+
+    Attributes:
+        SYSTEMD_RESOLVED: systemd-resolved service.
+        NETWORK_MANAGER: NetworkManager DNS plugin.
+        RESOLVCONF: resolvconf utility.
+        MANUAL: Direct /etc/resolv.conf editing.
+        UNKNOWN: Could not be determined.
+    """
 
     SYSTEMD_RESOLVED = "systemd-resolved"
     NETWORK_MANAGER = "NetworkManager"
@@ -45,7 +67,16 @@ class DetectedDNSBackend(Enum):
 
 @dataclass
 class UbuntuVersion:
-    """Ubuntu version information."""
+    """Ubuntu version information parsed from /etc/os-release.
+
+    Attributes:
+        version: Full version string (e.g. "22.04").
+        codename: Release codename (e.g. "jammy").
+        major: Major version number.
+        minor: Minor version number.
+        is_ubuntu: True if distro is Ubuntu.
+        is_supported: True if version is 22.04+.
+    """
 
     version: str = ""
     codename: str = ""
@@ -55,6 +86,11 @@ class UbuntuVersion:
     is_supported: bool = False
 
     def __str__(self) -> str:
+        """Return human-readable version string.
+
+        Returns:
+            "Ubuntu X.Y (codename)" or "Not Ubuntu".
+        """
         if self.is_ubuntu:
             return f"Ubuntu {self.version} ({self.codename})"
         return "Not Ubuntu"
@@ -62,7 +98,31 @@ class UbuntuVersion:
 
 @dataclass
 class SystemInfo:
-    """Complete system information."""
+    """Complete system information for compatibility checking.
+
+    Attributes:
+        ubuntu: Ubuntu version details.
+        kernel_version: Running kernel version string.
+        architecture: CPU architecture (e.g. "x86_64").
+        init_system: Detected init system type.
+        firewall_backend: Detected firewall backend.
+        iptables_available: Whether iptables binary exists.
+        nftables_available: Whether nft binary exists.
+        wireguard_module_loaded: Whether wireguard kernel module is loaded.
+        wireguard_tools_installed: Whether wg binary exists.
+        wg_quick_available: Whether wg-quick binary exists.
+        nfqueue_available: Whether NFQUEUE target works.
+        libnetfilter_queue_installed: Whether the library file exists.
+        dns_manager: Detected DNS management backend.
+        resolvectl_available: Whether resolvectl binary exists.
+        cgroups_v2: Whether cgroups v2 is active.
+        cgproxy_available: Whether cgproxy binary exists.
+        python_version: Running Python version string.
+        python_major: Python major version number.
+        python_minor: Python minor version number.
+        is_root: Whether running as root.
+        can_sudo: Whether passwordless sudo is available.
+    """
 
     # OS info
     ubuntu: UbuntuVersion = field(default_factory=UbuntuVersion)
@@ -104,7 +164,11 @@ class SystemInfo:
     can_sudo: bool = False
 
     def is_compatible(self) -> bool:
-        """Check if system is compatible with SplitWire-Turkey."""
+        """Check if system meets SplitWire minimum requirements.
+
+        Returns:
+            True if Ubuntu 22.04+, systemd, and Python 3.10+.
+        """
         return (
             self.ubuntu.is_supported
             and self.init_system == InitSystem.SYSTEMD
@@ -113,7 +177,11 @@ class SystemInfo:
         )
 
     def get_compatibility_issues(self) -> list[str]:
-        """Get list of compatibility issues."""
+        """Get list of detected compatibility issues.
+
+        Returns:
+            Human-readable issue description strings.
+        """
         issues = []
 
         if not self.ubuntu.is_ubuntu:
@@ -137,13 +205,28 @@ class SystemInfo:
 
 
 class SystemDetector:
-    """Detects system capabilities and compatibility."""
+    """Detects system capabilities and compatibility.
 
-    def __init__(self):
+    Probes the OS, kernel, firewall, WireGuard, DNS, cgroups,
+    and Python environment to build a SystemInfo report.
+    """
+
+    def __init__(self) -> None:
+        """Initialize system detector."""
         self._info: SystemInfo | None = None
 
     def detect(self) -> SystemInfo:
-        """Run full system detection."""
+        """Run full system detection and return results.
+
+        Returns:
+            Populated SystemInfo with all detected capabilities.
+
+        Example:
+            >>> detector = SystemDetector()
+            >>> info = detector.detect()
+            >>> isinstance(info, SystemInfo)
+            True
+        """
         logger.info("[SYSTEM] Detecting system capabilities...")
         self._info = SystemInfo()
 
@@ -382,13 +465,21 @@ class SystemDetector:
 
 
 def get_system_info() -> SystemInfo:
-    """Get system information (convenience function)."""
+    """Detect and return system information.
+
+    Returns:
+        Populated SystemInfo for the current machine.
+    """
     detector = SystemDetector()
     return detector.detect()
 
 
 def print_system_info(info: SystemInfo) -> None:
-    """Log system information in a formatted way."""
+    """Log system information in a formatted table.
+
+    Args:
+        info: SystemInfo to display.
+    """
     logger.info("=" * 50)
     logger.info("SplitWire-Turkey System Information")
     logger.info("=" * 50)

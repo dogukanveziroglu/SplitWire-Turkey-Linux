@@ -30,9 +30,7 @@ def _cmd_preview(cmd_str: str) -> str:
     return cmd_str
 
 
-def _parse_command(
-    command: str | list[str], shell: bool = False
-) -> tuple[str, str | list[str]]:
+def _parse_command(command: str | list[str], shell: bool = False) -> tuple[str, str | list[str]]:
     """
     Parse a command into display string and executable form.
 
@@ -65,54 +63,53 @@ def _make_failed_result(
     )
 
 
-def _log_result(returncode, stderr, duration, preview):
+def _log_result(returncode: int, stderr: str, duration: float, preview: str) -> None:
     """Log command result at appropriate level."""
     if returncode == 0:
         logger.debug(
             "[SHELL] Success (exit=0, %.2fs): %s",
-            duration, preview,
+            duration,
+            preview,
         )
     else:
         logger.error(
             "[SHELL] Failed (exit=%d): %s",
-            returncode, preview,
+            returncode,
+            preview,
         )
         if stderr:
-            sp = (
-                stderr[:_STDERR_LEN] + "..."
-                if len(stderr) > _STDERR_LEN
-                else stderr
-            )
+            sp = stderr[:_STDERR_LEN] + "..." if len(stderr) > _STDERR_LEN else stderr
             logger.error("[SHELL] stderr: %s", sp)
 
 
 class ShellExecutor:
-    """
-    Executes shell commands with various options.
+    """Executes shell commands with timeout and output capture.
 
-    Features:
-    - Synchronous and asynchronous execution
-    - Timeout handling
-    - Output streaming
-    - Environment variable management
-    - Working directory control
+    Supports synchronous, asynchronous, and streaming execution
+    modes with configurable environment and working directory.
+
+    Attributes:
+        DEFAULT_TIMEOUT: Default command timeout in seconds.
     """
 
-    DEFAULT_TIMEOUT = 60  # seconds
+    DEFAULT_TIMEOUT = 60
+    TIMEOUT_COMMAND_LOOKUP = 5  # which <command>
 
     def __init__(
         self,
         timeout: int = DEFAULT_TIMEOUT,
         env: dict[str, str] | None = None,
         cwd: Path | None = None,
-    ):
-        """
-        Initialize shell executor.
+    ) -> None:
+        """Initialize shell executor.
 
         Args:
-            timeout: Default command timeout in seconds
-            env: Additional environment variables
-            cwd: Default working directory
+            timeout: Default command timeout in seconds.
+            env: Additional environment variables to merge.
+            cwd: Default working directory for commands.
+
+        Example:
+            >>> executor = ShellExecutor(timeout=30)
         """
         self._timeout = timeout
         self._env = self._build_env(env)
@@ -125,8 +122,12 @@ class ShellExecutor:
         """Build environment dictionary."""
         env = os.environ.copy()
         paths = [
-            "/usr/local/bin", "/usr/bin", "/bin",
-            "/usr/local/sbin", "/usr/sbin", "/sbin",
+            "/usr/local/bin",
+            "/usr/bin",
+            "/bin",
+            "/usr/local/sbin",
+            "/usr/sbin",
+            "/sbin",
         ]
         current_path = env.get("PATH", "")
         for p in paths:
@@ -137,9 +138,7 @@ class ShellExecutor:
             env.update(extra_env)
         return env
 
-    def _resolve_env(
-        self, env: dict[str, str] | None
-    ) -> dict[str, str]:
+    def _resolve_env(self, env: dict[str, str] | None) -> dict[str, str]:
         """Merge base env with per-call overrides."""
         run_env = self._env.copy()
         if env:
@@ -165,21 +164,30 @@ class ShellExecutor:
         shell: bool = False,
         input_data: str | None = None,
     ) -> CommandResult:
-        """
-        Run a command synchronously.
+        """Run a command synchronously.
 
         Args:
-            command: Command string or list of arguments
-            timeout: Command timeout (overrides default)
-            capture_output: Whether to capture stdout/stderr
-            check: Raise exception on non-zero return code
-            cwd: Working directory (overrides default)
-            env: Additional environment variables
-            shell: Run through shell
-            input_data: Data to send to command's stdin
+            command: Command string or list of arguments.
+            timeout: Command timeout (overrides default).
+            capture_output: Whether to capture stdout/stderr.
+            check: Raise on non-zero return code.
+            cwd: Working directory (overrides default).
+            env: Additional environment variables.
+            shell: Run through system shell.
+            input_data: Data to send to stdin.
 
         Returns:
-            CommandResult with execution details
+            CommandResult with execution details.
+
+        Raises:
+            subprocess.CalledProcessError: If check=True and
+                command returns non-zero exit code.
+
+        Example:
+            >>> shell = ShellExecutor()
+            >>> result = shell.run("echo hello")
+            >>> result.success
+            True
         """
         start_time = time.time()
         cmd_str, cmd = _parse_command(command, shell)
@@ -192,16 +200,23 @@ class ShellExecutor:
 
         try:
             result = self._exec_subprocess(
-                cmd, run_env, run_cwd, run_timeout,
-                shell, input_data, capture_output,
+                cmd,
+                run_env,
+                run_cwd,
+                run_timeout,
+                shell,
+                input_data,
+                capture_output,
             )
         except subprocess.TimeoutExpired:
             logger.warning(
                 "[SHELL] Timeout after %ds: %s",
-                run_timeout, preview,
+                run_timeout,
+                preview,
             )
             return _make_failed_result(
-                CommandStatus.TIMEOUT, cmd_str,
+                CommandStatus.TIMEOUT,
+                cmd_str,
                 f"Command timed out after {run_timeout} seconds",
                 start_time,
             )
@@ -209,39 +224,60 @@ class ShellExecutor:
             nf = cmd[0] if isinstance(cmd, list) else cmd.split()[0]
             logger.error("[SHELL] Command not found: %s", nf)
             return _make_failed_result(
-                CommandStatus.NOT_FOUND, cmd_str,
-                f"Command not found: {nf}", start_time,
+                CommandStatus.NOT_FOUND,
+                cmd_str,
+                f"Command not found: {nf}",
+                start_time,
             )
         except (subprocess.SubprocessError, OSError, ValueError) as e:
-            logger.error(
-                "[SHELL] Exception during execution: %s", e
-            )
+            logger.error("[SHELL] Exception during execution: %s", e)
             return _make_failed_result(
-                CommandStatus.FAILED, cmd_str, str(e), start_time,
+                CommandStatus.FAILED,
+                cmd_str,
+                str(e),
+                start_time,
             )
 
         return self._to_result(
-            result, cmd_str, capture_output,
-            check, start_time, preview,
+            result,
+            cmd_str,
+            capture_output,
+            check,
+            start_time,
+            preview,
         )
 
     @staticmethod
     def _exec_subprocess(
-        cmd, run_env, run_cwd, run_timeout,
-        shell, input_data, capture_output,
+        cmd,
+        run_env,
+        run_cwd,
+        run_timeout,
+        shell,
+        input_data,
+        capture_output,
     ) -> subprocess.CompletedProcess:
         """Execute subprocess.run with the given parameters."""
         if capture_output:
             return subprocess.run(
-                cmd, capture_output=True, text=True,
-                timeout=run_timeout, cwd=run_cwd,
-                env=run_env, shell=shell,
-                input=input_data, check=False,
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=run_timeout,
+                cwd=run_cwd,
+                env=run_env,
+                shell=shell,
+                input=input_data,
+                check=False,
             )
         return subprocess.run(
-            cmd, timeout=run_timeout, cwd=run_cwd,
-            env=run_env, shell=shell,
-            input=input_data, text=bool(input_data),
+            cmd,
+            timeout=run_timeout,
+            cwd=run_cwd,
+            env=run_env,
+            shell=shell,
+            input=input_data,
+            text=bool(input_data),
             check=False,
         )
 
@@ -258,11 +294,7 @@ class ShellExecutor:
         stdout = (result.stdout or "") if capture_output else ""
         stderr = (result.stderr or "") if capture_output else ""
         duration = time.time() - start_time
-        status = (
-            CommandStatus.SUCCESS
-            if result.returncode == 0
-            else CommandStatus.FAILED
-        )
+        status = CommandStatus.SUCCESS if result.returncode == 0 else CommandStatus.FAILED
 
         _log_result(result.returncode, stderr, duration, preview)
 
@@ -277,7 +309,10 @@ class ShellExecutor:
 
         if check and result.returncode != 0:
             raise subprocess.CalledProcessError(
-                result.returncode, cmd_str, stdout, stderr,
+                result.returncode,
+                cmd_str,
+                stdout,
+                stderr,
             )
 
         return cmd_result
@@ -294,25 +329,29 @@ class ShellExecutor:
         cwd: Path | None = None,
         env: dict[str, str] | None = None,
     ) -> CommandResult:
-        """
-        Run a command asynchronously.
+        """Run a command asynchronously via asyncio.
 
         Args:
-            command: Command string or list of arguments
-            timeout: Command timeout
-            capture_output: Whether to capture stdout/stderr
-            cwd: Working directory
-            env: Additional environment variables
+            command: Command string or list of arguments.
+            timeout: Command timeout in seconds.
+            capture_output: Whether to capture stdout/stderr.
+            cwd: Working directory for the command.
+            env: Additional environment variables.
 
         Returns:
-            CommandResult with execution details
+            CommandResult with execution details.
+
+        Example:
+            >>> import asyncio
+            >>> shell = ShellExecutor()
+            >>> result = asyncio.run(shell.run_async("echo hi"))
+            >>> result.success
+            True
         """
         start_time = time.time()
         cmd_str, cmd = _parse_command(command)
         run_env = self._resolve_env(env)
-        run_cwd = (
-            str(cwd or self._cwd) if (cwd or self._cwd) else None
-        )
+        run_cwd = str(cwd or self._cwd) if (cwd or self._cwd) else None
         run_timeout = self._resolve_timeout(timeout)
         preview = _cmd_preview(cmd_str)
 
@@ -320,29 +359,42 @@ class ShellExecutor:
 
         try:
             process = await self._create_async_process(
-                cmd, run_cwd, run_env, capture_output,
+                cmd,
+                run_cwd,
+                run_env,
+                capture_output,
             )
             return await self._await_process(
-                process, cmd_str, run_timeout,
-                capture_output, start_time, preview,
+                process,
+                cmd_str,
+                run_timeout,
+                capture_output,
+                start_time,
+                preview,
             )
         except FileNotFoundError:
-            logger.error(
-                "[SHELL] Command not found: %s", cmd[0]
-            )
+            logger.error("[SHELL] Command not found: %s", cmd[0])
             return _make_failed_result(
-                CommandStatus.NOT_FOUND, cmd_str,
-                f"Command not found: {cmd[0]}", start_time,
+                CommandStatus.NOT_FOUND,
+                cmd_str,
+                f"Command not found: {cmd[0]}",
+                start_time,
             )
         except (OSError, ValueError) as e:
             logger.error("[SHELL] Async exception: %s", e)
             return _make_failed_result(
-                CommandStatus.FAILED, cmd_str, str(e), start_time,
+                CommandStatus.FAILED,
+                cmd_str,
+                str(e),
+                start_time,
             )
 
     @staticmethod
     async def _create_async_process(
-        cmd, run_cwd, run_env, capture_output,
+        cmd,
+        run_cwd,
+        run_env,
+        capture_output,
     ):
         """Create an asyncio subprocess."""
         if capture_output:
@@ -350,43 +402,53 @@ class ShellExecutor:
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=run_cwd, env=run_env,
+                cwd=run_cwd,
+                env=run_env,
             )
         return await asyncio.create_subprocess_exec(
-            *cmd, cwd=run_cwd, env=run_env,
+            *cmd,
+            cwd=run_cwd,
+            env=run_env,
         )
 
     @staticmethod
     async def _await_process(
-        process, cmd_str, run_timeout,
-        capture_output, start_time, preview,
+        process,
+        cmd_str,
+        run_timeout,
+        capture_output,
+        start_time,
+        preview,
     ) -> CommandResult:
         """Wait for async process and build result."""
         try:
             stdout, stderr = await _communicate(
-                process, run_timeout, capture_output,
+                process,
+                run_timeout,
+                capture_output,
             )
         except asyncio.TimeoutError:
             process.kill()
             await process.wait()
             logger.warning(
                 "[SHELL] Async timeout after %ds: %s",
-                run_timeout, preview,
+                run_timeout,
+                preview,
             )
             return _make_failed_result(
-                CommandStatus.TIMEOUT, cmd_str,
+                CommandStatus.TIMEOUT,
+                cmd_str,
                 f"Command timed out after {run_timeout} seconds",
                 start_time,
             )
 
         duration = time.time() - start_time
-        status = (
-            CommandStatus.SUCCESS
-            if process.returncode == 0
-            else CommandStatus.FAILED
-        )
+        status = CommandStatus.SUCCESS if process.returncode == 0 else CommandStatus.FAILED
         _log_result(
-            process.returncode or 0, stderr, duration, preview,
+            process.returncode or 0,
+            stderr,
+            duration,
+            preview,
         )
 
         return CommandResult(
@@ -410,18 +472,24 @@ class ShellExecutor:
         cwd: Path | None = None,
         env: dict[str, str] | None = None,
     ) -> CommandResult:
-        """
-        Run a command with real-time output streaming.
+        """Run a command with real-time output streaming.
+
+        Each line of stdout is passed to the callback as it arrives.
 
         Args:
-            command: Command string or list of arguments
-            callback: Function to call with each line of output
-            timeout: Command timeout
-            cwd: Working directory
-            env: Additional environment variables
+            command: Command string or list of arguments.
+            callback: Called with each output line (stripped).
+            timeout: Command timeout in seconds.
+            cwd: Working directory for the command.
+            env: Additional environment variables.
 
         Returns:
-            CommandResult with execution details
+            CommandResult with execution details.
+
+        Example:
+            >>> shell = ShellExecutor()
+            >>> lines = []
+            >>> shell.run_with_output("echo hi", lines.append)
         """
         cmd_str, cmd = _parse_command(command)
         return _stream_run(
@@ -438,22 +506,39 @@ class ShellExecutor:
     # ----------------------------------------------------------
 
     def command_exists(self, command: str) -> bool:
-        """Check if a command exists in PATH."""
-        return self.run(["which", command], timeout=5).success
+        """Check if a command exists in PATH.
+
+        Args:
+            command: Command name to look up.
+
+        Returns:
+            True if the command is found in PATH.
+        """
+        return self.run(["which", command], timeout=self.TIMEOUT_COMMAND_LOOKUP).success
 
     def get_command_path(self, command: str) -> str | None:
-        """Get full path of a command."""
-        result = self.run(["which", command], timeout=5)
+        """Get the full filesystem path of a command.
+
+        Args:
+            command: Command name to look up.
+
+        Returns:
+            Absolute path string, or None if not found.
+        """
+        result = self.run(["which", command], timeout=self.TIMEOUT_COMMAND_LOOKUP)
         return result.stdout if result.success else None
 
 
 async def _communicate(
-    process, run_timeout, capture_output,
+    process,
+    run_timeout,
+    capture_output,
 ) -> tuple[str, str]:
     """Communicate with async process, handling timeout."""
     if capture_output:
         stdout_b, stderr_b = await asyncio.wait_for(
-            process.communicate(), timeout=run_timeout,
+            process.communicate(),
+            timeout=run_timeout,
         )
         return (
             stdout_b.decode("utf-8", errors="replace"),

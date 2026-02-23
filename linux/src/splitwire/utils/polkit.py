@@ -17,7 +17,16 @@ logger = logging.getLogger(__name__)
 
 
 class ElevationMethod(Enum):
-    """Method for privilege elevation."""
+    """Method for privilege elevation.
+
+    Attributes:
+        PKEXEC: Polkit GUI dialog.
+        SUDO: Terminal sudo.
+        GKSUDO: Legacy GTK sudo dialog.
+        KDESUDO: KDE sudo dialog.
+        ROOT: Already running as root.
+        NONE: No elevation method available.
+    """
 
     PKEXEC = "pkexec"  # Polkit (GUI dialog)
     SUDO = "sudo"  # sudo (terminal)
@@ -29,13 +38,22 @@ class ElevationMethod(Enum):
 
 @dataclass
 class ElevationResult:
-    """Result of an elevated command execution."""
+    """Result of an elevated command execution.
+
+    Attributes:
+        success: Whether the command exited with code 0.
+        returncode: Process exit code.
+        stdout: Captured standard output.
+        stderr: Captured standard error.
+        cancelled: True if user cancelled the auth dialog.
+        method: Elevation method that was used.
+    """
 
     success: bool
     returncode: int
     stdout: str
     stderr: str
-    cancelled: bool = False  # True if user cancelled auth dialog
+    cancelled: bool = False
     method: ElevationMethod = ElevationMethod.NONE
 
 
@@ -44,22 +62,30 @@ class PolkitError(Exception):
 
 
 class PolkitHelper:
-    """
-    Helper class for running commands with elevated privileges.
+    """Runs commands with elevated privileges via Polkit.
 
-    Uses pkexec (Polkit) for GUI applications, with fallbacks to sudo.
+    Uses pkexec for GUI applications, with fallbacks to sudo,
+    gksudo, and kdesudo.
+
+    Attributes:
+        ACTION_WIREGUARD: Polkit action ID for WireGuard ops.
+        ACTION_ZAPRET: Polkit action ID for Zapret ops.
+        ACTION_DNS: Polkit action ID for DNS ops.
+        ACTION_SYSTEM: Polkit action ID for system ops.
+        POLICY_PATH: Filesystem path to the polkit policy file.
+        is_root: Whether the process runs as root.
+        elevation_method: Detected best elevation method.
     """
 
-    # Action IDs for our polkit policy
     ACTION_WIREGUARD = "com.splitwire.turkey.wireguard"
     ACTION_ZAPRET = "com.splitwire.turkey.zapret"
     ACTION_DNS = "com.splitwire.turkey.dns"
     ACTION_SYSTEM = "com.splitwire.turkey.system"
 
-    # Path to our polkit policy file
     POLICY_PATH = "/usr/share/polkit-1/actions/com.splitwire.turkey.policy"
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize PolkitHelper and detect elevation method."""
         self._elevation_method: ElevationMethod | None = None
         self._is_root = os.geteuid() == 0
 
@@ -104,11 +130,19 @@ class PolkitHelper:
         return ElevationMethod.NONE
 
     def can_elevate(self) -> bool:
-        """Check if privilege elevation is available."""
+        """Check if privilege elevation is available.
+
+        Returns:
+            True if at least one elevation method is detected.
+        """
         return self.elevation_method != ElevationMethod.NONE
 
     def is_policy_installed(self) -> bool:
-        """Check if our polkit policy is installed."""
+        """Check if the SplitWire polkit policy file exists.
+
+        Returns:
+            True if the policy file is present on disk.
+        """
         return Path(self.POLICY_PATH).exists()
 
     def run_elevated(
@@ -118,17 +152,22 @@ class PolkitHelper:
         timeout: int = 60,
         capture_output: bool = True,
     ) -> ElevationResult:
-        """
-        Run a command with elevated privileges.
+        """Run a command with elevated privileges.
 
         Args:
-            command: Command and arguments to run
-            action_id: Polkit action ID (for pkexec)
-            timeout: Command timeout in seconds
-            capture_output: Whether to capture stdout/stderr
+            command: Command and arguments to run.
+            action_id: Polkit action ID (for pkexec).
+            timeout: Command timeout in seconds.
+            capture_output: Whether to capture stdout/stderr.
 
         Returns:
-            ElevationResult with command output and status
+            ElevationResult with output and status.
+
+        Example:
+            >>> helper = PolkitHelper()
+            >>> result = helper.run_elevated(["whoami"])
+            >>> isinstance(result, ElevationResult)
+            True
         """
         method = self.elevation_method
         cmd_str = " ".join(command)
@@ -351,27 +390,66 @@ class PolkitHelper:
     # Convenience methods for common operations
 
     def run_wg_quick(self, action: str, interface: str) -> ElevationResult:
-        """Run wg-quick up/down."""
+        """Run wg-quick up/down with elevated privileges.
+
+        Args:
+            action: "up" or "down".
+            interface: WireGuard interface name.
+
+        Returns:
+            ElevationResult from the wg-quick command.
+        """
         return self.run_elevated(
             ["wg-quick", action, interface], action_id=self.ACTION_WIREGUARD, timeout=30
         )
 
     def run_systemctl(self, action: str, service: str) -> ElevationResult:
-        """Run systemctl action on a service."""
+        """Run systemctl action on a service with elevation.
+
+        Args:
+            action: systemctl verb (start, stop, restart, etc.).
+            service: Unit name of the service.
+
+        Returns:
+            ElevationResult from the systemctl command.
+        """
         return self.run_elevated(
             ["systemctl", action, service], action_id=self.ACTION_SYSTEM, timeout=30
         )
 
     def run_iptables(self, args: list[str]) -> ElevationResult:
-        """Run iptables command."""
+        """Run iptables command with elevated privileges.
+
+        Args:
+            args: iptables arguments (e.g. ["-A", "INPUT", ...]).
+
+        Returns:
+            ElevationResult from the iptables command.
+        """
         return self.run_elevated(["iptables", *args], action_id=self.ACTION_ZAPRET, timeout=10)
 
     def copy_file_as_root(self, src: str, dst: str) -> ElevationResult:
-        """Copy a file to a root-owned location."""
+        """Copy a file to a root-owned location.
+
+        Args:
+            src: Source file path.
+            dst: Destination file path.
+
+        Returns:
+            ElevationResult from the cp command.
+        """
         return self.run_elevated(["cp", src, dst], action_id=self.ACTION_SYSTEM, timeout=10)
 
     def write_file_as_root(self, content: str, path: str) -> ElevationResult:
-        """Write content to a root-owned file using tee."""
+        """Write content to a root-owned file using pkexec tee.
+
+        Args:
+            content: Text content to write.
+            path: Destination file path.
+
+        Returns:
+            ElevationResult from the tee command.
+        """
         # Use tee to write to file
         proc = None
         try:
@@ -421,23 +499,43 @@ _polkit_helper: PolkitHelper | None = None
 
 
 def get_polkit_helper() -> PolkitHelper:
-    """Get the global PolkitHelper instance."""
+    """Get the global PolkitHelper singleton.
+
+    Returns:
+        The shared PolkitHelper instance.
+    """
     global _polkit_helper
     if _polkit_helper is None:
         _polkit_helper = PolkitHelper()
     return _polkit_helper
 
 
-def run_elevated(command: list[str], **kwargs) -> ElevationResult:
-    """Run a command with elevated privileges (convenience function)."""
+def run_elevated(command: list[str], **kwargs: object) -> ElevationResult:
+    """Run a command with elevated privileges.
+
+    Args:
+        command: Command and arguments to run.
+        **kwargs: Passed to PolkitHelper.run_elevated().
+
+    Returns:
+        ElevationResult with output and status.
+    """
     return get_polkit_helper().run_elevated(command, **kwargs)
 
 
 def can_elevate() -> bool:
-    """Check if privilege elevation is available (convenience function)."""
+    """Check if privilege elevation is available.
+
+    Returns:
+        True if an elevation method is detected.
+    """
     return get_polkit_helper().can_elevate()
 
 
 def is_root() -> bool:
-    """Check if running as root (convenience function)."""
+    """Check if the current process is running as root.
+
+    Returns:
+        True if effective UID is 0.
+    """
     return get_polkit_helper().is_root

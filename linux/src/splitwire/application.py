@@ -25,9 +25,14 @@ logger = logging.getLogger(__name__)
 
 
 class SplitWireApp(Adw.Application):
-    """Main application class for SplitWire-Turkey."""
+    """Main GTK4/Libadwaita application for SplitWire-Turkey.
 
-    def __init__(self):
+    Attributes:
+        window: The main application window instance.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the application, actions, and signals."""
         super().__init__(
             application_id="com.splitwire.turkey",
             flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
@@ -67,7 +72,7 @@ class SplitWireApp(Adw.Application):
         self.add_action(preferences_action)
         self.set_accels_for_action("app.preferences", ["<Control>comma"])
 
-    def do_startup(self):
+    def do_startup(self) -> None:
         """Called when the application starts."""
         Adw.Application.do_startup(self)
 
@@ -248,8 +253,12 @@ class SplitWireApp(Adw.Application):
         if self.window:
             self.window.navigate_to_settings()
 
-    def set_theme(self, theme: str):
-        """Set the application theme."""
+    def set_theme(self, theme: str) -> None:
+        """Set the application theme and save to config.
+
+        Args:
+            theme: Theme name ("light", "dark", or "system").
+        """
         self._apply_theme(theme)
 
         # Save to config
@@ -258,8 +267,12 @@ class SplitWireApp(Adw.Application):
             config.theme = theme  # Store as string, not enum
             self._config.save()
 
-    def set_language(self, language: str):
-        """Set the application language."""
+    def set_language(self, language: str) -> None:
+        """Set the application language and refresh the UI.
+
+        Args:
+            language: Language code (tr, en, ru, es).
+        """
         from splitwire.core import set_language
 
         set_language(language)
@@ -279,15 +292,26 @@ class SplitWireApp(Adw.Application):
         title: str,
         body: str,
         priority: Gio.NotificationPriority = (Gio.NotificationPriority.NORMAL),
-    ):
-        """Show a desktop notification."""
+    ) -> None:
+        """Show a desktop notification.
+
+        Args:
+            title: Notification title text.
+            body: Notification body text.
+            priority: Notification urgency level.
+        """
         notification = Gio.Notification.new(title)
         notification.set_body(body)
         notification.set_priority(priority)
         self.send_notification(None, notification)
 
-    def show_toast(self, message: str, timeout: int = 3):
-        """Show a toast message in the main window."""
+    def show_toast(self, message: str, timeout: int = 3) -> None:
+        """Show a toast message in the main window.
+
+        Args:
+            message: Toast text to display.
+            timeout: Auto-dismiss time in seconds.
+        """
         if self.window:
             self.window.show_toast(message, timeout)
 

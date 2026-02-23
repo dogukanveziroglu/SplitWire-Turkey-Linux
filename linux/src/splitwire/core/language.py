@@ -19,15 +19,14 @@ class LanguageError(Exception):
 
 
 class LanguageManager:
-    """
-    Manages application translations.
+    """Manages application translations from JSON files.
 
     Loads language strings from JSON files and provides
     easy access to translations via get_text().
 
-    Language files are stored in:
-    - Resources: src/splitwire/resources/languages/
-    - User overrides: ~/.local/share/splitwire/languages/
+    Attributes:
+        LANGUAGES: Mapping of language codes to display names.
+        DEFAULT_LANGUAGE: Fallback language code ("en").
     """
 
     # Supported languages
@@ -40,13 +39,21 @@ class LanguageManager:
 
     DEFAULT_LANGUAGE = "en"
 
-    def __init__(self, language: str = DEFAULT_LANGUAGE, resources_dir: Path | None = None):
-        """
-        Initialize language manager.
+    def __init__(
+        self,
+        language: str = DEFAULT_LANGUAGE,
+        resources_dir: Path | None = None,
+    ) -> None:
+        """Initialize language manager.
 
         Args:
-            language: Language code (tr, en, ru, es)
-            resources_dir: Override resources directory (for testing)
+            language: Language code (tr, en, ru, es).
+            resources_dir: Override resources directory (for testing).
+
+        Example:
+            >>> mgr = LanguageManager("en")
+            >>> mgr.language
+            'en'
         """
         self._language = language if language in self.LANGUAGES else self.DEFAULT_LANGUAGE
         self._translations: dict[str, Any] = {}
@@ -74,18 +81,31 @@ class LanguageManager:
 
     @classmethod
     def get_available_languages(cls) -> dict[str, str]:
-        """Get dictionary of available languages (code -> name)."""
+        """Get dictionary of available languages (code to name).
+
+        Returns:
+            Copy of the LANGUAGES mapping.
+
+        Example:
+            >>> langs = LanguageManager.get_available_languages()
+            >>> "en" in langs
+            True
+        """
         return cls.LANGUAGES.copy()
 
     def set_language(self, language: str) -> bool:
-        """
-        Change the current language.
+        """Change the current language and reload translations.
 
         Args:
-            language: Language code
+            language: Language code (tr, en, ru, es).
 
         Returns:
-            True if language was changed successfully
+            True if language was changed successfully.
+
+        Example:
+            >>> mgr = LanguageManager("en")
+            >>> mgr.set_language("tr")
+            True
         """
         if language not in self.LANGUAGES:
             logger.warning(f"[LANG] Unsupported language: {language}")
@@ -143,20 +163,21 @@ class LanguageManager:
 
     @lru_cache(maxsize=512)  # noqa: B019 -- singleton instance, no leak risk
     def get_text(self, *keys: str, default: str = "") -> str:
-        """
-        Get translated text for the given key(s).
+        """Get translated text for the given key path.
 
-        Supports nested keys:
-            get_text("messages", "error")  -> translations["messages"]["error"]
-            get_text("buttons.save")       -> translations["buttons"]["save"]
-            get_text("simple_key")         -> translations["simple_key"]
+        Supports nested keys via multiple args or dot notation.
 
         Args:
-            *keys: Key path (multiple args or dot-separated)
-            default: Default value if key not found
+            *keys: Key path (multiple args or dot-separated).
+            default: Default value if key not found.
 
         Returns:
-            Translated string
+            Translated string, English fallback, or key path.
+
+        Example:
+            >>> mgr = LanguageManager("en")
+            >>> mgr.get_text("buttons", "save")
+            'Save'
         """
         # Handle both get_text("a", "b") and get_text("a.b")
         key_path = keys[0].split(".") if len(keys) == 1 and "." in keys[0] else list(keys)
@@ -192,19 +213,22 @@ class LanguageManager:
         # Return only if it's a string
         return current if isinstance(current, str) else None
 
-    def format_text(self, *keys: str, **kwargs) -> str:
-        """
-        Get translated text and format it with the given arguments.
+    def format_text(self, *keys: str, **kwargs: object) -> str:
+        """Get translated text and format with named arguments.
 
-        Uses Python's str.format() for placeholders.
-        Also supports positional {0}, {1} style (Windows compatibility).
+        Uses Python str.format() for ``{name}`` placeholders.
 
         Args:
-            *keys: Key path
-            **kwargs: Format arguments
+            *keys: Key path for the translation.
+            **kwargs: Named format arguments.
 
         Returns:
-            Formatted translated string
+            Formatted translated string.
+
+        Example:
+            >>> mgr = LanguageManager("en")
+            >>> mgr.format_text("greeting", name="World")
+            'Hello, World!'
         """
         text = self.get_text(*keys)
 
@@ -217,18 +241,22 @@ class LanguageManager:
         except (KeyError, IndexError):
             return text
 
-    def format_text_positional(self, *keys: str, args: tuple = ()) -> str:
-        """
-        Get translated text and format with positional arguments.
+    def format_text_positional(self, *keys: str, args: tuple[object, ...] = ()) -> str:
+        """Get translated text and format with positional arguments.
 
-        For Windows compatibility with {0}, {1} style placeholders.
+        For Windows compatibility with ``{0}``, ``{1}`` placeholders.
 
         Args:
-            *keys: Key path
-            args: Positional format arguments
+            *keys: Key path for the translation.
+            args: Positional format arguments.
 
         Returns:
-            Formatted translated string
+            Formatted translated string.
+
+        Example:
+            >>> mgr = LanguageManager("en")
+            >>> mgr.format_text_positional("msg", args=("A",))
+            'Value: A'
         """
         text = self.get_text(*keys)
         try:
@@ -237,14 +265,19 @@ class LanguageManager:
             return text
 
     def get_section(self, section: str) -> dict[str, str]:
-        """
-        Get all translations in a section.
+        """Get all translations in a named section.
 
         Args:
-            section: Section name (e.g., "buttons", "messages")
+            section: Section name (e.g., "buttons", "messages").
 
         Returns:
-            Dictionary of key -> translated text
+            Dictionary mapping keys to translated text strings.
+
+        Example:
+            >>> mgr = LanguageManager("en")
+            >>> btns = mgr.get_section("buttons")
+            >>> isinstance(btns, dict)
+            True
         """
         result = self._translations.get(section, {})
         if isinstance(result, dict):
@@ -253,7 +286,7 @@ class LanguageManager:
         return {}
 
     def reload(self) -> None:
-        """Reload translations from files."""
+        """Reload translations from disk and clear cache."""
         self._load_translations()
 
 
@@ -262,37 +295,77 @@ _language_manager: LanguageManager | None = None
 
 
 def get_language_manager() -> LanguageManager:
-    """Get the global LanguageManager instance."""
+    """Get the global LanguageManager singleton.
+
+    Returns:
+        The shared LanguageManager instance.
+    """
     global _language_manager
     if _language_manager is None:
         _language_manager = LanguageManager()
     return _language_manager
 
 
-def init_language_manager(language: str = LanguageManager.DEFAULT_LANGUAGE) -> LanguageManager:
-    """Initialize the global LanguageManager with a specific language."""
+def init_language_manager(
+    language: str = LanguageManager.DEFAULT_LANGUAGE,
+) -> LanguageManager:
+    """Initialize the global LanguageManager with a language.
+
+    Args:
+        language: Language code to activate.
+
+    Returns:
+        Newly created LanguageManager instance.
+    """
     global _language_manager
     _language_manager = LanguageManager(language)
     return _language_manager
 
 
 def get_text(*keys: str, default: str = "") -> str:
-    """Get translated text (convenience function)."""
+    """Get translated text via the global manager.
+
+    Args:
+        *keys: Key path for the translation.
+        default: Fallback if key is missing.
+
+    Returns:
+        Translated string.
+    """
     return get_language_manager().get_text(*keys, default=default)
 
 
-def format_text(*keys: str, **kwargs) -> str:
-    """Get and format translated text (convenience function)."""
+def format_text(*keys: str, **kwargs: object) -> str:
+    """Get and format translated text via the global manager.
+
+    Args:
+        *keys: Key path for the translation.
+        **kwargs: Named format arguments.
+
+    Returns:
+        Formatted translated string.
+    """
     return get_language_manager().format_text(*keys, **kwargs)
 
 
 def set_language(language: str) -> bool:
-    """Set the current language (convenience function)."""
+    """Set the current language via the global manager.
+
+    Args:
+        language: Language code to switch to.
+
+    Returns:
+        True if language was changed successfully.
+    """
     return get_language_manager().set_language(language)
 
 
 def get_current_language() -> str:
-    """Get current language code (convenience function)."""
+    """Get current language code from the global manager.
+
+    Returns:
+        Active language code string (e.g. "en").
+    """
     return get_language_manager().language
 
 
