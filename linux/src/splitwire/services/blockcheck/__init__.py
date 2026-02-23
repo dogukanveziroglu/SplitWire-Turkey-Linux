@@ -1,0 +1,36 @@
+"""
+SplitWire blockcheck service package.
+
+Re-exports all public names so that existing imports like
+``from splitwire.services.blockcheck import BlockcheckService``
+continue to work.
+"""
+
+from .models import (
+    BlockcheckResult,
+    ScanMode,
+    ScanProgress,
+    ScanStatus,
+)
+from .service import BlockcheckService
+
+# Singleton instance
+_blockcheck_service: BlockcheckService | None = None
+
+
+def get_blockcheck_service() -> BlockcheckService:
+    """Get the singleton Blockcheck service instance."""
+    global _blockcheck_service
+    if _blockcheck_service is None:
+        _blockcheck_service = BlockcheckService()
+    return _blockcheck_service
+
+
+__all__ = [
+    "BlockcheckResult",
+    "BlockcheckService",
+    "ScanMode",
+    "ScanProgress",
+    "ScanStatus",
+    "get_blockcheck_service",
+]
