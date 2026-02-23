@@ -34,7 +34,6 @@ def parse_args() -> argparse.Namespace:
         epilog="""
 Examples:
   splitwire                    Launch GUI application
-  splitwire --cli              Launch CLI mode
   splitwire --check-deps       Check system dependencies
   splitwire --version          Show version information
   splitwire --debug            Enable debug logging
@@ -48,8 +47,6 @@ For more information, visit: https://github.com/cagritaskn/SplitWire-Turkey
     )
 
     parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging")
-
-    parser.add_argument("--cli", action="store_true", help="Run in CLI mode (no GUI)")
 
     parser.add_argument(
         "--check-deps", action="store_true", help="Check system dependencies and exit"
@@ -153,13 +150,11 @@ def run_gui(args: argparse.Namespace) -> int:
 
         gi.require_version("Gtk", "4.0")
         gi.require_version("Adw", "1")
-        from gi.repository import Gtk, Adw
+        from gi.repository import Gtk, Adw  # noqa: F401
     except (ImportError, ValueError) as e:
         logger.error(f"GTK4/Libadwaita not available: {e}")
         print("Error: GTK4 and Libadwaita are required for GUI mode.")
         print("Install with: sudo apt install gir1.2-gtk-4.0 gir1.2-adw-1 python3-gi")
-        print("")
-        print("Alternatively, run in CLI mode: splitwire --cli")
         return 1
 
     # Import and run the GTK4 application
@@ -168,49 +163,6 @@ def run_gui(args: argparse.Namespace) -> int:
     logger.info("Launching GTK4 GUI")
     app = SplitWireApp()
     return app.run(sys.argv[:1])
-
-
-def run_cli(args: argparse.Namespace) -> int:
-    """
-    Launch CLI mode.
-
-    Args:
-        args: Parsed command line arguments
-
-    Returns:
-        Exit code
-    """
-    from splitwire.core import (
-        init_logger,
-        init_language_manager,
-        get_config,
-    )
-
-    # Initialize logger
-    logger = init_logger(debug=args.debug)
-    logger.info("Starting SplitWire Linux (CLI mode)")
-
-    # Load configuration
-    config = get_config()
-
-    # Initialize language manager
-    language = args.language or config.language
-    init_language_manager(language)
-
-    # TODO: Import and run actual CLI
-    # from splitwire.cli import main as cli_main
-    # return cli_main()
-
-    # Placeholder until CLI is implemented
-    logger.info("CLI mode not yet implemented - Phase 5")
-    print("SplitWire-Turkey Linux - CLI Mode")
-    print("=" * 40)
-    print("CLI mode is not yet implemented.")
-    print("This will be added in Phase 5 of development.")
-    print("")
-    print("Use --check-deps or --check-system for now.")
-
-    return 0
 
 
 def main() -> int:
@@ -244,11 +196,8 @@ def main() -> int:
         success = install_dependencies()
         return 0 if success else 1
 
-    # Run appropriate mode
-    if args.cli:
-        return run_cli(args)
-    else:
-        return run_gui(args)
+    # Launch GUI
+    return run_gui(args)
 
 
 if __name__ == "__main__":
