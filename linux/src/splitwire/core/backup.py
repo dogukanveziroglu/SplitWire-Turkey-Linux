@@ -14,7 +14,7 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional
 import hashlib
 
 from splitwire.core.logger import get_logger

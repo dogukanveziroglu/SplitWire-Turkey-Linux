@@ -9,9 +9,8 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, Gio, GLib, GdkPixbuf
-from typing import Optional, Dict, Callable
-import os
+from gi.repository import Gtk, Adw, Gio, GLib
+from typing import Optional, Dict
 
 from splitwire.core import get_text, get_logger
 

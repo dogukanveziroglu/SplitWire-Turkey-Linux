@@ -8,18 +8,16 @@ ciadpi is the Linux version of ByeDPI.
 import json
 import os
 import signal
-import stat
 import subprocess
 import tempfile
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Callable
+from typing import Optional
 import urllib.request
 import platform
 
-from splitwire.core import get_logger, get_shell
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
 
 

@@ -126,7 +126,6 @@ def run_gui(args: argparse.Namespace) -> int:
         init_logger,
         init_language_manager,
         get_config_manager,
-        get_config,
     )
 
     # Initialize logger

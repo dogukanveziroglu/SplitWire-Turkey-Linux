@@ -15,7 +15,6 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from splitwire.core import get_logger, get_shell
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
 from splitwire.services.split_tunnel import KNOWN_APPS, BROWSER_APPS
 

@@ -6,15 +6,13 @@ Uses systemd-resolved for Ubuntu systems.
 """
 
 import json
-import subprocess
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
-from splitwire.core import get_logger, get_shell
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
 
 

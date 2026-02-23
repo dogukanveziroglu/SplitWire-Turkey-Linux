@@ -9,15 +9,14 @@ Provides comprehensive systemd integration for managing services:
 - Read journal logs
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Optional, List, Dict, Callable
 import os
 import tempfile
-import shutil
 
-from splitwire.core import get_logger, get_shell, CommandResult
+from splitwire.core import get_logger, get_shell
 
 
 class SystemdUnitType(Enum):

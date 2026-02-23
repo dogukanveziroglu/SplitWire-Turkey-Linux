@@ -10,7 +10,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 from typing import Optional, Callable, TYPE_CHECKING
 
-from splitwire.core import get_text, get_logger
+from splitwire.core import get_logger
 
 if TYPE_CHECKING:
     from splitwire.ui.window import SplitWireWindow

@@ -12,7 +12,6 @@ Provides WireGuard VPN management with:
 import os
 import re
 import json
-import shutil
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,7 +21,7 @@ from urllib.error import URLError, HTTPError
 
 from .base import BaseService, ServiceStatus, ServiceType, ServiceInfo
 from .systemd import get_systemd_manager
-from splitwire.core import get_logger, get_shell, get_config
+from splitwire.core import get_config
 
 
 # WireGuard configuration paths

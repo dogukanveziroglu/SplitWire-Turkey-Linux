@@ -6,7 +6,6 @@ and other system capabilities needed for SplitWire-Turkey.
 """
 
 import os
-import re
 import subprocess
 from dataclasses import dataclass, field
 from enum import Enum

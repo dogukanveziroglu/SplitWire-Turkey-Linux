@@ -9,7 +9,7 @@ import json
 import os
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional
 from enum import Enum
 
 from splitwire.core.logger import get_logger

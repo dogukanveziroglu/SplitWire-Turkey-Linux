@@ -13,13 +13,11 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, Gio, GLib, Gdk
 from typing import Optional
 import sys
-import os
 
 from splitwire.core import (
     get_config_manager,
     init_language_manager,
     init_logger,
-    get_logger,
 )
 from splitwire.ui.window import SplitWireWindow
 

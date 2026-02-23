@@ -9,7 +9,6 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import Optional
 
 from splitwire.core.logger import get_logger

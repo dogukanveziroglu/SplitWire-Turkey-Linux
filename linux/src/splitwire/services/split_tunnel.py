@@ -7,15 +7,12 @@ through the VPN tunnel while allowing other traffic to bypass it.
 This is the Linux equivalent of WireSock's AllowedApps functionality.
 """
 
-import os
 import json
-import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
 from .base import BaseService, ServiceStatus, ServiceType
-from splitwire.core import get_logger, get_shell
 
 
 # cgproxy configuration

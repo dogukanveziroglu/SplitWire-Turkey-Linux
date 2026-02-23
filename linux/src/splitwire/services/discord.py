@@ -8,14 +8,12 @@ Supports Discord Stable, PTB, Canary, and WebCord.
 import json
 import shutil
 import subprocess
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Optional
 from datetime import datetime
 
-from splitwire.core import get_logger, get_shell
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
 
 

@@ -11,7 +11,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
 from gi.repository import Gtk, Adw, GLib
-from typing import Optional, List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING
 from pathlib import Path
 
 from splitwire.core import get_text, get_config, save_config
@@ -21,7 +21,6 @@ from splitwire.services import (
     get_dns_service,
     ServiceStatus,
     KNOWN_APPS,
-    BROWSER_APPS,
 )
 from splitwire.services.wireguard import TunnelMode
 from .base_page import BasePage
