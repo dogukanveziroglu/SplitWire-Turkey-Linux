@@ -7,21 +7,15 @@ This package contains:
 - logger: Logging system
 - shell: Shell command execution
 - backup: Backup and rollback system
+
+Uses PEP 562 lazy imports for backup and shell modules to avoid
+loading them at package import time.
 """
 
-from .backup import (
-    BackupError,
-    BackupManager,
-    BackupMetadata,
-    BackupType,
-    SnapshotManager,
-    SystemSnapshot,
-    create_backup,
-    get_backup_manager,
-    get_snapshot_manager,
-    list_backups,
-    restore_backup,
-)
+from __future__ import annotations
+
+import importlib
+
 from .config import (
     AppConfig,
     ByeDPIConfig,
@@ -50,15 +44,27 @@ from .logger import (
     SplitWireLogger,
     setup_logging,
 )
-from .shell import (
-    CommandResult,
-    CommandStatus,
-    ShellExecutor,
-    command_exists,
-    get_shell,
-    run,
-    run_async,
-)
+
+_LAZY_IMPORTS: dict[str, tuple[str, str]] = {
+    "BackupError": (".backup", "BackupError"),
+    "BackupManager": (".backup", "BackupManager"),
+    "BackupMetadata": (".backup", "BackupMetadata"),
+    "BackupType": (".backup", "BackupType"),
+    "CommandResult": (".shell", "CommandResult"),
+    "CommandStatus": (".shell", "CommandStatus"),
+    "ShellExecutor": (".shell", "ShellExecutor"),
+    "SnapshotManager": (".backup", "SnapshotManager"),
+    "SystemSnapshot": (".backup", "SystemSnapshot"),
+    "command_exists": (".shell", "command_exists"),
+    "create_backup": (".backup", "create_backup"),
+    "get_backup_manager": (".backup", "get_backup_manager"),
+    "get_shell": (".shell", "get_shell"),
+    "get_snapshot_manager": (".backup", "get_snapshot_manager"),
+    "list_backups": (".backup", "list_backups"),
+    "restore_backup": (".backup", "restore_backup"),
+    "run": (".shell", "run"),
+    "run_async": (".shell", "run_async"),
+}
 
 __all__ = [
     "AppConfig",
@@ -102,3 +108,14 @@ __all__ = [
     "set_language",
     "setup_logging",
 ]
+
+
+def __getattr__(name: str):
+    """Lazily import core attributes on first access."""
+    if name in _LAZY_IMPORTS:
+        module_path, attr_name = _LAZY_IMPORTS[name]
+        module = importlib.import_module(module_path, __package__)
+        value = getattr(module, attr_name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

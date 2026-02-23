@@ -25,7 +25,7 @@ from .polkit import (
     run_elevated,
 )
 from .system import (
-    DNSManager,
+    DetectedDNSBackend,
     FirewallBackend,
     InitSystem,
     SystemDetector,
@@ -36,10 +36,10 @@ from .system import (
 )
 
 __all__ = [
-    "DNSManager",
     "Dependency",
     "DependencyChecker",
     "DependencyStatus",
+    "DetectedDNSBackend",
     "ElevationMethod",
     "ElevationResult",
     "FirewallBackend",

@@ -33,8 +33,8 @@ class InitSystem(Enum):
     UNKNOWN = "unknown"
 
 
-class DNSManager(Enum):
-    """Detected DNS manager."""
+class DetectedDNSBackend(Enum):
+    """Detected DNS backend on the system."""
 
     SYSTEMD_RESOLVED = "systemd-resolved"
     NETWORK_MANAGER = "NetworkManager"
@@ -87,7 +87,7 @@ class SystemInfo:
     libnetfilter_queue_installed: bool = False
 
     # DNS
-    dns_manager: DNSManager = DNSManager.UNKNOWN
+    dns_manager: DetectedDNSBackend = DetectedDNSBackend.UNKNOWN
     resolvectl_available: bool = False
 
     # cgroups (for app-based routing)
@@ -333,24 +333,24 @@ class SystemDetector:
         # Check for systemd-resolved
         code, _, _ = self._run_command(["systemctl", "is-active", "systemd-resolved"])
         if code == 0:
-            self._info.dns_manager = DNSManager.SYSTEMD_RESOLVED
+            self._info.dns_manager = DetectedDNSBackend.SYSTEMD_RESOLVED
             self._info.resolvectl_available = self._command_exists("resolvectl")
             return
 
         # Check for NetworkManager
         code, _, _ = self._run_command(["systemctl", "is-active", "NetworkManager"])
         if code == 0:
-            self._info.dns_manager = DNSManager.NETWORK_MANAGER
+            self._info.dns_manager = DetectedDNSBackend.NETWORK_MANAGER
             return
 
         # Check for resolvconf
         if self._command_exists("resolvconf"):
-            self._info.dns_manager = DNSManager.RESOLVCONF
+            self._info.dns_manager = DetectedDNSBackend.RESOLVCONF
             return
 
         # Manual (direct /etc/resolv.conf editing)
         if Path("/etc/resolv.conf").exists():
-            self._info.dns_manager = DNSManager.MANUAL
+            self._info.dns_manager = DetectedDNSBackend.MANUAL
 
     def _detect_cgroups(self) -> None:
         """Detect cgroups version and cgproxy availability."""
