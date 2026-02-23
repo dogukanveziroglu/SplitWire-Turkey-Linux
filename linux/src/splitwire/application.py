@@ -5,21 +5,23 @@ Main application class that initializes the GUI and manages
 the application lifecycle.
 """
 
+import logging
+import sys
+
 import gi
 
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-
-import sys
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from splitwire.core import (
     get_config_manager,
     init_language_manager,
-    init_logger,
 )
 from splitwire.ui.window import SplitWireWindow
+
+logger = logging.getLogger(__name__)
 
 
 class SplitWireApp(Adw.Application):
@@ -27,11 +29,11 @@ class SplitWireApp(Adw.Application):
 
     def __init__(self):
         super().__init__(
-            application_id="com.splitwire.turkey", flags=Gio.ApplicationFlags.DEFAULT_FLAGS
+            application_id="com.splitwire.turkey",
+            flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
 
         self.window: SplitWireWindow | None = None
-        self._logger = None
         self._config = None
         self._debug = False
 
@@ -63,7 +65,9 @@ class SplitWireApp(Adw.Application):
         preferences_action = Gio.SimpleAction.new("preferences", None)
         preferences_action.connect("activate", self.on_preferences)
         self.add_action(preferences_action)
-        self.set_accels_for_action("app.preferences", ["<Control>comma"])
+        self.set_accels_for_action(
+            "app.preferences", ["<Control>comma"]
+        )
 
     def do_startup(self):
         """Called when the application starts."""
@@ -78,33 +82,41 @@ class SplitWireApp(Adw.Application):
     def _init_core_systems(self):
         """Initialize core systems (config, language, logging)."""
         try:
-            # Initialize logger first
-            self._logger = init_logger(debug=self._debug)
-            self._logger.info("SplitWire-Turkey starting...")
+            logger.info("SplitWire-Turkey starting...")
 
             # Initialize config
             self._config = get_config_manager()
             config = self._config.load()
-            self._logger.info(f"Config loaded: theme={config.theme}, language={config.language}")
+            logger.info(
+                "Config loaded: theme=%s, language=%s",
+                config.theme,
+                config.language,
+            )
 
             # Initialize language (config stores strings, not enums)
             init_language_manager(language=config.language)
-            self._logger.info(f"Language initialized: {config.language}")
+            logger.info("Language initialized: %s", config.language)
 
             # Apply theme
             self._apply_theme(config.theme)
 
-        except Exception as e:
-            print(f"Error initializing core systems: {e}", file=sys.stderr)
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            sys.stderr.write(
+                f"Error initializing core systems: {e}\n"
+            )
 
     def _apply_theme(self, theme: str):
         """Apply the specified theme."""
         style_manager = Adw.StyleManager.get_default()
 
         if theme == "dark":
-            style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+            style_manager.set_color_scheme(
+                Adw.ColorScheme.FORCE_DARK
+            )
         elif theme == "light":
-            style_manager.set_color_scheme(Adw.ColorScheme.FORCE_LIGHT)
+            style_manager.set_color_scheme(
+                Adw.ColorScheme.FORCE_LIGHT
+            )
         else:  # system
             style_manager.set_color_scheme(Adw.ColorScheme.DEFAULT)
 
@@ -186,37 +198,35 @@ class SplitWireApp(Adw.Application):
         display = Gdk.Display.get_default()
         if display:
             Gtk.StyleContext.add_provider_for_display(
-                display, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                display,
+                css_provider,
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
 
-    def on_activate(self, app):
+    def on_activate(self, _app):
         """Called when the application is activated."""
         if not self.window:
             self.window = SplitWireWindow(application=self)
 
         self.window.present()
+        logger.info("Main window presented")
 
-        if self._logger:
-            self._logger.info("Main window presented")
-
-    def on_shutdown(self, app):
+    def on_shutdown(self, _app):
         """Called when the application is shutting down."""
-        if self._logger:
-            self._logger.info("SplitWire-Turkey shutting down...")
+        logger.info("SplitWire-Turkey shutting down...")
 
         # Save config
         if self._config:
             try:
                 self._config.save()
-            except Exception as e:
-                if self._logger:
-                    self._logger.error(f"Error saving config: {e}")
+            except (OSError, ValueError, TypeError) as e:
+                logger.error("Error saving config: %s", e)
 
-    def on_quit(self, action, param):
+    def on_quit(self, _action, _param):
         """Handle quit action."""
         self.quit()
 
-    def on_about(self, action, param):
+    def on_about(self, _action, _param):
         """Show about dialog."""
         about = Adw.AboutWindow(
             transient_for=self.window,
@@ -226,18 +236,22 @@ class SplitWireApp(Adw.Application):
             version="1.0.0",
             website="https://github.com/dogukanveziroglu/SplitWire-Turkey",
             issue_url="https://github.com/dogukanveziroglu/SplitWire-Turkey/issues",
-            copyright="© 2024 SplitWire Team",
+            copyright="2024 SplitWire Team",
             license_type=Gtk.License.MIT_X11,
             developers=[
                 "Dogukan Veziroglu",
             ],
-            comments="Manages network traffic routing with privacy-preserving configurations.\n\n"
-            "Provides WireGuard VPN, Zapret packet processing, ByeDPI proxy, "
-            "and Discord repair tools.",
+            comments=(
+                "Manages network traffic routing with "
+                "privacy-preserving configurations.\n\n"
+                "Provides WireGuard VPN, Zapret packet "
+                "processing, ByeDPI proxy, "
+                "and Discord repair tools."
+            ),
         )
         about.present()
 
-    def on_preferences(self, action, param):
+    def on_preferences(self, _action, _param):
         """Show preferences (navigate to settings page)."""
         if self.window:
             self.window.navigate_to_settings()
@@ -272,7 +286,9 @@ class SplitWireApp(Adw.Application):
         self,
         title: str,
         body: str,
-        priority: Gio.NotificationPriority = Gio.NotificationPriority.NORMAL,
+        priority: Gio.NotificationPriority = (
+            Gio.NotificationPriority.NORMAL
+        ),
     ):
         """Show a desktop notification."""
         notification = Gio.Notification.new(title)

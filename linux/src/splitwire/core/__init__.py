@@ -48,15 +48,7 @@ from .language import (
 from .logger import (
     ColoredFormatter,
     SplitWireLogger,
-    critical,
-    debug,
-    error,
-    exception,
-    get_component_logger,
-    get_logger,
-    info,
-    init_logger,
-    warning,
+    setup_logging,
 )
 from .shell import (
     CommandResult,
@@ -93,15 +85,7 @@ __all__ = [
     # logger
     "SplitWireLogger",
     "ColoredFormatter",
-    "get_logger",
-    "init_logger",
-    "get_component_logger",
-    "debug",
-    "info",
-    "warning",
-    "error",
-    "critical",
-    "exception",
+    "setup_logging",
     # shell
     "ShellExecutor",
     "CommandResult",

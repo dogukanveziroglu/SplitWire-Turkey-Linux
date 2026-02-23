@@ -7,20 +7,27 @@ It initializes core systems and launches the GUI.
 """
 
 import argparse
+import logging
 import sys
 from pathlib import Path
+
+from splitwire.core.logger import setup_logging
 
 # Ensure the package can be found when run directly
 _package_dir = Path(__file__).parent.parent
 if str(_package_dir) not in sys.path:
     sys.path.insert(0, str(_package_dir))
 
+logger = logging.getLogger(__name__)
+
 
 def check_python_version() -> bool:
     """Check if Python version is compatible."""
     major, minor = sys.version_info[:2]
     if major < 3 or (major == 3 and minor < 10):
-        print(f"Error: Python 3.10+ required, found {major}.{minor}")
+        sys.stderr.write(
+            f"Error: Python 3.10+ required, found {major}.{minor}\n"
+        )
         return False
     return True
 
@@ -29,7 +36,9 @@ def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
         prog="splitwire",
-        description="SplitWire - A privacy-focused network routing tool for Linux",
+        description=(
+            "SplitWire - A privacy-focused network routing tool for Linux"
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -43,20 +52,36 @@ For more information, visit: https://github.com/cagritaskn/SplitWire-Turkey
     )
 
     parser.add_argument(
-        "--version", "-v", action="store_true", help="Show version information and exit"
-    )
-
-    parser.add_argument("--debug", "-d", action="store_true", help="Enable debug logging")
-
-    parser.add_argument(
-        "--check-deps", action="store_true", help="Check system dependencies and exit"
+        "--version",
+        "-v",
+        action="store_true",
+        help="Show version information and exit",
     )
 
     parser.add_argument(
-        "--check-system", action="store_true", help="Show system information and exit"
+        "--debug",
+        "-d",
+        action="store_true",
+        help="Enable debug logging",
     )
 
-    parser.add_argument("--install-deps", action="store_true", help="Install missing dependencies")
+    parser.add_argument(
+        "--check-deps",
+        action="store_true",
+        help="Check system dependencies and exit",
+    )
+
+    parser.add_argument(
+        "--check-system",
+        action="store_true",
+        help="Show system information and exit",
+    )
+
+    parser.add_argument(
+        "--install-deps",
+        action="store_true",
+        help="Install missing dependencies",
+    )
 
     parser.add_argument(
         "--language",
@@ -66,7 +91,12 @@ For more information, visit: https://github.com/cagritaskn/SplitWire-Turkey
         help="Set application language",
     )
 
-    parser.add_argument("--config-dir", type=Path, default=None, help="Override config directory")
+    parser.add_argument(
+        "--config-dir",
+        type=Path,
+        default=None,
+        help="Override config directory",
+    )
 
     return parser.parse_args()
 
@@ -76,11 +106,10 @@ def show_version() -> None:
     from splitwire.core import get_config
 
     config = get_config()
-    print(f"SplitWire Linux v{config.version}")
-    print("A privacy-focused network routing tool for Linux")
-    print("")
-    print("GitHub: https://github.com/cagritaskn/SplitWire-Turkey")
-    print("License: MIT")
+    logger.info("SplitWire Linux v%s", config.version)
+    logger.info("A privacy-focused network routing tool for Linux")
+    logger.info("GitHub: https://github.com/cagritaskn/SplitWire-Turkey")
+    logger.info("License: MIT")
 
 
 def check_dependencies() -> bool:
@@ -92,7 +121,9 @@ def check_dependencies() -> bool:
 
     # Return True if all required deps are installed
     missing_required = [
-        d for d in system_deps + python_deps if d.required and d.status.value == "missing"
+        d
+        for d in system_deps + python_deps
+        if d.required and d.status.value == "missing"
     ]
     return len(missing_required) == 0
 
@@ -125,11 +156,8 @@ def run_gui(args: argparse.Namespace) -> int:
     from splitwire.core import (
         get_config_manager,
         init_language_manager,
-        init_logger,
     )
 
-    # Initialize logger
-    logger = init_logger(debug=args.debug)
     logger.info("Starting SplitWire Linux")
 
     # Load configuration
@@ -140,8 +168,8 @@ def run_gui(args: argparse.Namespace) -> int:
     language = args.language or config.language
     init_language_manager(language)
 
-    logger.info(f"Language: {language}")
-    logger.info(f"Debug mode: {args.debug}")
+    logger.info("Language: %s", language)
+    logger.info("Debug mode: %s", args.debug)
 
     # Check if GTK is available
     try:
@@ -151,9 +179,11 @@ def run_gui(args: argparse.Namespace) -> int:
         gi.require_version("Adw", "1")
         from gi.repository import Adw, Gtk  # noqa: F401
     except (ImportError, ValueError) as e:
-        logger.error(f"GTK4/Libadwaita not available: {e}")
-        print("Error: GTK4 and Libadwaita are required for GUI mode.")
-        print("Install with: sudo apt install gir1.2-gtk-4.0 gir1.2-adw-1 python3-gi")
+        logger.error("GTK4/Libadwaita not available: %s", e)
+        logger.error(
+            "Install with: sudo apt install "
+            "gir1.2-gtk-4.0 gir1.2-adw-1 python3-gi"
+        )
         return 1
 
     # Import and run the GTK4 application
@@ -171,12 +201,15 @@ def main() -> int:
     Returns:
         Exit code
     """
-    # Check Python version first
+    # Check Python version first (before logging is available)
     if not check_python_version():
         return 1
 
     # Parse arguments
     args = parse_args()
+
+    # Initialize centralized logging
+    setup_logging(debug=args.debug)
 
     # Handle simple commands that don't need full initialization
     if args.version:

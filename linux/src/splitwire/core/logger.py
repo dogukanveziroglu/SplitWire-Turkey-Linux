@@ -1,14 +1,36 @@
 """
-Logging module for SplitWire-Turkey Linux.
+Logging module for SplitWire Linux.
 
-Provides structured logging with file rotation and console output.
+Provides centralized logging setup with file rotation and colored console output.
 Logs are stored in ~/.cache/splitwire/logs/
+
+Usage:
+    # In __main__.py (once, before app startup):
+    from splitwire.core.logger import setup_logging
+    setup_logging(debug=args.debug)
+
+    # In every other module:
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("message %s", value)
 """
 
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+
+
+# Log formats
+FILE_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s"
+CONSOLE_FORMAT = "%(asctime)s | %(levelname)-8s | %(message)s"
+DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+# Rotation settings
+MAX_LOG_SIZE = 5 * 1024 * 1024  # 5MB
+BACKUP_COUNT = 3
+
+APP_NAME = "splitwire"
 
 
 class ColoredFormatter(logging.Formatter):
@@ -25,10 +47,12 @@ class ColoredFormatter(logging.Formatter):
     RESET = "\033[0m"
 
     def format(self, record: logging.LogRecord) -> str:
-        # Add color to levelname
+        """Format the log record with color codes on levelname."""
         levelname = record.levelname
         if levelname in self.COLORS:
-            record.levelname = f"{self.COLORS[levelname]}{levelname}{self.RESET}"
+            record.levelname = (
+                f"{self.COLORS[levelname]}{levelname}{self.RESET}"
+            )
 
         result = super().format(record)
 
@@ -37,92 +61,66 @@ class ColoredFormatter(logging.Formatter):
         return result
 
 
+def setup_logging(
+    debug: bool = False,
+    log_dir: Path | None = None,
+) -> None:
+    """
+    Configure the root 'splitwire' logger with file and console handlers.
+
+    Must be called once early in application startup (after argument parsing,
+    before any other module work). All modules using ``logging.getLogger(__name__)``
+    under the ``splitwire`` namespace will inherit this configuration.
+
+    Args:
+        debug: Enable DEBUG level logging (default: INFO)
+        log_dir: Override log directory (default: ~/.cache/splitwire/logs)
+    """
+    if log_dir is None:
+        log_dir = Path.home() / ".cache" / APP_NAME / "logs"
+
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    root_logger = logging.getLogger(APP_NAME)
+    root_logger.setLevel(logging.DEBUG if debug else logging.INFO)
+
+    # Clear any existing handlers to avoid duplicates on re-init
+    root_logger.handlers.clear()
+
+    # File handler -- rotates at 5 MB, keeps 3 backups
+    file_handler = RotatingFileHandler(
+        log_dir / "splitwire.log",
+        maxBytes=MAX_LOG_SIZE,
+        backupCount=BACKUP_COUNT,
+        encoding="utf-8",
+    )
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(FILE_FORMAT, DATE_FORMAT))
+    root_logger.addHandler(file_handler)
+
+    # Console handler -- colored output
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG if debug else logging.INFO)
+    console_handler.setFormatter(ColoredFormatter(CONSOLE_FORMAT, DATE_FORMAT))
+    root_logger.addHandler(console_handler)
+
+
 class SplitWireLogger:
     """
-    Application logger with file and console handlers.
+    Utility class for log management operations.
 
-    Features:
-    - Rotating file logs (max 5MB, 3 backups)
-    - Colored console output
-    - Separate logs for different components
-    - Debug mode toggle
+    Provides helpers to read, clear, and measure log files.
+    Does NOT proxy logging calls -- modules use stdlib
+    ``logging.getLogger(__name__)`` directly.
+
+    Args:
+        log_dir: Log directory (default: ~/.cache/splitwire/logs)
     """
 
-    APP_NAME = "splitwire"
-    MAX_LOG_SIZE = 5 * 1024 * 1024  # 5MB
-    BACKUP_COUNT = 3
-
-    # Log format
-    FILE_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)-20s | %(message)s"
-    CONSOLE_FORMAT = "%(asctime)s | %(levelname)-8s | %(message)s"
-    DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
-
-    def __init__(
-        self,
-        name: str = APP_NAME,
-        log_dir: Path | None = None,
-        debug: bool = False,
-        console: bool = True,
-    ):
-        """
-        Initialize logger.
-
-        Args:
-            name: Logger name
-            log_dir: Override log directory
-            debug: Enable debug logging
-            console: Enable console output
-        """
-        self._name = name
-        self._debug = debug
-        self._console_enabled = console
-
-        # Determine log directory
-        if log_dir:
-            self._log_dir = log_dir
-        else:
-            # Default: ~/.cache/splitwire/logs
-            xdg_cache = Path.home() / ".cache"
-            self._log_dir = xdg_cache / self.APP_NAME / "logs"
-
-        self._log_dir.mkdir(parents=True, exist_ok=True)
-
-        # Create logger
-        self._logger = logging.getLogger(name)
-        self._logger.setLevel(logging.DEBUG if debug else logging.INFO)
-
-        # Remove existing handlers
-        self._logger.handlers.clear()
-
-        # Setup handlers
-        self._setup_file_handler()
-        if console:
-            self._setup_console_handler()
-
-    def _setup_file_handler(self) -> None:
-        """Setup rotating file handler."""
-        log_file = self._log_dir / f"{self._name}.log"
-
-        handler = RotatingFileHandler(
-            log_file, maxBytes=self.MAX_LOG_SIZE, backupCount=self.BACKUP_COUNT, encoding="utf-8"
-        )
-        handler.setLevel(logging.DEBUG)
-        handler.setFormatter(logging.Formatter(self.FILE_FORMAT, self.DATE_FORMAT))
-
-        self._logger.addHandler(handler)
-
-    def _setup_console_handler(self) -> None:
-        """Setup colored console handler."""
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setLevel(logging.DEBUG if self._debug else logging.INFO)
-        handler.setFormatter(ColoredFormatter(self.CONSOLE_FORMAT, self.DATE_FORMAT))
-
-        self._logger.addHandler(handler)
-
-    @property
-    def logger(self) -> logging.Logger:
-        """Get the underlying Logger instance."""
-        return self._logger
+    def __init__(self, log_dir: Path | None = None):
+        if log_dir is None:
+            log_dir = Path.home() / ".cache" / APP_NAME / "logs"
+        self._log_dir = log_dir
 
     @property
     def log_dir(self) -> Path:
@@ -132,66 +130,7 @@ class SplitWireLogger:
     @property
     def log_file(self) -> Path:
         """Get main log file path."""
-        return self._log_dir / f"{self._name}.log"
-
-    def set_debug(self, enabled: bool) -> None:
-        """Enable or disable debug logging."""
-        self._debug = enabled
-        level = logging.DEBUG if enabled else logging.INFO
-        self._logger.setLevel(level)
-
-        for handler in self._logger.handlers:
-            if isinstance(handler, logging.StreamHandler) and not isinstance(
-                handler, RotatingFileHandler
-            ):
-                handler.setLevel(level)
-
-    # Logging methods
-
-    def debug(self, message: str, *args, **kwargs) -> None:
-        """Log debug message."""
-        self._logger.debug(message, *args, **kwargs)
-
-    def info(self, message: str, *args, **kwargs) -> None:
-        """Log info message."""
-        self._logger.info(message, *args, **kwargs)
-
-    def warning(self, message: str, *args, **kwargs) -> None:
-        """Log warning message."""
-        self._logger.warning(message, *args, **kwargs)
-
-    def error(self, message: str, *args, **kwargs) -> None:
-        """Log error message."""
-        self._logger.error(message, *args, **kwargs)
-
-    def critical(self, message: str, *args, **kwargs) -> None:
-        """Log critical message."""
-        self._logger.critical(message, *args, **kwargs)
-
-    def exception(self, message: str, *args, **kwargs) -> None:
-        """Log exception with traceback."""
-        self._logger.exception(message, *args, **kwargs)
-
-    # Component loggers
-
-    def get_component_logger(self, component: str) -> "SplitWireLogger":
-        """
-        Get a logger for a specific component.
-
-        Args:
-            component: Component name (e.g., "wireguard", "zapret")
-
-        Returns:
-            Logger for the component
-        """
-        return SplitWireLogger(
-            name=f"{self._name}.{component}",
-            log_dir=self._log_dir,
-            debug=self._debug,
-            console=self._console_enabled,
-        )
-
-    # Utility methods
+        return self._log_dir / "splitwire.log"
 
     def get_recent_logs(self, lines: int = 100) -> list[str]:
         """
@@ -238,67 +177,3 @@ class SplitWireLogger:
         for log_file in self._log_dir.glob("*.log*"):
             total += log_file.stat().st_size
         return total
-
-
-# Global logger instance
-_main_logger: SplitWireLogger | None = None
-
-
-def get_logger() -> SplitWireLogger:
-    """Get the global logger instance."""
-    global _main_logger
-    if _main_logger is None:
-        _main_logger = SplitWireLogger()
-    return _main_logger
-
-
-def init_logger(debug: bool = False, log_dir: Path | None = None) -> SplitWireLogger:
-    """
-    Initialize the global logger.
-
-    Args:
-        debug: Enable debug mode
-        log_dir: Override log directory
-
-    Returns:
-        The initialized logger
-    """
-    global _main_logger
-    _main_logger = SplitWireLogger(debug=debug, log_dir=log_dir)
-    return _main_logger
-
-
-def get_component_logger(component: str) -> SplitWireLogger:
-    """Get a logger for a specific component."""
-    return get_logger().get_component_logger(component)
-
-
-# Convenience functions
-def debug(message: str, *args, **kwargs) -> None:
-    """Log debug message."""
-    get_logger().debug(message, *args, **kwargs)
-
-
-def info(message: str, *args, **kwargs) -> None:
-    """Log info message."""
-    get_logger().info(message, *args, **kwargs)
-
-
-def warning(message: str, *args, **kwargs) -> None:
-    """Log warning message."""
-    get_logger().warning(message, *args, **kwargs)
-
-
-def error(message: str, *args, **kwargs) -> None:
-    """Log error message."""
-    get_logger().error(message, *args, **kwargs)
-
-
-def critical(message: str, *args, **kwargs) -> None:
-    """Log critical message."""
-    get_logger().critical(message, *args, **kwargs)
-
-
-def exception(message: str, *args, **kwargs) -> None:
-    """Log exception with traceback."""
-    get_logger().exception(message, *args, **kwargs)
