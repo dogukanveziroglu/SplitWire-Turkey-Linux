@@ -32,7 +32,7 @@ class SettingsPage(BasePage):
         """Build the settings page UI."""
         # Appearance group
         appearance_group = self.create_preferences_group(
-            title=get_text("settings", "appearance") or "Görünüm"
+            title=get_text("settings", "appearance")
         )
         self.append(appearance_group)
 
@@ -45,8 +45,8 @@ class SettingsPage(BasePage):
         ]
 
         lang_row = Adw.ComboRow(
-            title=get_text("settings", "language") or "Dil",
-            subtitle=get_text("settings", "language_subtitle") or "Uygulama dilini seçin",
+            title=get_text("settings", "language"),
+            subtitle=get_text("settings", "language_subtitle"),
         )
 
         # Create model with language names
@@ -68,14 +68,14 @@ class SettingsPage(BasePage):
 
         # Theme selector
         themes = [
-            ("system", get_text("settings", "theme_system") or "Sistem"),
-            ("light", get_text("settings", "theme_light") or "Açık"),
-            ("dark", get_text("settings", "theme_dark") or "Koyu"),
+            ("system", get_text("settings", "theme_system")),
+            ("light", get_text("settings", "theme_light")),
+            ("dark", get_text("settings", "theme_dark")),
         ]
 
         theme_row = Adw.ComboRow(
-            title=get_text("settings", "theme") or "Tema",
-            subtitle=get_text("settings", "theme_subtitle") or "Uygulama temasını seçin",
+            title=get_text("settings", "theme"),
+            subtitle=get_text("settings", "theme_subtitle"),
         )
 
         theme_model = Gtk.StringList.new([name for code, name in themes])
@@ -95,7 +95,7 @@ class SettingsPage(BasePage):
 
         # DNS Settings group
         dns_group = self.create_preferences_group(
-            title=get_text("settings", "dns") or "DNS Ayarları"
+            title=get_text("settings", "dns")
         )
         self.append(dns_group)
 
@@ -109,7 +109,7 @@ class SettingsPage(BasePage):
         ]
 
         self._dns_row = self.create_combo_row(
-            title=get_text("settings", "dns_server") or "DNS Sunucusu",
+            title=get_text("settings", "dns_server"),
             items=dns_presets,
             selected=1,  # Default: Cloudflare
             callback=self._on_dns_changed,
@@ -118,8 +118,8 @@ class SettingsPage(BasePage):
 
         # DoH mode switch
         self._switch_doh = self.create_switch_row(
-            title=get_text("settings", "doh_enabled") or "DNS over HTTPS (DoH)",
-            subtitle=get_text("settings", "doh_subtitle") or "Şifrelenmiş DNS sorguları kullan",
+            title=get_text("settings", "doh_enabled"),
+            subtitle=get_text("settings", "doh_subtitle"),
             active=True,
             callback=self._on_doh_changed,
         )
@@ -127,13 +127,13 @@ class SettingsPage(BasePage):
 
         # About group
         about_group = self.create_preferences_group(
-            title=get_text("settings", "about") or "Hakkında"
+            title=get_text("settings", "about")
         )
         self.append(about_group)
 
         # Version row
         version_row = Adw.ActionRow(
-            title=get_text("settings", "version") or "Sürüm",
+            title=get_text("settings", "version"),
             subtitle="1.0.0",
         )
         about_group.add(version_row)
@@ -150,7 +150,7 @@ class SettingsPage(BasePage):
 
         # Support row (Patreon)
         support_row = Adw.ActionRow(
-            title=get_text("settings", "support") or "Destek",
+            title=get_text("settings", "support"),
             subtitle="patreon.com/splitwire",
             activatable=True,
         )
@@ -159,13 +159,13 @@ class SettingsPage(BasePage):
         about_group.add(support_row)
 
         # Logs group
-        logs_group = self.create_preferences_group(title=get_text("settings", "logs") or "Loglar")
+        logs_group = self.create_preferences_group(title=get_text("settings", "logs"))
         self.append(logs_group)
 
         # Open logs row
         logs_row = Adw.ActionRow(
-            title=get_text("settings", "open_logs") or "Logs Klasörünü Aç",
-            subtitle=get_text("settings", "logs_subtitle") or "Uygulama loglarını görüntüle",
+            title=get_text("settings", "open_logs"),
+            subtitle=get_text("settings", "logs_subtitle"),
             activatable=True,
         )
         logs_row.add_suffix(Gtk.Image.new_from_icon_name("folder-symbolic"))
@@ -174,8 +174,8 @@ class SettingsPage(BasePage):
 
         # Check updates row
         updates_row = Adw.ActionRow(
-            title=get_text("settings", "check_updates") or "Güncellemeleri Kontrol Et",
-            subtitle=get_text("settings", "updates_subtitle") or "Yeni sürüm kontrolü yap",
+            title=get_text("settings", "check_updates"),
+            subtitle=get_text("settings", "updates_subtitle"),
             activatable=True,
         )
         updates_row.add_suffix(Gtk.Image.new_from_icon_name("software-update-available-symbolic"))
@@ -186,9 +186,9 @@ class SettingsPage(BasePage):
         """Refresh UI translations."""
         # Update theme names
         themes = [
-            ("system", get_text("settings", "theme_system") or "Sistem"),
-            ("light", get_text("settings", "theme_light") or "Açık"),
-            ("dark", get_text("settings", "theme_dark") or "Koyu"),
+            ("system", get_text("settings", "theme_system")),
+            ("light", get_text("settings", "theme_light")),
+            ("dark", get_text("settings", "theme_dark")),
         ]
         theme_model = Gtk.StringList.new([name for code, name in themes])
         self._theme_row.set_model(theme_model)
@@ -207,7 +207,7 @@ class SettingsPage(BasePage):
             app = self._window.get_application()
             if app:
                 app.set_language(code)
-                self.show_toast(f"Dil değiştirildi: {name}")
+                self.show_toast(get_text("messages", "language_changed").format(name))
 
     def _on_theme_changed(self, row, param):
         """Handle theme selection change."""
@@ -220,7 +220,7 @@ class SettingsPage(BasePage):
             app = self._window.get_application()
             if app:
                 app.set_theme(code)
-                self.show_toast(f"Tema değiştirildi: {name}")
+                self.show_toast(get_text("messages", "theme_changed").format(name))
 
     def _on_dns_changed(self, row, param):
         """Handle DNS selection change."""
@@ -250,7 +250,7 @@ class SettingsPage(BasePage):
     def _on_check_updates(self, row):
         """Handle check updates click."""
         self._logger.info("[UI:Settings] Checking for updates...")
-        self.set_status("Güncellemeler kontrol ediliyor...")
+        self.set_status(get_text("status", "checking"))
 
         def do_check():
             import httpx
@@ -272,15 +272,15 @@ class SettingsPage(BasePage):
             if result:
                 current = "v1.0.0"
                 if result != current:
-                    self.show_toast(f"Yeni sürüm mevcut: {result}")
+                    self.show_toast(get_text("messages", "update_available").format(result))
                     # Optionally open release page
                     self._open_url(
                         f"https://github.com/dogukanveziroglu/SplitWire-Turkey/releases/tag/{result}"
                     )
                 else:
-                    self.show_toast("En güncel sürümü kullanıyorsunuz")
+                    self.show_toast(get_text("messages", "no_updates"))
             else:
-                self.show_toast("Güncelleme kontrolü başarısız")
+                self.show_toast(get_text("messages", "update_check_failed"))
 
         self.run_async(do_check, on_complete)
 
@@ -294,4 +294,4 @@ class SettingsPage(BasePage):
             try:
                 subprocess.Popen(["xdg-open", url])
             except Exception:
-                self.show_toast(f"URL açılamadı: {url}")
+                self.show_toast(get_text("messages", "error_generic").format(url))

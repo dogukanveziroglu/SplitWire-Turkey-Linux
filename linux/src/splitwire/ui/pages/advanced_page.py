@@ -61,7 +61,7 @@ class AdvancedPage(BasePage):
         """Build the advanced page UI."""
         # Services group
         services_group = self.create_preferences_group(
-            title=get_text("advanced", "services") or "Hizmetler"
+            title=get_text("advanced", "services")
         )
         self.append(services_group)
 
@@ -76,29 +76,27 @@ class AdvancedPage(BasePage):
 
         # Options group
         options_group = self.create_preferences_group(
-            title=get_text("advanced", "options") or "Seçenekler"
+            title=get_text("advanced", "options")
         )
         self.append(options_group)
 
         # Auto DNS switch
         self._switch_auto_dns = self.create_switch_row(
-            title=get_text("advanced", "auto_dns")
-            or "DNS ve DoH ayarlarını her kurulumda gerçekleştir",
-            subtitle=get_text("tooltips", "auto_dns")
-            or "WireGuard ve hizmet kurulumlarinda DNS'i otomatik ayarla",
+            title=get_text("advanced", "auto_dns"),
+            subtitle=get_text("tooltips", "auto_dns"),
             active=True,
         )
         options_group.add(self._switch_auto_dns)
 
         # Actions group
         actions_group = self.create_preferences_group(
-            title=get_text("advanced", "actions") or "İşlemler"
+            title=get_text("advanced", "actions")
         )
         self.append(actions_group)
 
         # Remove all services button
         self._btn_remove_all = self.create_action_button(
-            label=get_text("advanced", "remove_all") or "Tüm Hizmetleri Kaldır",
+            label=get_text("advanced", "remove_all"),
             callback=self._on_remove_all,
             destructive=True,
         )
@@ -106,7 +104,7 @@ class AdvancedPage(BasePage):
 
         # Reset DNS button
         self._btn_reset_dns = self.create_action_button(
-            label=get_text("advanced", "reset_dns") or "DNS ve DoH Ayarlarını Geri Al",
+            label=get_text("advanced", "reset_dns"),
             callback=self._on_reset_dns,
             destructive=True,
         )
@@ -114,19 +112,19 @@ class AdvancedPage(BasePage):
 
         # Uninstall SplitWire button
         self._btn_uninstall = self.create_action_button(
-            label=get_text("advanced", "uninstall") or "SplitWire'i Kaldır",
+            label=get_text("advanced", "uninstall"),
             callback=self._on_uninstall,
             destructive=True,
         )
         actions_group.add(self._btn_uninstall)
 
         # Logs section
-        logs_group = self.create_preferences_group(title=get_text("advanced", "logs") or "Loglar")
+        logs_group = self.create_preferences_group(title=get_text("advanced", "logs"))
         self.append(logs_group)
 
         # Open logs button
         self._btn_open_logs = Gtk.Button(
-            label=get_text("advanced", "open_logs") or "Logs Klasörünü Aç",
+            label=get_text("advanced", "open_logs"),
         )
         self._btn_open_logs.connect("clicked", self._on_open_logs)
         logs_group.add(self._btn_open_logs)
@@ -151,7 +149,7 @@ class AdvancedPage(BasePage):
         status_box.append(status_dot)
 
         status_label = Gtk.Label(
-            label=get_text("status", "checking") or "Kontrol ediliyor...",
+            label=get_text("status", "checking"),
         )
         status_box.append(status_label)
 
@@ -159,7 +157,7 @@ class AdvancedPage(BasePage):
 
         # Remove button (hidden by default)
         remove_btn = Gtk.Button(
-            label=get_text("buttons", "remove") or "Kaldır",
+            label=get_text("buttons", "remove"),
             css_classes=["destructive-action"],
             valign=Gtk.Align.CENTER,
             margin_start=8,
@@ -185,15 +183,15 @@ class AdvancedPage(BasePage):
 
         if status == ServiceStatus.RUNNING:
             row["status_dot"].set_css_classes(["status-running"])
-            row["status_label"].set_label(get_text("status", "running") or "Çalışıyor")
+            row["status_label"].set_label(get_text("status", "running"))
             row["remove_btn"].set_visible(True)
         elif installed:
             row["status_dot"].set_css_classes(["status-stopped"])
-            row["status_label"].set_label(get_text("status", "stopped") or "Durduruldu")
+            row["status_label"].set_label(get_text("status", "stopped"))
             row["remove_btn"].set_visible(True)
         else:
             row["status_dot"].set_css_classes(["status-stopped"])
-            row["status_label"].set_label(get_text("status", "not_installed") or "Kurulu Değil")
+            row["status_label"].set_label(get_text("status", "not_installed"))
             row["remove_btn"].set_visible(False)
 
     def _refresh_all_status(self):
@@ -229,15 +227,15 @@ class AdvancedPage(BasePage):
     def refresh_translations(self):
         """Refresh UI translations."""
         self._switch_auto_dns.set_title(
-            get_text("advanced", "auto_dns") or "DNS ve DoH ayarlarını her kurulumda gerçekleştir"
+            get_text("advanced", "auto_dns")
         )
         self._btn_remove_all.set_label(
-            get_text("advanced", "remove_all") or "Tüm Hizmetleri Kaldır"
+            get_text("advanced", "remove_all")
         )
         self._btn_reset_dns.set_label(
-            get_text("advanced", "reset_dns") or "DNS ve DoH Ayarlarını Geri Al"
+            get_text("advanced", "reset_dns")
         )
-        self._btn_uninstall.set_label(get_text("advanced", "uninstall") or "SplitWire'i Kaldır")
+        self._btn_uninstall.set_label(get_text("advanced", "uninstall"))
 
     # Event handlers
 
@@ -252,11 +250,11 @@ class AdvancedPage(BasePage):
         name = info["name"]
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="Kaldır",
-            body=f"{name} kaldırılacak. Devam etmek istiyor musunuz?",
+            heading=get_text("dialogs", "confirm_remove"),
+            body=get_text("messages", "confirm_remove").format(name),
         )
-        dialog.add_response("cancel", "İptal")
-        dialog.add_response("remove", "Kaldır")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("remove", get_text("buttons", "remove"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         self._pending_remove_key = key  # Store in instance variable (GTK4 compatible)
         dialog.connect("response", self._on_service_remove_confirmed)
@@ -270,7 +268,7 @@ class AdvancedPage(BasePage):
             if not info:
                 return
 
-            self.set_status(f"{info['name']} kaldırılıyor...")
+            self.set_status(get_text("status", "removing"))
 
             def do_remove():
                 service = info["service"]
@@ -281,7 +279,7 @@ class AdvancedPage(BasePage):
             def on_complete(result):
                 self._refresh_all_status()
                 if result:
-                    self.show_toast(f"{info['name']} kaldırıldı")
+                    self.show_toast(get_text("messages", "remove_success").format(info["name"]))
                 self.set_status("")
 
             self.run_async(do_remove, on_complete)
@@ -290,11 +288,11 @@ class AdvancedPage(BasePage):
         """Handle remove all services button."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="Tüm Hizmetleri Kaldır",
-            body="Tüm SplitWire hizmetleri kaldırılacak. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
+            heading=get_text("advanced", "remove_all"),
+            body=get_text("dialogs", "remove_all_body"),
         )
-        dialog.add_response("cancel", "İptal")
-        dialog.add_response("remove", "Tümünü Kaldır")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("remove", get_text("buttons", "remove"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_remove_all_confirmed)
         dialog.present()
@@ -303,7 +301,7 @@ class AdvancedPage(BasePage):
         """Handle remove all confirmation."""
         if response == "remove":
             self._logger.info("[UI:Advanced] Removing all services...")
-            self.set_status("Tüm hizmetler kaldırılıyor...")
+            self.set_status(get_text("status", "removing"))
 
             def do_remove_all():
                 for key, info in self._services.items():
@@ -318,7 +316,7 @@ class AdvancedPage(BasePage):
             def on_complete(result):
                 self._refresh_all_status()
                 if result:
-                    self.show_toast("Tüm hizmetler kaldırıldı")
+                    self.show_toast(get_text("messages", "all_services_removed"))
                 self.set_status("")
 
             self.run_async(do_remove_all, on_complete)
@@ -327,11 +325,11 @@ class AdvancedPage(BasePage):
         """Handle reset DNS button."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="DNS Ayarlarını Sıfırla",
-            body="DNS ayarları varsayılana döndürülecek. Devam etmek istiyor musunuz?",
+            heading=get_text("advanced", "reset_dns"),
+            body=get_text("dialogs", "reset_dns_body"),
         )
-        dialog.add_response("cancel", "İptal")
-        dialog.add_response("reset", "Sıfırla")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("reset", get_text("buttons", "reset"))
         dialog.set_response_appearance("reset", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_reset_dns_confirmed)
         dialog.present()
@@ -340,7 +338,7 @@ class AdvancedPage(BasePage):
         """Handle DNS reset confirmation."""
         if response == "reset":
             self._logger.info("[UI:Advanced] Resetting DNS settings...")
-            self.set_status("DNS ayarları sıfırlanıyor...")
+            self.set_status(get_text("status", "checking"))
 
             def do_reset():
                 dns_service = self._services["dns"]["service"]
@@ -350,7 +348,7 @@ class AdvancedPage(BasePage):
             def on_complete(result):
                 self._refresh_all_status()
                 if result:
-                    self.show_toast("DNS ayarları sıfırlandı")
+                    self.show_toast(get_text("messages", "dns_reset"))
                 self.set_status("")
 
             self.run_async(do_reset, on_complete)
@@ -359,11 +357,11 @@ class AdvancedPage(BasePage):
         """Handle uninstall SplitWire button."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="SplitWire'i Kaldır",
-            body="SplitWire ve tüm bileşenleri kaldırılacak. Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
+            heading=get_text("advanced", "uninstall"),
+            body=get_text("dialogs", "uninstall_body"),
         )
-        dialog.add_response("cancel", "İptal")
-        dialog.add_response("uninstall", "Kaldır")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("uninstall", get_text("buttons", "remove"))
         dialog.set_response_appearance("uninstall", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_uninstall_confirmed)
         dialog.present()
@@ -372,7 +370,7 @@ class AdvancedPage(BasePage):
         """Handle uninstall confirmation."""
         if response == "uninstall":
             self._logger.info("[UI:Advanced] Uninstalling SplitWire...")
-            self.set_status("SplitWire kaldırılıyor...")
+            self.set_status(get_text("status", "removing"))
 
             def do_uninstall():
                 # Remove all services first
@@ -400,7 +398,7 @@ class AdvancedPage(BasePage):
 
             def on_complete(result):
                 if result:
-                    self.show_toast("SplitWire kaldırıldı. Uygulamayı kapatın.")
+                    self.show_toast(get_text("messages", "uninstall_complete"))
                     # Quit the application
                     app = self._window.get_application()
                     if app:
@@ -421,4 +419,4 @@ class AdvancedPage(BasePage):
             subprocess.Popen(["xdg-open", logs_dir])
         except Exception as e:
             self._logger.error(f"Error opening logs: {e}")
-            self.show_toast(f"Hata: {e}")
+            self.show_toast(get_text("messages", "error_generic").format(e))
