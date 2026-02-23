@@ -35,61 +35,59 @@ class RepairPage(BasePage):
         """Build the repair page UI."""
         # Main actions group
         actions_group = self.create_preferences_group(
-            title=get_text("repair", "actions") or "İşlemler"
+            title=get_text("repair", "actions")
         )
         self.append(actions_group)
 
         # Discord repair button
         self._btn_repair = self.create_action_button(
-            label=get_text("repair", "repair_discord") or "Discord'u Onar",
+            label=get_text("repair", "repair_discord"),
             callback=self._on_repair_discord,
-            tooltip=get_text("tooltips", "discord_repair") or "Discord önbelleğini temizle ve onar",
+            tooltip=get_text("tooltips", "discord_repair"),
             suggested=True,
         )
         actions_group.add(self._btn_repair)
 
         # Discord PTB install button
         self._btn_ptb = self.create_action_button(
-            label=get_text("repair", "install_ptb") or "Discord PTB Yükle",
+            label=get_text("repair", "install_ptb"),
             callback=self._on_install_ptb,
-            tooltip=get_text("tooltips", "discord_ptb_install")
-            or "Discord Public Test Build'i yükle",
+            tooltip=get_text("tooltips", "discord_ptb_install"),
         )
         actions_group.add(self._btn_ptb)
 
         # WebCord install button
         self._btn_webcord = self.create_action_button(
-            label=get_text("repair", "install_webcord") or "WebCord Yükle",
+            label=get_text("repair", "install_webcord"),
             callback=self._on_install_webcord,
-            tooltip=get_text("tooltips", "webcord_install") or "Alternatif Discord istemcisi yükle",
+            tooltip=get_text("tooltips", "webcord_install"),
         )
         actions_group.add(self._btn_webcord)
 
         # Options group
         options_group = self.create_preferences_group(
-            title=get_text("repair", "options") or "Seçenekler"
+            title=get_text("repair", "options")
         )
         self.append(options_group)
 
         # Clean install for PTB switch
         self._switch_clean_ptb = self.create_switch_row(
-            title=get_text("repair", "clean_install_ptb") or "Discord PTB için temiz kurulum yap",
-            subtitle=get_text("tooltips", "clean_install_ptb")
-            or "Mevcut Discord'u kaldırıp PTB'yi yükle",
+            title=get_text("repair", "clean_install_ptb"),
+            subtitle=get_text("tooltips", "clean_install_ptb"),
             active=False,
         )
         options_group.add(self._switch_clean_ptb)
 
         # Create shortcut for WebCord switch
         self._switch_webcord_shortcut = self.create_switch_row(
-            title=get_text("repair", "webcord_shortcut") or "WebCord için kısayol oluştur",
-            subtitle=get_text("tooltips", "webcord_shortcut") or "Masaüstünde kısayol oluştur",
+            title=get_text("repair", "webcord_shortcut"),
+            subtitle=get_text("tooltips", "webcord_shortcut"),
             active=True,
         )
         options_group.add(self._switch_webcord_shortcut)
 
         # Status group
-        status_group = self.create_preferences_group(title=get_text("repair", "status") or "Durum")
+        status_group = self.create_preferences_group(title=get_text("repair", "status"))
         self.append(status_group)
 
         # Discord status row
@@ -152,7 +150,7 @@ class RepairPage(BasePage):
         status_box.append(status_dot)
 
         status_label = Gtk.Label(
-            label=get_text("status", "not_installed") or "Yüklü Değil",
+            label=get_text("status", "not_installed"),
         )
         status_box.append(status_label)
 
@@ -160,7 +158,7 @@ class RepairPage(BasePage):
 
         # Action button
         action_btn = Gtk.Button(
-            label=get_text("buttons", "install") or "Yükle",
+            label=get_text("buttons", "install"),
             valign=Gtk.Align.CENTER,
             margin_start=8,
         )
@@ -169,7 +167,7 @@ class RepairPage(BasePage):
 
         # Remove button (hidden by default)
         remove_btn = Gtk.Button(
-            label=get_text("buttons", "remove") or "Kaldır",
+            label=get_text("buttons", "remove"),
             css_classes=["destructive-action"],
             valign=Gtk.Align.CENTER,
             margin_start=8,
@@ -192,19 +190,19 @@ class RepairPage(BasePage):
         if installed:
             if running:
                 status_dict["status_dot"].set_css_classes(["status-running"])
-                status_dict["status_label"].set_label(get_text("status", "running") or "Çalışıyor")
+                status_dict["status_label"].set_label(get_text("status", "running"))
             else:
                 status_dict["status_dot"].set_css_classes(["status-stopped"])
-                status_dict["status_label"].set_label(get_text("status", "installed") or "Yüklü")
+                status_dict["status_label"].set_label(get_text("status", "installed"))
 
-            status_dict["action_btn"].set_label(get_text("buttons", "launch") or "Başlat")
+            status_dict["action_btn"].set_label(get_text("buttons", "launch"))
             status_dict["remove_btn"].set_visible(True)
         else:
             status_dict["status_dot"].set_css_classes(["status-stopped"])
             status_dict["status_label"].set_label(
-                get_text("status", "not_installed") or "Yüklü Değil"
+                get_text("status", "not_installed")
             )
-            status_dict["action_btn"].set_label(get_text("buttons", "install") or "Yükle")
+            status_dict["action_btn"].set_label(get_text("buttons", "install"))
             status_dict["remove_btn"].set_visible(False)
 
     def _refresh_status(self):
@@ -260,16 +258,16 @@ class RepairPage(BasePage):
 
     def refresh_translations(self):
         """Refresh UI translations."""
-        self._btn_repair.set_label(get_text("repair", "repair_discord") or "Discord'u Onar")
-        self._btn_ptb.set_label(get_text("repair", "install_ptb") or "Discord PTB Yükle")
-        self._btn_webcord.set_label(get_text("repair", "install_webcord") or "WebCord Yükle")
+        self._btn_repair.set_label(get_text("repair", "repair_discord"))
+        self._btn_ptb.set_label(get_text("repair", "install_ptb"))
+        self._btn_webcord.set_label(get_text("repair", "install_webcord"))
 
     # Event handlers
 
     def _on_repair_discord(self, button):
         """Handle repair Discord button."""
         self._logger.info("[UI:Repair] Repairing Discord...")
-        self.set_status("Discord onarılıyor...")
+        self.set_status(get_text("status", "installing"))
 
         def do_repair():
             result = self._discord_service.repair_discord()
@@ -278,10 +276,10 @@ class RepairPage(BasePage):
         def on_complete(result):
             self._refresh_status()
             if result and result.success:
-                self.show_toast("Discord onarıldı")
+                self.show_toast(get_text("messages", "install_success").format("Discord"))
             else:
-                msg = result.message if result else "Bilinmeyen hata"
-                self.show_toast(f"Hata: {msg}")
+                msg = result.message if result else get_text("status", "error")
+                self.show_toast(get_text("messages", "error_generic").format(msg))
             self.set_status("")
 
         self.run_async(do_repair, on_complete)
@@ -295,11 +293,11 @@ class RepairPage(BasePage):
             # Confirmation dialog
             dialog = Adw.MessageDialog(
                 transient_for=self._window,
-                heading="Temiz Kurulum",
-                body="Mevcut Discord kaldırılacak ve PTB yüklenecek. Devam etmek istiyor musunuz?",
+                heading=get_text("repair", "clean_install_ptb"),
+                body=get_text("dialogs", "clean_install_body"),
             )
-            dialog.add_response("cancel", "İptal")
-            dialog.add_response("continue", "Devam")
+            dialog.add_response("cancel", get_text("buttons", "cancel"))
+            dialog.add_response("continue", get_text("buttons", "ok"))
             dialog.set_response_appearance("continue", Adw.ResponseAppearance.DESTRUCTIVE)
             dialog.connect("response", self._on_clean_install_confirmed)
             dialog.present()
@@ -313,7 +311,7 @@ class RepairPage(BasePage):
 
     def _do_install_ptb(self, clean: bool = False):
         """Perform PTB installation."""
-        self.set_status("Discord PTB kuruluyor...")
+        self.set_status(get_text("status", "installing"))
 
         def do_install():
             if clean:
@@ -331,7 +329,7 @@ class RepairPage(BasePage):
         def on_complete(result):
             self._refresh_status()
             if result:
-                self.show_toast("Discord PTB kuruldu")
+                self.show_toast(get_text("messages", "install_success").format("Discord PTB"))
             self.set_status("")
 
         self.run_async(do_install, on_complete)
@@ -340,7 +338,7 @@ class RepairPage(BasePage):
         """Handle install WebCord button."""
         self._logger.info("[UI:Repair] Installing WebCord...")
         create_shortcut = self._switch_webcord_shortcut.get_active()
-        self.set_status("WebCord kuruluyor...")
+        self.set_status(get_text("status", "installing"))
 
         def do_install():
             self._discord_service.install_webcord(create_shortcut=create_shortcut)
@@ -349,7 +347,7 @@ class RepairPage(BasePage):
         def on_complete(result):
             self._refresh_status()
             if result:
-                self.show_toast("WebCord kuruldu")
+                self.show_toast(get_text("messages", "install_success").format("WebCord"))
             self.set_status("")
 
         self.run_async(do_install, on_complete)
@@ -357,14 +355,14 @@ class RepairPage(BasePage):
     def _on_discord_action(self, button):
         """Handle Discord action button (install/launch)."""
         label = button.get_label()
-        if label == (get_text("buttons", "install") or "Yükle"):
+        if label == get_text("buttons", "install"):
             self._do_install_discord()
         else:
             self._discord_service.launch_discord(DiscordVersion.STABLE)
 
     def _do_install_discord(self):
         """Install Discord stable."""
-        self.set_status("Discord kuruluyor...")
+        self.set_status(get_text("status", "installing"))
 
         def do_install():
             self._discord_service.install_discord(DiscordVersion.STABLE)
@@ -373,7 +371,7 @@ class RepairPage(BasePage):
         def on_complete(result):
             self._refresh_status()
             if result:
-                self.show_toast("Discord kuruldu")
+                self.show_toast(get_text("messages", "install_success").format("Discord"))
             self.set_status("")
 
         self.run_async(do_install, on_complete)
@@ -385,7 +383,7 @@ class RepairPage(BasePage):
     def _on_ptb_action(self, button):
         """Handle PTB action button (install/launch)."""
         label = button.get_label()
-        if label == (get_text("buttons", "install") or "Yükle"):
+        if label == get_text("buttons", "install"):
             self._do_install_ptb()
         else:
             self._discord_service.launch_discord(DiscordVersion.PTB)
@@ -397,7 +395,7 @@ class RepairPage(BasePage):
     def _on_webcord_action(self, button):
         """Handle WebCord action button (install/launch)."""
         label = button.get_label()
-        if label == (get_text("buttons", "install") or "Yükle"):
+        if label == get_text("buttons", "install"):
             self._on_install_webcord(button)
         else:
             self._discord_service.launch_webcord()
@@ -410,11 +408,11 @@ class RepairPage(BasePage):
         """Show remove confirmation dialog."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="Kaldır",
-            body=f"{name} kaldırılacak. Devam etmek istiyor musunuz?",
+            heading=get_text("dialogs", "confirm_remove"),
+            body=get_text("messages", "confirm_remove").format(name),
         )
-        dialog.add_response("cancel", "İptal")
-        dialog.add_response("remove", "Kaldır")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("remove", get_text("buttons", "remove"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         self._pending_remove_version = version  # Store in instance variable (GTK4 compatible)
         dialog.connect("response", self._on_remove_confirmed)
@@ -424,7 +422,7 @@ class RepairPage(BasePage):
         """Handle remove confirmation."""
         if response == "remove":
             version = self._pending_remove_version  # Use instance variable (GTK4 compatible)
-            self.set_status("Kaldırılıyor...")
+            self.set_status(get_text("status", "removing"))
 
             def do_remove():
                 installations = self._discord_service.get_installations()
@@ -436,7 +434,7 @@ class RepairPage(BasePage):
             def on_complete(result):
                 self._refresh_status()
                 if result:
-                    self.show_toast("Kaldırıldı")
+                    self.show_toast(get_text("messages", "service_removed"))
                 self.set_status("")
 
             self.run_async(do_remove, on_complete)
@@ -445,11 +443,11 @@ class RepairPage(BasePage):
         """Show WebCord remove confirmation dialog."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="Kaldır",
-            body="WebCord kaldırılacak. Devam etmek istiyor musunuz?",
+            heading=get_text("dialogs", "confirm_remove"),
+            body=get_text("messages", "confirm_remove").format("WebCord"),
         )
-        dialog.add_response("cancel", "İptal")
-        dialog.add_response("remove", "Kaldır")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("remove", get_text("buttons", "remove"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_webcord_remove_confirmed)
         dialog.present()
@@ -457,7 +455,7 @@ class RepairPage(BasePage):
     def _on_webcord_remove_confirmed(self, dialog, response):
         """Handle WebCord remove confirmation."""
         if response == "remove":
-            self.set_status("Kaldırılıyor...")
+            self.set_status(get_text("status", "removing"))
 
             def do_remove():
                 self._discord_service.uninstall_webcord()
@@ -466,7 +464,7 @@ class RepairPage(BasePage):
             def on_complete(result):
                 self._refresh_status()
                 if result:
-                    self.show_toast("WebCord kaldırıldı")
+                    self.show_toast(get_text("messages", "remove_success").format("WebCord"))
                 self.set_status("")
 
             self.run_async(do_remove, on_complete)
@@ -475,28 +473,8 @@ class RepairPage(BasePage):
         """Handle help button."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading="Discord Onarım Yardım",
-            body="""Discord onarım araçları, Discord bağlantı sorunlarını çözmeye yardımcı olur.
-
-Discord'u Onar:
-- Önbelleği temizler
-- Ayarları sıfırlar
-- Bozuk dosyaları düzeltir
-
-Discord PTB:
-- Public Test Build
-- Yeni özellikleri daha erken deneyin
-- Temiz kurulum seçeneği mevcut Discord'u kaldırır
-
-WebCord:
-- Alternatif Discord istemcisi
-- Daha hafif ve gizlilik odaklı
-- Electron tabanlı açık kaynak
-
-Durum göstergeleri:
-● Yeşil: Çalışıyor
-● Gri: Yüklü/Durduruldu
-● Gri: Yüklü değil""",
+            heading=get_text("help", "repair_title"),
+            body=get_text("help", "repair_body"),
         )
-        dialog.add_response("ok", "Tamam")
+        dialog.add_response("ok", get_text("buttons", "ok"))
         dialog.present()

@@ -56,24 +56,23 @@ class MainPage(BasePage):
         # Note: _update_status_indicator() called at end of _build_ui after buttons exist
 
         # Main buttons group
-        buttons_group = self.create_preferences_group(title=get_text("main", "setup") or "Kurulum")
+        buttons_group = self.create_preferences_group(title=get_text("main", "setup"))
         self.append(buttons_group)
 
         # Standard setup button
         self._btn_standard = self.create_action_button(
-            label=get_text("main", "standard_setup") or "Standart Kurulum",
+            label=get_text("main", "standard_setup"),
             callback=self._on_standard_setup,
-            tooltip=get_text("tooltips", "standard_install")
-            or "WireGuard/WGCF ile standart kurulum",
+            tooltip=get_text("tooltips", "standard_install"),
             suggested=True,
         )
         buttons_group.add(self._btn_standard)
 
         # Disconnect button (initially hidden)
         self._btn_disconnect = self.create_action_button(
-            label=get_text("buttons", "disconnect") or "Bağlantıyı Kes",
+            label=get_text("buttons", "disconnect"),
             callback=self._on_disconnect,
-            tooltip=get_text("tooltips", "wireguard_disconnect") or "VPN bağlantısını kes",
+            tooltip=get_text("tooltips", "wireguard_disconnect"),
             destructive=True,
         )
         self._btn_disconnect.set_visible(False)
@@ -81,15 +80,14 @@ class MainPage(BasePage):
 
         # Options group
         options_group = self.create_preferences_group(
-            title=get_text("main", "options") or "Seçenekler"
+            title=get_text("main", "options")
         )
         self.append(options_group)
 
         # Browser tunneling switch
         self._switch_browser = self.create_switch_row(
-            title=get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap",
-            subtitle=get_text("tooltips", "browser_tunneling")
-            or "Chrome, Firefox, Edge vb. tarayıcıları dahil et",
+            title=get_text("main", "browser_tunneling"),
+            subtitle=get_text("tooltips", "browser_tunneling"),
             active=False,
             callback=self._on_browser_tunneling_changed,
         )
@@ -97,9 +95,8 @@ class MainPage(BasePage):
 
         # Full tunnel mode switch (default: ON - all traffic through VPN)
         self._switch_full_tunnel = self.create_switch_row(
-            title=get_text("main", "full_tunnel") or "Tüm Trafik VPN'den Geçsin",
-            subtitle=get_text("tooltips", "full_tunnel")
-            or "Tüm internet trafiğini VPN üzerinden yönlendir (daha yavaş ama tüm engeller kalkar)",
+            title=get_text("main", "full_tunnel"),
+            subtitle=get_text("tooltips", "full_tunnel"),
             active=True,
             callback=self._on_full_tunnel_changed,
         )
@@ -107,9 +104,8 @@ class MainPage(BasePage):
 
         # Refresh timer switch
         self._switch_refresh = self.create_switch_row(
-            title=get_text("main", "refresh_timer") or "WireSock yineleyici kur",
-            subtitle=get_text("tooltips", "wiresock_repeater")
-            or "Bağlantıyı periyodik olarak yenile (30 dakika)",
+            title=get_text("main", "refresh_timer"),
+            subtitle=get_text("tooltips", "wiresock_repeater"),
             active=False,
             callback=self._on_refresh_timer_changed,
         )
@@ -117,9 +113,8 @@ class MainPage(BasePage):
 
         # Advanced settings expander
         self._advanced_expander = Adw.ExpanderRow(
-            title=get_text("main", "folder_customization") or "Klasör listesini özelleştir",
-            subtitle=get_text("tooltips", "folder_customization")
-            or "Tünelleme yapılacak uygulamaları özelleştir",
+            title=get_text("main", "folder_customization"),
+            subtitle=get_text("tooltips", "folder_customization"),
         )
         options_group.add(self._advanced_expander)
 
@@ -138,16 +133,16 @@ class MainPage(BasePage):
 
         # Add folder button
         self._btn_add_folder = Gtk.Button(
-            label=get_text("main", "add_folder") or "Klasör Ekle",
-            tooltip_text=get_text("tooltips", "add_folder") or "Özel uygulama klasörü ekle",
+            label=get_text("main", "add_folder"),
+            tooltip_text=get_text("tooltips", "add_folder"),
         )
         self._btn_add_folder.connect("clicked", self._on_add_folder)
         custom_buttons_box.append(self._btn_add_folder)
 
         # Clear list button
         self._btn_clear = Gtk.Button(
-            label=get_text("main", "clear_list") or "Listeyi Temizle",
-            tooltip_text=get_text("tooltips", "clear_list") or "Özel listeyi temizle",
+            label=get_text("main", "clear_list"),
+            tooltip_text=get_text("tooltips", "clear_list"),
         )
         self._btn_clear.connect("clicked", self._on_clear_list)
         custom_buttons_box.append(self._btn_clear)
@@ -163,17 +158,16 @@ class MainPage(BasePage):
 
         # Custom setup button
         self._btn_custom = Gtk.Button(
-            label=get_text("main", "custom_setup") or "Özel Kurulum",
-            tooltip_text=get_text("tooltips", "custom_install") or "Özel listeyle kurulum yap",
+            label=get_text("main", "custom_setup"),
+            tooltip_text=get_text("tooltips", "custom_install"),
         )
         self._btn_custom.connect("clicked", self._on_custom_setup)
         advanced_buttons_box.append(self._btn_custom)
 
         # Generate config button
         self._btn_generate = Gtk.Button(
-            label=get_text("main", "generate_config") or "Özel Config Oluştur",
-            tooltip_text=get_text("tooltips", "generate_config")
-            or "Özel WireGuard config dosyası oluştur",
+            label=get_text("main", "generate_config"),
+            tooltip_text=get_text("tooltips", "generate_config"),
         )
         self._btn_generate.connect("clicked", self._on_generate_config)
         advanced_buttons_box.append(self._btn_generate)
@@ -186,7 +180,7 @@ class MainPage(BasePage):
         self.append(remove_box)
 
         self._btn_remove = self.create_action_button(
-            label=get_text("main", "remove_service") or "Hizmeti Kaldır",
+            label=get_text("main", "remove_service"),
             callback=self._on_remove_service,
             destructive=True,
         )
@@ -264,8 +258,6 @@ class MainPage(BasePage):
 
         # Status text
         status_text = get_text("status", "running") if running else get_text("status", "stopped")
-        if not status_text:
-            status_text = "Çalışıyor" if running else "Durduruldu"
         label = Gtk.Label(label=status_text)
         self._status_box.append(label)
 
@@ -279,21 +271,21 @@ class MainPage(BasePage):
 
     def refresh_translations(self):
         """Refresh UI translations."""
-        self._btn_standard.set_label(get_text("main", "standard_setup") or "Standart Kurulum")
+        self._btn_standard.set_label(get_text("main", "standard_setup"))
         self._switch_browser.set_title(
-            get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap"
+            get_text("main", "browser_tunneling")
         )
         self._switch_refresh.set_title(
-            get_text("main", "refresh_timer") or "WireSock yineleyici kur"
+            get_text("main", "refresh_timer")
         )
-        self._btn_remove.set_label(get_text("main", "remove_service") or "Hizmeti Kaldır")
+        self._btn_remove.set_label(get_text("main", "remove_service"))
 
     # Event handlers
 
     def _on_standard_setup(self, button):
         """Handle standard setup button click."""
         self._logger.info("[UI:Main] Starting standard setup...")
-        self.set_status(get_text("status", "installing") or "Kuruluyor...")
+        self.set_status(get_text("status", "installing"))
 
         def do_setup():
             error_msg = None
@@ -302,7 +294,7 @@ class MainPage(BasePage):
                 if not self._wg_service.register_wgcf():
                     return (
                         False,
-                        get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız",
+                        get_text("errors", "wgcf_register_failed"),
                     )
 
                 # Determine tunnel mode based on switch state
@@ -314,7 +306,7 @@ class MainPage(BasePage):
                 if not self._wg_service.generate_config(tunnel_mode=tunnel_mode):
                     return (
                         False,
-                        get_text("errors", "config_generate_failed") or "Config oluşturulamadı",
+                        get_text("errors", "config_generate_failed"),
                     )
 
                 # CRITICAL: Start WireGuard BEFORE changing DNS
@@ -323,7 +315,7 @@ class MainPage(BasePage):
                 if not self._wg_service.start():
                     return (
                         False,
-                        get_text("errors", "service_start_failed") or "Servis başlatılamadı",
+                        get_text("errors", "service_start_failed"),
                     )
 
                 # Verify VPN connection is working
@@ -359,10 +351,11 @@ class MainPage(BasePage):
             success, error = result if isinstance(result, tuple) else (result, None)
             if success:
                 self._logger.info("[UI:Main] Standard setup completed successfully")
-                self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
+                self.show_toast(get_text("messages", "setup_complete"))
             else:
                 self._logger.error(f"[UI:Main] Standard setup failed: {error}")
-                self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
+                error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                self.show_toast(error_msg)
             self.set_status("")
 
         self.run_async(do_setup, on_complete)
@@ -370,7 +363,7 @@ class MainPage(BasePage):
     def _on_disconnect(self, button):
         """Handle disconnect button click."""
         self._logger.info("[UI:Main] Disconnecting VPN...")
-        self.set_status(get_text("status", "disconnecting") or "Bağlantı kesiliyor...")
+        self.set_status(get_text("status", "disconnecting"))
 
         def do_disconnect():
             try:
@@ -386,10 +379,10 @@ class MainPage(BasePage):
             self._update_status_indicator()
             success, error = result if isinstance(result, tuple) else (result, None)
             if success:
-                msg = get_text("messages", "service_stopped") or "{} durduruldu"
-                self.show_toast(msg.format("WireGuard") if "{}" in msg else "WireGuard durduruldu")
+                self.show_toast(get_text("messages", "service_stopped").format("WireGuard"))
             else:
-                self.show_toast(f"Hata: {error}" if error else "Bağlantı kesilemedi")
+                error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                self.show_toast(error_msg)
             self.set_status("")
 
         self.run_async(do_disconnect, on_complete)
@@ -428,7 +421,7 @@ class MainPage(BasePage):
     def _on_add_folder(self, button):
         """Handle add folder button click."""
         dialog = Gtk.FileDialog(
-            title=get_text("dialogs", "select_folder") or "Klasör Seç",
+            title=get_text("dialogs", "select_folder"),
         )
         dialog.select_folder(
             self._window,
@@ -445,9 +438,13 @@ class MainPage(BasePage):
                 if path not in self._custom_apps:
                     self._custom_apps.append(path)
                     self._save_settings()  # Persist the change
-                    self.show_toast(f"Eklendi: {path}")
+                    self.show_toast(
+                        get_text("messages", "item_added").format(path)
+                    )
                 else:
-                    self.show_toast(f"Zaten listede: {path}")
+                    self.show_toast(
+                        get_text("messages", "item_exists").format(path)
+                    )
         except GLib.Error as e:
             if e.code != 2:  # Not cancelled
                 self._logger.error(f"Folder selection error: {e}")
@@ -456,17 +453,17 @@ class MainPage(BasePage):
         """Handle clear list button click."""
         self._custom_apps.clear()
         self._save_settings()  # Persist the change
-        self.show_toast(get_text("messages", "list_cleared") or "Liste temizlendi")
+        self.show_toast(get_text("messages", "list_cleared"))
 
     def _on_custom_setup(self, button):
         """Handle custom setup button click."""
         self._logger.info("[UI:Main] Starting custom setup...")
         if not self._custom_apps:
             self._logger.warning("[UI:Main] Custom setup cancelled: no custom apps")
-            self.show_toast(get_text("messages", "no_custom_apps") or "Özel uygulama listesi boş")
+            self.show_toast(get_text("messages", "no_custom_apps"))
             return
 
-        self.set_status(get_text("status", "installing") or "Kuruluyor...")
+        self.set_status(get_text("status", "installing"))
 
         def do_setup():
             try:
@@ -474,21 +471,21 @@ class MainPage(BasePage):
                 if not self._wg_service.register_wgcf():
                     return (
                         False,
-                        get_text("errors", "wgcf_register_failed") or "WGCF kayıt başarısız",
+                        get_text("errors", "wgcf_register_failed"),
                     )
 
                 # Generate config
                 if not self._wg_service.generate_config():
                     return (
                         False,
-                        get_text("errors", "config_generate_failed") or "Config oluşturulamadı",
+                        get_text("errors", "config_generate_failed"),
                     )
 
                 # CRITICAL: Start WireGuard BEFORE changing DNS
                 if not self._wg_service.start():
                     return (
                         False,
-                        get_text("errors", "service_start_failed") or "Servis başlatılamadı",
+                        get_text("errors", "service_start_failed"),
                     )
 
                 # Verify VPN connection is working
@@ -516,9 +513,10 @@ class MainPage(BasePage):
             self._update_status_indicator()
             success, error = result if isinstance(result, tuple) else (result, None)
             if success:
-                self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
+                self.show_toast(get_text("messages", "setup_complete"))
             else:
-                self.show_toast(f"Hata: {error}" if error else "Kurulum başarısız")
+                error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                self.show_toast(error_msg)
             self.set_status("")
 
         self.run_async(do_setup, on_complete)
@@ -526,7 +524,7 @@ class MainPage(BasePage):
     def _on_generate_config(self, button):
         """Handle generate config button click."""
         dialog = Gtk.FileDialog(
-            title=get_text("dialogs", "save_config") or "Config Kaydet",
+            title=get_text("dialogs", "save_config"),
             initial_name="splitwire.conf",
         )
         dialog.save(
@@ -546,7 +544,7 @@ class MainPage(BasePage):
                 )
                 with open(path, "w") as f:
                     f.write(config_content)
-                self.show_toast(f"Config kaydedildi: {path}")
+                self.show_toast(get_text("messages", "config_saved"))
         except GLib.Error as e:
             if e.code != 2:  # Not cancelled
                 self._logger.error(f"Config save error: {e}")
@@ -556,12 +554,11 @@ class MainPage(BasePage):
         # Confirmation dialog
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading=get_text("dialogs", "confirm_remove") or "Hizmeti Kaldır",
-            body=get_text("dialogs", "remove_wireguard_body")
-            or "WireGuard hizmeti kaldırılacak. Devam etmek istiyor musunuz?",
+            heading=get_text("dialogs", "confirm_remove"),
+            body=get_text("dialogs", "remove_wireguard_body"),
         )
-        dialog.add_response("cancel", get_text("buttons", "cancel") or "İptal")
-        dialog.add_response("remove", get_text("buttons", "remove") or "Kaldır")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("remove", get_text("buttons", "remove"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_remove_confirmed)
         dialog.present()
@@ -570,7 +567,7 @@ class MainPage(BasePage):
         """Handle remove confirmation response."""
         if response == "remove":
             self._logger.info("[UI:Main] Removing WireGuard service...")
-            self.set_status(get_text("status", "removing") or "Kaldırılıyor...")
+            self.set_status(get_text("status", "removing"))
 
             def do_remove():
                 try:
@@ -588,9 +585,10 @@ class MainPage(BasePage):
                 self._update_status_indicator()
                 success, error = result if isinstance(result, tuple) else (result, None)
                 if success:
-                    self.show_toast(get_text("messages", "service_removed") or "Hizmet kaldırıldı")
+                    self.show_toast(get_text("messages", "service_removed"))
                 else:
-                    self.show_toast(f"Hata: {error}" if error else "Kaldırma başarısız")
+                    error_msg = get_text("messages", "error_generic").format(error) if error else get_text("status", "error")
+                    self.show_toast(error_msg)
                 self.set_status("")
 
             self.run_async(do_remove, on_complete)
@@ -599,19 +597,10 @@ class MainPage(BasePage):
         """Handle help button click."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading=get_text("help", "wireguard_title") or "WireGuard Yardım",
-            body=get_text("help", "wireguard_body")
-            or """WireGuard, Cloudflare WARP üzerinden VPN bağlantısı sağlar.
-
-Standart Kurulum: Discord ve seçilen uygulamalar VPN üzerinden geçer.
-
-Alternatif Kurulum: Farklı bir endpoint kullanır.
-
-Tarayıcılar için tünelleme: Chrome, Firefox vb. tarayıcıları da dahil eder.
-
-Yineleyici: Bağlantıyı 30 dakikada bir yeniler.""",
+            heading=get_text("help", "wireguard_title"),
+            body=get_text("help", "wireguard_body"),
         )
-        dialog.add_response("ok", "Tamam")
+        dialog.add_response("ok", get_text("buttons", "ok"))
         dialog.present()
 
     # Helper methods

@@ -219,7 +219,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         # Main page (WireGuard)
         main_page = MainPage(window=self)
         self._stack.add_titled_with_icon(
-            main_page, "main", get_text("tabs", "main") or "Ana Sayfa", "go-home-symbolic"
+            main_page, "main", get_text("tabs", "main"), "go-home-symbolic"
         )
         self._pages["main"] = main_page
 
@@ -235,7 +235,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._stack.add_titled_with_icon(
             repair_page,
             "repair",
-            get_text("tabs", "repair") or "Onarım",
+            get_text("tabs", "repair"),
             "applications-games-symbolic",
         )
         self._pages["repair"] = repair_page
@@ -245,7 +245,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._stack.add_titled_with_icon(
             advanced_page,
             "advanced",
-            get_text("tabs", "advanced") or "Gelişmiş",
+            get_text("tabs", "advanced"),
             "applications-system-symbolic",
         )
         self._pages["advanced"] = advanced_page
@@ -255,7 +255,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._stack.add_titled_with_icon(
             settings_page,
             "settings",
-            get_text("tabs", "settings") or "Ayarlar",
+            get_text("tabs", "settings"),
             "preferences-system-symbolic",
         )
         self._pages["settings"] = settings_page

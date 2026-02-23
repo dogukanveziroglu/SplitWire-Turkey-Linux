@@ -32,7 +32,8 @@
     "reset": "Sbrosit' nastroyki",
     "check_deps": "Proverit' zavisimosti",
     "install_deps": "Ustanovit' zavisimosti",
-    "launch": "Launch"
+    "launch": "Launch",
+    "ok": "OK"
   },
   "wireguard": {
     "title": "WireGuard VPN",
@@ -185,7 +186,14 @@
     "list_cleared": "List cleared",
     "no_custom_apps": "Custom application list is empty",
     "service_removed": "Service removed",
-    "setup_complete": "Setup completed"
+    "setup_complete": "Setup completed",
+    "item_added": "Added: {0}",
+    "item_exists": "Already in list: {0}",
+    "all_services_removed": "All services removed",
+    "uninstall_complete": "SplitWire removed. Please close the application.",
+    "language_changed": "Language changed: {0}",
+    "theme_changed": "Theme changed: {0}",
+    "update_check_failed": "Update check failed"
   },
   "errors": {
     "wireguard_not_installed": "Instrumenty WireGuard ne ustanovleny",
@@ -230,14 +238,20 @@
     "byedpi_title": "Pomoshch' ByeDPI",
     "byedpi_content": "ByeDPI sozdayet lokal'nyy SOCKS proksi, kotoryy vypolnyayet obrabotku trafika. Trafik vybrannykh prilozheniy budet napravlyat'sya cherez etot proksi.",
     "byedpi_body": "ByeDPI creates a local SOCKS proxy that performs traffic processing. Selected applications will have their traffic routed through this proxy.",
-    "wireguard_body": "WireGuard is a modern VPN protocol. Select a configuration file and click Connect to establish a VPN connection. Enable split tunneling to route only selected applications through the VPN."
+    "wireguard_body": "WireGuard is a modern VPN protocol. Select a configuration file and click Connect to establish a VPN connection. Enable split tunneling to route only selected applications through the VPN.",
+    "repair_title": "Discord Repair Help",
+    "repair_body": "Discord repair tools help resolve Discord connection issues.\n\nRepair Discord:\n- Clears cache\n- Resets settings\n- Fixes corrupted files\n\nDiscord PTB:\n- Public Test Build\n- Try new features early\n- Clean install option removes existing Discord\n\nWebCord:\n- Alternative Discord client\n- Lighter and privacy-focused\n- Open source Electron-based"
   },
   "dialogs": {
     "confirm_remove": "Remove",
     "remove_byedpi_body": "ByeDPI will be removed. Do you want to continue?",
     "remove_wireguard_body": "WireGuard service will be removed. Do you want to continue?",
     "save_config": "Save Config",
-    "select_folder": "Select Folder"
+    "select_folder": "Select Folder",
+    "clean_install_body": "Existing Discord will be removed and PTB will be installed. Do you want to continue?",
+    "remove_all_body": "All SplitWire services will be removed. This cannot be undone. Do you want to continue?",
+    "reset_dns_body": "DNS settings will be reset to defaults. Do you want to continue?",
+    "uninstall_body": "SplitWire and all components will be removed. This cannot be undone. Do you want to continue?"
   },
   "main": {
     "about": "About",

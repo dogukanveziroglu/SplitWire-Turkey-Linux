@@ -35,7 +35,11 @@
     "remove_byedpi_body": "ByeDPI will be removed. Do you want to continue?",
     "select_folder": "Select Folder",
     "save_config": "Save Config",
-    "remove_wireguard_body": "WireGuard service will be removed. Do you want to continue?"
+    "remove_wireguard_body": "WireGuard service will be removed. Do you want to continue?",
+    "clean_install_body": "Existing Discord will be removed and PTB will be installed. Do you want to continue?",
+    "remove_all_body": "All SplitWire services will be removed. This cannot be undone. Do you want to continue?",
+    "reset_dns_body": "DNS settings will be reset to defaults. Do you want to continue?",
+    "uninstall_body": "SplitWire and all components will be removed. This cannot be undone. Do you want to continue?"
   },
   "tabs": {
     "wireguard": "WireGuard",
@@ -65,7 +69,8 @@
     "reset": "Reset to Defaults",
     "check_deps": "Check Dependencies",
     "install_deps": "Install Dependencies",
-    "launch": "Launch"
+    "launch": "Launch",
+    "ok": "OK"
   },
   "wireguard": {
     "title": "WireGuard VPN",
@@ -218,7 +223,14 @@
     "error_generic": "An error occurred: {0}",
     "restart_required": "Please restart the application for changes to take effect",
     "list_cleared": "List cleared",
-    "no_custom_apps": "Custom application list is empty"
+    "no_custom_apps": "Custom application list is empty",
+    "item_added": "Added: {0}",
+    "item_exists": "Already in list: {0}",
+    "all_services_removed": "All services removed",
+    "uninstall_complete": "SplitWire removed. Please close the application.",
+    "language_changed": "Language changed: {0}",
+    "theme_changed": "Theme changed: {0}",
+    "update_check_failed": "Update check failed"
   },
   "errors": {
     "wireguard_not_installed": "WireGuard tools not installed",
@@ -263,6 +275,8 @@
     "byedpi_title": "ByeDPI Help",
     "byedpi_content": "ByeDPI creates a local SOCKS proxy that performs traffic processing. Selected applications will have their traffic routed through this proxy.",
     "wireguard_body": "WireGuard is a modern VPN protocol. Select a configuration file and click Connect to establish a VPN connection. Enable split tunneling to route only selected applications through the VPN.",
-    "byedpi_body": "ByeDPI creates a local SOCKS proxy that performs traffic processing. Selected applications will have their traffic routed through this proxy."
+    "byedpi_body": "ByeDPI creates a local SOCKS proxy that performs traffic processing. Selected applications will have their traffic routed through this proxy.",
+    "repair_title": "Discord Repair Help",
+    "repair_body": "Discord repair tools help resolve Discord connection issues.\n\nRepair Discord:\n- Clears cache\n- Resets settings\n- Fixes corrupted files\n\nDiscord PTB:\n- Public Test Build\n- Try new features early\n- Clean install option removes existing Discord\n\nWebCord:\n- Alternative Discord client\n- Lighter and privacy-focused\n- Open source Electron-based"
   }
 }

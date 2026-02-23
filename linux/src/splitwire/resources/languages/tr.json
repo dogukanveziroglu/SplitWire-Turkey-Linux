@@ -35,7 +35,11 @@
     "remove_byedpi_body": "ByeDPI kaldırılacak. Devam etmek istiyor musunuz?",
     "remove_wireguard_body": "WireGuard hizmeti kaldırılacak. Devam etmek istiyor musunuz?",
     "select_folder": "Klasör Seç",
-    "save_config": "Config Kaydet"
+    "save_config": "Config Kaydet",
+    "clean_install_body": "Mevcut Discord kaldirilacak ve PTB yuklenecek. Devam etmek istiyor musunuz?",
+    "remove_all_body": "Tum SplitWire hizmetleri kaldirilacak. Bu islem geri alinamaz. Devam etmek istiyor musunuz?",
+    "reset_dns_body": "DNS ayarlari varsayilana dondurilecek. Devam etmek istiyor musunuz?",
+    "uninstall_body": "SplitWire ve tum bilesenleri kaldirilacak. Bu islem geri alinamaz. Devam etmek istiyor musunuz?"
   },
   "tabs": {
     "wireguard": "WireGuard",
@@ -65,7 +69,8 @@
     "reset": "Varsayilanlara Sifirla",
     "check_deps": "Bagimliliklari Kontrol Et",
     "install_deps": "Bagimliliklari Kur",
-    "launch": "Baslat"
+    "launch": "Baslat",
+    "ok": "Tamam"
   },
   "wireguard": {
     "title": "WireGuard VPN",
@@ -218,7 +223,14 @@
     "auth_cancelled": "Kimlik doğrulama iptal edildi",
     "root_required": "Bu işlem root yetkisi gerektirir",
     "error_generic": "Bir hata oluştu: {0}",
-    "restart_required": "Değişikliklerin yürürlüğe girmesi için uygulamayı yeniden başlatın"
+    "restart_required": "Değişikliklerin yürürlüğe girmesi için uygulamayı yeniden başlatın",
+    "item_added": "Eklendi: {0}",
+    "item_exists": "Zaten listede: {0}",
+    "all_services_removed": "Tum hizmetler kaldirildi",
+    "uninstall_complete": "SplitWire kaldirildi. Uygulamayi kapatin.",
+    "language_changed": "Dil degistirildi: {0}",
+    "theme_changed": "Tema degistirildi: {0}",
+    "update_check_failed": "Guncelleme kontrolu basarisiz"
   },
   "errors": {
     "wireguard_not_installed": "WireGuard araclari kurulu degil",
@@ -263,6 +275,8 @@
     "byedpi_title": "ByeDPI Yardim",
     "byedpi_content": "ByeDPI, trafik isleme yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir.",
     "wireguard_body": "WireGuard modern bir VPN protokoludur. Bir yapilandirma dosyasi secin ve VPN baglantisi kurmak icin Baglan'a tiklayin. Sadece secili uygulamalari VPN uzerinden yonlendirmek icin bolunmus tunellemeyi etkinlestirin.",
-    "byedpi_body": "ByeDPI, trafik isleme yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir."
+    "byedpi_body": "ByeDPI, trafik isleme yapan yerel bir SOCKS proxy olusturur. Secili uygulamalarin trafigi bu proxy uzerinden yonlendirilecektir.",
+    "repair_title": "Discord Onarim Yardim",
+    "repair_body": "Discord onarim araclari, Discord baglanti sorunlarini cozmeye yardimci olur.\n\nDiscord'u Onar:\n- Onbellegi temizler\n- Ayarlari sifirlar\n- Bozuk dosyalari duzeltir\n\nDiscord PTB:\n- Public Test Build\n- Yeni ozellikleri daha erken deneyin\n- Temiz kurulum secenegi mevcut Discord'u kaldirir\n\nWebCord:\n- Alternatif Discord istemcisi\n- Daha hafif ve gizlilik odakli\n- Electron tabanli acik kaynak"
   }
 }
