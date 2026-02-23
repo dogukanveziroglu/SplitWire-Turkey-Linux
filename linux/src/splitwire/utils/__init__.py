@@ -7,34 +7,32 @@ This package contains:
 - polkit: Privilege escalation helpers
 """
 
+from .deps import (
+    Dependency,
+    DependencyChecker,
+    DependencyStatus,
+    check_dependencies,
+    install_all_dependencies,
+    print_dependency_status,
+)
+from .polkit import (
+    ElevationMethod,
+    ElevationResult,
+    PolkitHelper,
+    can_elevate,
+    get_polkit_helper,
+    is_root,
+    run_elevated,
+)
 from .system import (
+    DNSManager,
+    FirewallBackend,
+    InitSystem,
     SystemDetector,
     SystemInfo,
     UbuntuVersion,
-    FirewallBackend,
-    InitSystem,
-    DNSManager,
     get_system_info,
     print_system_info,
-)
-
-from .deps import (
-    DependencyChecker,
-    Dependency,
-    DependencyStatus,
-    check_dependencies,
-    print_dependency_status,
-    install_all_dependencies,
-)
-
-from .polkit import (
-    PolkitHelper,
-    ElevationMethod,
-    ElevationResult,
-    get_polkit_helper,
-    run_elevated,
-    can_elevate,
-    is_root,
 )
 
 __all__ = [

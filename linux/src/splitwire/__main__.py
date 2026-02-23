@@ -6,8 +6,8 @@ This module serves as the entry point for the application.
 It initializes core systems and launches the GUI.
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
 
 # Ensure the package can be found when run directly
@@ -123,9 +123,9 @@ def run_gui(args: argparse.Namespace) -> int:
         Exit code
     """
     from splitwire.core import (
-        init_logger,
-        init_language_manager,
         get_config_manager,
+        init_language_manager,
+        init_logger,
     )
 
     # Initialize logger
@@ -149,7 +149,7 @@ def run_gui(args: argparse.Namespace) -> int:
 
         gi.require_version("Gtk", "4.0")
         gi.require_version("Adw", "1")
-        from gi.repository import Gtk, Adw  # noqa: F401
+        from gi.repository import Adw, Gtk  # noqa: F401
     except (ImportError, ValueError) as e:
         logger.error(f"GTK4/Libadwaita not available: {e}")
         print("Error: GTK4 and Libadwaita are required for GUI mode.")

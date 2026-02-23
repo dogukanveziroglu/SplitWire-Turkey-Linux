@@ -7,8 +7,10 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, GLib
-from typing import Optional, Callable, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
+from gi.repository import Adw, GLib, Gtk
 
 from splitwire.core import get_logger
 
@@ -43,11 +45,9 @@ class BasePage(Gtk.Box):
 
     def refresh(self):
         """Refresh page data. Override in subclasses if needed."""
-        pass
 
     def refresh_translations(self):
         """Refresh translations. Override in subclasses if needed."""
-        pass
 
     def show_toast(self, message: str, timeout: int = 3):
         """Show a toast notification."""
@@ -64,7 +64,7 @@ class BasePage(Gtk.Box):
         self._is_busy = busy
         self.set_sensitive(not busy)
 
-    def run_async(self, func: Callable, callback: Optional[Callable] = None, *args):
+    def run_async(self, func: Callable, callback: Callable | None = None, *args):
         """Run a function asynchronously in a thread."""
         import threading
 
@@ -89,10 +89,10 @@ class BasePage(Gtk.Box):
         self,
         label: str,
         callback: Callable,
-        tooltip: Optional[str] = None,
+        tooltip: str | None = None,
         destructive: bool = False,
         suggested: bool = False,
-        icon_name: Optional[str] = None,
+        icon_name: str | None = None,
     ) -> Gtk.Button:
         """Create a styled action button."""
         if icon_name:
@@ -120,9 +120,9 @@ class BasePage(Gtk.Box):
     def create_switch_row(
         self,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         active: bool = False,
-        callback: Optional[Callable] = None,
+        callback: Callable | None = None,
     ) -> Adw.SwitchRow:
         """Create a switch row."""
         row = Adw.SwitchRow(
@@ -140,7 +140,7 @@ class BasePage(Gtk.Box):
         title: str,
         items: list,
         selected: int = 0,
-        callback: Optional[Callable] = None,
+        callback: Callable | None = None,
     ) -> Adw.ComboRow:
         """Create a combo box row."""
         model = Gtk.StringList.new(items)
@@ -157,7 +157,7 @@ class BasePage(Gtk.Box):
         self,
         title: str,
         text: str = "",
-        placeholder: Optional[str] = None,
+        placeholder: str | None = None,
     ) -> Adw.EntryRow:
         """Create an entry row."""
         row = Adw.EntryRow(
@@ -170,8 +170,8 @@ class BasePage(Gtk.Box):
 
     def create_preferences_group(
         self,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
+        title: str | None = None,
+        description: str | None = None,
     ) -> Adw.PreferencesGroup:
         """Create a preferences group."""
         group = Adw.PreferencesGroup()
@@ -184,7 +184,7 @@ class BasePage(Gtk.Box):
     def create_status_indicator(
         self,
         running: bool = False,
-        label: Optional[str] = None,
+        label: str | None = None,
     ) -> Gtk.Box:
         """Create a status indicator widget."""
         box = Gtk.Box(

@@ -10,12 +10,14 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, Gio
-from typing import TYPE_CHECKING
-import subprocess
 import os
+import subprocess
+from typing import TYPE_CHECKING
 
-from splitwire.core import get_text, get_config
+from gi.repository import Adw, Gio, Gtk
+
+from splitwire.core import get_config, get_text
+
 from .base_page import BasePage
 
 if TYPE_CHECKING:

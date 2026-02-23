@@ -7,15 +7,14 @@ Provides:
 - Rollback capability for failed operations
 """
 
+import hashlib
 import json
 import shutil
 import tarfile
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional
-import hashlib
 
 from splitwire.core.logger import get_logger
 
@@ -74,7 +73,6 @@ class BackupMetadata:
 class BackupError(Exception):
     """Exception raised for backup-related errors."""
 
-    pass
 
 
 class BackupManager:
@@ -88,7 +86,7 @@ class BackupManager:
     MAX_BACKUPS = 10  # Maximum number of backups to keep
     METADATA_FILE = "backup_metadata.json"
 
-    def __init__(self, backup_dir: Optional[Path] = None, config_dir: Optional[Path] = None):
+    def __init__(self, backup_dir: Path | None = None, config_dir: Path | None = None):
         """
         Initialize backup manager.
 
@@ -338,7 +336,7 @@ class BackupManager:
 
         return deleted
 
-    def list_backups(self, backup_type: Optional[BackupType] = None) -> list[BackupMetadata]:
+    def list_backups(self, backup_type: BackupType | None = None) -> list[BackupMetadata]:
         """
         List all backups.
 
@@ -352,7 +350,7 @@ class BackupManager:
 
         for metadata_file in self._backup_dir.glob("*.json"):
             try:
-                with open(metadata_file, "r", encoding="utf-8") as f:
+                with open(metadata_file, encoding="utf-8") as f:
                     data = json.load(f)
                     metadata = BackupMetadata.from_dict(data)
 
@@ -366,7 +364,7 @@ class BackupManager:
 
         return backups
 
-    def get_backup_metadata(self, backup_id: str) -> Optional[BackupMetadata]:
+    def get_backup_metadata(self, backup_id: str) -> BackupMetadata | None:
         """
         Get metadata for a specific backup.
 
@@ -382,15 +380,15 @@ class BackupManager:
             return None
 
         try:
-            with open(metadata_path, "r", encoding="utf-8") as f:
+            with open(metadata_path, encoding="utf-8") as f:
                 data = json.load(f)
                 return BackupMetadata.from_dict(data)
         except (json.JSONDecodeError, KeyError):
             return None
 
     def get_latest_backup(
-        self, backup_type: Optional[BackupType] = None
-    ) -> Optional[BackupMetadata]:
+        self, backup_type: BackupType | None = None
+    ) -> BackupMetadata | None:
         """
         Get the most recent backup.
 
@@ -448,7 +446,7 @@ class SystemSnapshot:
     operation: str
     files_backed_up: list[str]
     services_state: dict[str, str]
-    dns_state: Optional[str] = None
+    dns_state: str | None = None
 
 
 class SnapshotManager:
@@ -458,7 +456,7 @@ class SnapshotManager:
     Used to capture state before potentially destructive operations.
     """
 
-    def __init__(self, snapshot_dir: Optional[Path] = None):
+    def __init__(self, snapshot_dir: Path | None = None):
         """
         Initialize snapshot manager.
 
@@ -472,7 +470,7 @@ class SnapshotManager:
             self._snapshot_dir = xdg_cache / "snapshots"
 
         self._snapshot_dir.mkdir(parents=True, exist_ok=True)
-        self._current_snapshot: Optional[SystemSnapshot] = None
+        self._current_snapshot: SystemSnapshot | None = None
 
     def create_snapshot(self, operation: str, files: list[str]) -> SystemSnapshot:
         """
@@ -527,7 +525,7 @@ class SnapshotManager:
         _logger.info(f"[SNAPSHOT] Snapshot created: {snapshot_id} ({len(backed_up)} files)")
         return snapshot
 
-    def rollback(self, snapshot_id: Optional[str] = None) -> bool:
+    def rollback(self, snapshot_id: str | None = None) -> bool:
         """
         Rollback to a snapshot.
 
@@ -558,7 +556,7 @@ class SnapshotManager:
             return False
 
         try:
-            with open(meta_path, "r", encoding="utf-8") as f:
+            with open(meta_path, encoding="utf-8") as f:
                 snapshot_data = json.load(f)
 
             # Restore backed up files
@@ -579,7 +577,7 @@ class SnapshotManager:
             _logger.error(f"[SNAPSHOT] Failed to rollback snapshot: {e}")
             return False
 
-    def cleanup_snapshot(self, snapshot_id: Optional[str] = None) -> bool:
+    def cleanup_snapshot(self, snapshot_id: str | None = None) -> bool:
         """
         Remove a snapshot after successful operation.
 
@@ -623,22 +621,22 @@ class SnapshotManager:
 
         return states
 
-    def _capture_dns_state(self) -> Optional[str]:
+    def _capture_dns_state(self) -> str | None:
         """Capture current DNS configuration."""
         resolv_conf = Path("/etc/resolv.conf")
 
         if resolv_conf.exists():
             try:
                 return resolv_conf.read_text()
-            except IOError:
+            except OSError:
                 pass
 
         return None
 
 
 # Global instances
-_backup_manager: Optional[BackupManager] = None
-_snapshot_manager: Optional[SnapshotManager] = None
+_backup_manager: BackupManager | None = None
+_snapshot_manager: SnapshotManager | None = None
 
 
 def get_backup_manager() -> BackupManager:
@@ -670,6 +668,6 @@ def restore_backup(backup_id: str) -> list[str]:
     return get_backup_manager().restore_backup(backup_id)
 
 
-def list_backups(backup_type: Optional[BackupType] = None) -> list[BackupMetadata]:
+def list_backups(backup_type: BackupType | None = None) -> list[BackupMetadata]:
     """List backups (convenience function)."""
     return get_backup_manager().list_backups(backup_type)

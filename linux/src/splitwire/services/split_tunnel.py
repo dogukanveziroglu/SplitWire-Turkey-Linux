@@ -10,10 +10,8 @@ This is the Linux equivalent of WireSock's AllowedApps functionality.
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from .base import BaseService, ServiceStatus, ServiceType
-
 
 # cgproxy configuration
 # Use SplitWire's own config directory and service
@@ -210,7 +208,7 @@ class SplitTunnelService(BaseService):
 
     def install(
         self,
-        apps: Optional[list[str]] = None,
+        apps: list[str] | None = None,
         include_browsers: bool = False,
         interface: str = "splitwire",
         **kwargs,
@@ -299,10 +297,9 @@ class SplitTunnelService(BaseService):
             self._logger.info("cgproxy started")
             self._notify_status_change(ServiceStatus.RUNNING)
             return True
-        else:
-            self._logger.error(f"Failed to start cgproxy: {result.stderr}")
-            self._notify_status_change(ServiceStatus.FAILED)
-            return False
+        self._logger.error(f"Failed to start cgproxy: {result.stderr}")
+        self._notify_status_change(ServiceStatus.FAILED)
+        return False
 
     def stop(self) -> bool:
         """Stop cgproxy service."""
@@ -314,9 +311,8 @@ class SplitTunnelService(BaseService):
             self._logger.info("cgproxy stopped")
             self._notify_status_change(ServiceStatus.STOPPED)
             return True
-        else:
-            self._logger.error(f"Failed to stop cgproxy: {result.stderr}")
-            return False
+        self._logger.error(f"Failed to stop cgproxy: {result.stderr}")
+        return False
 
     def status(self) -> ServiceStatus:
         """Get cgproxy service status."""
@@ -328,12 +324,11 @@ class SplitTunnelService(BaseService):
         stdout = result.stdout.strip().lower()
         if stdout == "active":
             return ServiceStatus.RUNNING
-        elif stdout == "inactive":
+        if stdout == "inactive":
             return ServiceStatus.STOPPED
-        elif stdout == "failed":
+        if stdout == "failed":
             return ServiceStatus.FAILED
-        else:
-            return ServiceStatus.UNKNOWN
+        return ServiceStatus.UNKNOWN
 
     def is_installed(self) -> bool:
         """Check if cgproxy is configured."""
@@ -436,7 +431,7 @@ class SplitTunnelService(BaseService):
 
     def configure(
         self,
-        apps: Optional[list[str]] = None,
+        apps: list[str] | None = None,
         include_browsers: bool = False,
         interface: str = "splitwire",
     ) -> bool:
@@ -453,7 +448,7 @@ class SplitTunnelService(BaseService):
         """
         return self.install(apps=apps, include_browsers=include_browsers, interface=interface)
 
-    def run_app_through_tunnel(self, app_path: str, args: Optional[list[str]] = None) -> bool:
+    def run_app_through_tunnel(self, app_path: str, args: list[str] | None = None) -> bool:
         """
         Run an application through the tunnel using cgproxy.
 
@@ -497,7 +492,7 @@ class SplitTunnelService(BaseService):
         return True
 
     def _build_app_list(
-        self, apps: Optional[list[str]], include_browsers: bool
+        self, apps: list[str] | None, include_browsers: bool
     ) -> list[TunneledApp]:
         """
         Build list of apps to tunnel.
@@ -632,7 +627,7 @@ class SplitTunnelService(BaseService):
 
 
 # Convenience functions
-_split_tunnel_service: Optional[SplitTunnelService] = None
+_split_tunnel_service: SplitTunnelService | None = None
 
 
 def get_split_tunnel_service() -> SplitTunnelService:

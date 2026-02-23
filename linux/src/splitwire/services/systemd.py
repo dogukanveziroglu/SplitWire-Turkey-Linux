@@ -9,12 +9,12 @@ Provides comprehensive systemd integration for managing services:
 - Read journal logs
 """
 
+import os
+import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional, List, Dict, Callable
-import os
-import tempfile
 
 from splitwire.core import get_logger, get_shell
 
@@ -62,13 +62,13 @@ class SystemdUnitStatus:
     description: str = ""
     load_state: str = "not-found"
     sub_state: str = ""
-    main_pid: Optional[int] = None
-    memory_current: Optional[int] = None  # bytes
-    tasks_current: Optional[int] = None
-    cpu_usage_nsec: Optional[int] = None
-    invocation_id: Optional[str] = None
-    active_enter_timestamp: Optional[str] = None
-    inactive_enter_timestamp: Optional[str] = None
+    main_pid: int | None = None
+    memory_current: int | None = None  # bytes
+    tasks_current: int | None = None
+    cpu_usage_nsec: int | None = None
+    invocation_id: str | None = None
+    active_enter_timestamp: str | None = None
+    inactive_enter_timestamp: str | None = None
 
     @property
     def is_running(self) -> bool:
@@ -94,8 +94,8 @@ class JournalEntry:
     unit: str
     priority: int
     message: str
-    pid: Optional[int] = None
-    hostname: Optional[str] = None
+    pid: int | None = None
+    hostname: str | None = None
 
 
 class SystemdManager:
@@ -135,7 +135,7 @@ class SystemdManager:
     def install_unit(
         self,
         unit_name: str,
-        content: Optional[str] = None,
+        content: str | None = None,
         enable: bool = True,
         start: bool = False,
     ) -> bool:
@@ -261,7 +261,7 @@ class SystemdManager:
             self._logger.error(f"[SYSTEMD] daemon-reload failed: {result.stderr}")
         return result.success
 
-    def _get_bundled_unit_content(self, unit_name: str) -> Optional[str]:
+    def _get_bundled_unit_content(self, unit_name: str) -> str | None:
         """Get content of bundled unit file."""
         unit_path = self._unit_files_dir / unit_name
         if unit_path.exists():
@@ -533,10 +533,10 @@ class SystemdManager:
         self,
         unit_name: str,
         lines: int = 100,
-        since: Optional[str] = None,
-        until: Optional[str] = None,
-        priority: Optional[int] = None,
-    ) -> List[str]:
+        since: str | None = None,
+        until: str | None = None,
+        priority: int | None = None,
+    ) -> list[str]:
         """
         Get journal logs for a unit.
 
@@ -565,7 +565,7 @@ class SystemdManager:
             return result.stdout.strip().split("\n")
         return []
 
-    def get_logs_json(self, unit_name: str, lines: int = 100) -> List[JournalEntry]:
+    def get_logs_json(self, unit_name: str, lines: int = 100) -> list[JournalEntry]:
         """
         Get journal logs as structured entries.
 
@@ -649,7 +649,7 @@ class SystemdManager:
     # SplitWire-specific helpers
     # =========================================================================
 
-    def get_splitwire_services_status(self) -> Dict[str, SystemdUnitStatus]:
+    def get_splitwire_services_status(self) -> dict[str, SystemdUnitStatus]:
         """
         Get status of all SplitWire services.
 
@@ -665,7 +665,7 @@ class SystemdManager:
             )
         return status_dict
 
-    def install_splitwire_service(self, service_key: str, config: Optional[Dict] = None) -> bool:
+    def install_splitwire_service(self, service_key: str, config: dict | None = None) -> bool:
         """
         Install a SplitWire service.
 
@@ -729,7 +729,7 @@ class SystemdManager:
 
 
 # Singleton instance
-_systemd_manager: Optional[SystemdManager] = None
+_systemd_manager: SystemdManager | None = None
 
 
 def get_systemd_manager() -> SystemdManager:

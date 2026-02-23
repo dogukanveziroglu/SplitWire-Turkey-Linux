@@ -15,95 +15,88 @@ This package contains service managers for:
 
 from .base import (
     BaseService,
-    SystemdService,
+    ServiceInfo,
     ServiceStatus,
     ServiceType,
-    ServiceInfo,
+    SystemdService,
 )
-
-from .wireguard import (
-    WireGuardService,
-    WireGuardInterface,
-    WGCFAccount,
-    get_wireguard_service,
-    WIREGUARD_CONFIG_DIR,
-    SPLITWIRE_CONFIG_FILE,
-)
-
-from .split_tunnel import (
-    SplitTunnelService,
-    SplitTunnelConfig,
-    TunneledApp,
-    get_split_tunnel_service,
-    KNOWN_APPS,
-    BROWSER_APPS,
-)
-
-from .zapret import (
-    ZapretService,
-    ZapretConfig,
-    ZapretPreset,
-    ZapretMode,
-    get_zapret_service,
-    DEFAULT_PRESETS,
-)
-
 from .blockcheck import (
-    BlockcheckService,
     BlockcheckResult,
+    BlockcheckService,
     ScanMode,
-    ScanStatus,
     ScanProgress,
+    ScanStatus,
     get_blockcheck_service,
 )
-
 from .byedpi import (
-    ByeDPIService,
-    ByeDPIConfig,
-    ByeDPIPreset,
-    ByeDPIMode,
-    get_byedpi_service,
     DEFAULT_PRESETS as BYEDPI_PRESETS,
 )
-
-from .proxy_route import (
-    ProxyRouteService,
-    ProxyRouteConfig,
-    ProxiedApp,
-    ProxyMethod,
-    get_proxy_route_service,
+from .byedpi import (
+    ByeDPIConfig,
+    ByeDPIMode,
+    ByeDPIPreset,
+    ByeDPIService,
+    get_byedpi_service,
 )
-
-from .dns import (
-    DNSService,
-    DNSConfig,
-    DNSServer,
-    DNSBackup,
-    DNSManager,
-    DoHMode,
-    DNS_PRESETS,
-    get_dns_service,
-)
-
 from .discord import (
-    DiscordService,
     DiscordConfig,
     DiscordInstallation,
-    WebCordInstallation,
+    DiscordService,
     DiscordVersion,
     InstallMethod,
     RepairResult,
+    WebCordInstallation,
     get_discord_service,
 )
-
+from .dns import (
+    DNS_PRESETS,
+    DNSBackup,
+    DNSConfig,
+    DNSManager,
+    DNSServer,
+    DNSService,
+    DoHMode,
+    get_dns_service,
+)
+from .proxy_route import (
+    ProxiedApp,
+    ProxyMethod,
+    ProxyRouteConfig,
+    ProxyRouteService,
+    get_proxy_route_service,
+)
+from .split_tunnel import (
+    BROWSER_APPS,
+    KNOWN_APPS,
+    SplitTunnelConfig,
+    SplitTunnelService,
+    TunneledApp,
+    get_split_tunnel_service,
+)
 from .systemd import (
-    SystemdManager,
-    SystemdUnitType,
+    JournalEntry,
     SystemdActiveState,
     SystemdEnabledState,
+    SystemdManager,
     SystemdUnitStatus,
-    JournalEntry,
+    SystemdUnitType,
     get_systemd_manager,
+)
+from .wireguard import (
+    SPLITWIRE_CONFIG_FILE,
+    WIREGUARD_CONFIG_DIR,
+    WGCFAccount,
+    WireGuardInterface,
+    WireGuardService,
+    get_wireguard_service,
+)
+from .zapret import (
+    DEFAULT_PRESETS,
+    ZapretConfig,
+    ZapretMode,
+    ZapretPreset,
+    ZapretService,
+    get_zapret_service,
 )
 
 __all__ = [

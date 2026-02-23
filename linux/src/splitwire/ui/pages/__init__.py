@@ -9,10 +9,10 @@ Contains all application pages:
 - SettingsPage: Application settings
 """
 
-from .main_page import MainPage
-from .byedpi_page import ByeDPIPage
-from .repair_page import RepairPage
 from .advanced_page import AdvancedPage
+from .byedpi_page import ByeDPIPage
+from .main_page import MainPage
+from .repair_page import RepairPage
 from .settings_page import SettingsPage
 
 __all__ = [

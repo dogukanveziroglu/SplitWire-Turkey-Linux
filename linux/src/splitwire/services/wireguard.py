@@ -9,20 +9,19 @@ Provides WireGuard VPN management with:
 - IP-based split tunneling via AllowedIPs
 """
 
+import json
 import os
 import re
-import json
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
-from urllib.request import urlopen, Request
-from urllib.error import URLError, HTTPError
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
-from .base import BaseService, ServiceStatus, ServiceType, ServiceInfo
-from .systemd import get_systemd_manager
 from splitwire.core import get_config
 
+from .base import BaseService, ServiceInfo, ServiceStatus, ServiceType
+from .systemd import get_systemd_manager
 
 # WireGuard configuration paths
 WIREGUARD_CONFIG_DIR = Path("/etc/wireguard")
@@ -191,10 +190,10 @@ class WireGuardService(BaseService):
 
     def install(
         self,
-        allowed_apps: Optional[list[str]] = None,
+        allowed_apps: list[str] | None = None,
         include_browsers: bool = False,
         use_warp: bool = True,
-        custom_config: Optional[Path] = None,
+        custom_config: Path | None = None,
         endpoint_type: str = "standard",
         **kwargs,
     ) -> bool:
@@ -296,10 +295,9 @@ class WireGuardService(BaseService):
             self._logger.info("WireGuard VPN started")
             self._notify_status_change(ServiceStatus.RUNNING)
             return True
-        else:
-            self._logger.error(f"Failed to start: {result.stderr}")
-            self._notify_status_change(ServiceStatus.FAILED)
-            return False
+        self._logger.error(f"Failed to start: {result.stderr}")
+        self._notify_status_change(ServiceStatus.FAILED)
+        return False
 
     def stop(self) -> bool:
         """Stop WireGuard VPN connection."""
@@ -311,13 +309,12 @@ class WireGuardService(BaseService):
             self._logger.info("WireGuard VPN stopped")
             self._notify_status_change(ServiceStatus.STOPPED)
             return True
-        else:
-            # wg-quick returns error if interface doesn't exist
-            if "is not a WireGuard interface" in result.stderr:
-                self._notify_status_change(ServiceStatus.STOPPED)
-                return True
-            self._logger.error(f"Failed to stop: {result.stderr}")
-            return False
+        # wg-quick returns error if interface doesn't exist
+        if "is not a WireGuard interface" in result.stderr:
+            self._notify_status_change(ServiceStatus.STOPPED)
+            return True
+        self._logger.error(f"Failed to stop: {result.stderr}")
+        return False
 
     def status(self) -> ServiceStatus:
         """Get WireGuard VPN status."""
@@ -328,8 +325,7 @@ class WireGuardService(BaseService):
         result = self._shell.run(["ip", "link", "show", self._interface_name])
         if result.success:
             return ServiceStatus.RUNNING
-        else:
-            return ServiceStatus.STOPPED
+        return ServiceStatus.STOPPED
 
     def _check_config_exists(self) -> bool:
         """Check if config file exists (handles permission issues)."""
@@ -339,7 +335,7 @@ class WireGuardService(BaseService):
             return exists
         except PermissionError:
             # Can't check directly, try via shell with sudo
-            self._logger.debug(f"[WG] Permission denied checking config, using sudo")
+            self._logger.debug("[WG] Permission denied checking config, using sudo")
             result = self._shell.run(["sudo", "test", "-f", str(self._config_file)], timeout=5)
             self._logger.debug(f"[WG] Config file check via sudo: exists={result.success}")
             return result.success
@@ -370,7 +366,7 @@ class WireGuardService(BaseService):
     # WireGuard specific methods
     # =========================================================================
 
-    def get_interface_info(self) -> Optional[WireGuardInterface]:
+    def get_interface_info(self) -> WireGuardInterface | None:
         """
         Get information about the WireGuard interface.
 
@@ -378,7 +374,7 @@ class WireGuardService(BaseService):
             WireGuardInterface with current state or None
         """
         if not self.is_running():
-            self._logger.debug(f"[WG] get_interface_info: interface not running")
+            self._logger.debug("[WG] get_interface_info: interface not running")
             return None
 
         result = self._run_privileged(["wg", "show", self._interface_name])
@@ -400,7 +396,7 @@ class WireGuardService(BaseService):
             True if connection is working
         """
         if not self.is_running():
-            self._logger.debug(f"[WG] test_connection: interface not running")
+            self._logger.debug("[WG] test_connection: interface not running")
             return False
 
         self._logger.debug(f"[WG] Testing connection to {test_host} via {self._interface_name}")
@@ -468,9 +464,8 @@ class WireGuardService(BaseService):
         if result.success:
             self._logger.info("WARP account registered")
             return True
-        else:
-            self._logger.error(f"Registration failed: {result.stderr}")
-            return False
+        self._logger.error(f"Registration failed: {result.stderr}")
+        return False
 
     def generate_warp_profile(self) -> bool:
         """
@@ -490,13 +485,12 @@ class WireGuardService(BaseService):
         if result.success and WGCF_PROFILE_FILE.exists():
             self._logger.info("WARP profile generated")
             return True
-        else:
-            self._logger.error(f"Profile generation failed: {result.stderr}")
-            return False
+        self._logger.error(f"Profile generation failed: {result.stderr}")
+        return False
 
     def _generate_warp_config(
         self, endpoint_type: str = "standard", tunnel_mode: str = TunnelMode.SPLIT
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Generate WireGuard config for WARP.
 
@@ -529,7 +523,7 @@ class WireGuardService(BaseService):
     def _modify_allowed_ips(
         self,
         config: str,
-        custom_ips: Optional[list[str]] = None,
+        custom_ips: list[str] | None = None,
         tunnel_mode: str = TunnelMode.SPLIT,
     ) -> str:
         """
@@ -865,11 +859,11 @@ class WireGuardService(BaseService):
 
     def generate_config(
         self,
-        allowed_apps: Optional[list[str]] = None,
+        allowed_apps: list[str] | None = None,
         include_browsers: bool = False,
-        endpoint: Optional[str] = None,
+        endpoint: str | None = None,
         tunnel_mode: str = TunnelMode.SPLIT,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Generate WireGuard configuration and install it.
 
@@ -907,9 +901,8 @@ class WireGuardService(BaseService):
             # Install to /etc/wireguard/
             if self._install_config(config_content):
                 return str(self._config_file)
-            else:
-                self._logger.error("Failed to install config")
-                return None
+            self._logger.error("Failed to install config")
+            return None
 
         except Exception as e:
             self._logger.error(f"Failed to generate config: {e}")
@@ -917,9 +910,9 @@ class WireGuardService(BaseService):
 
     def generate_config_content(
         self,
-        allowed_apps: Optional[list[str]] = None,
+        allowed_apps: list[str] | None = None,
         include_browsers: bool = False,
-        endpoint: Optional[str] = None,
+        endpoint: str | None = None,
         tunnel_mode: str = TunnelMode.SPLIT,
     ) -> str:
         """
@@ -961,7 +954,7 @@ class WireGuardService(BaseService):
 
 
 # Convenience functions
-_wireguard_service: Optional[WireGuardService] = None
+_wireguard_service: WireGuardService | None = None
 
 
 def get_wireguard_service() -> WireGuardService:

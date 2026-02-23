@@ -8,13 +8,11 @@ Uses systemd-resolved for Ubuntu systems.
 import json
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional
-from datetime import datetime
 
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
-
 
 # ============================================================================
 # Constants
@@ -59,8 +57,8 @@ class DNSServer:
     name: str
     primary: str
     secondary: str
-    doh_url: Optional[str] = None
-    dot_hostname: Optional[str] = None  # DNS over TLS hostname
+    doh_url: str | None = None
+    dot_hostname: str | None = None  # DNS over TLS hostname
 
 
 @dataclass
@@ -71,8 +69,8 @@ class DNSBackup:
     dns_servers: list[str]
     search_domains: list[str]
     doh_enabled: bool
-    interface: Optional[str] = None
-    raw_config: Optional[str] = None
+    interface: str | None = None
+    raw_config: str | None = None
 
 
 @dataclass
@@ -183,7 +181,7 @@ class DNSService(BaseService):
             service_type=ServiceType.DNS,
         )
         self._config = DNSConfig()
-        self._dns_manager: Optional[DNSManager] = None
+        self._dns_manager: DNSManager | None = None
         self._ensure_directories()
         self._load_config()
         self._detect_dns_manager()
@@ -255,9 +253,9 @@ class DNSService(BaseService):
 
     def install(
         self,
-        preset: Optional[str] = None,
-        primary: Optional[str] = None,
-        secondary: Optional[str] = None,
+        preset: str | None = None,
+        primary: str | None = None,
+        secondary: str | None = None,
         doh_mode: DoHMode = DoHMode.OPPORTUNISTIC,
         **kwargs,
     ) -> bool:
@@ -307,9 +305,8 @@ class DNSService(BaseService):
             elif self._dns_manager == DNSManager.NETWORK_MANAGER:
                 if not self._apply_network_manager(dns_primary, dns_secondary):
                     return False
-            else:
-                if not self._apply_manual(dns_primary, dns_secondary):
-                    return False
+            elif not self._apply_manual(dns_primary, dns_secondary):
+                return False
 
             self._config.enabled = True
             self._save_config()
@@ -400,11 +397,11 @@ class DNSService(BaseService):
         """Get all available DNS presets."""
         return DNS_PRESETS.copy()
 
-    def get_preset(self, name: str) -> Optional[DNSServer]:
+    def get_preset(self, name: str) -> DNSServer | None:
         """Get a specific preset by name."""
         return DNS_PRESETS.get(name)
 
-    def get_current_preset(self) -> Optional[DNSServer]:
+    def get_current_preset(self) -> DNSServer | None:
         """Get the currently selected preset."""
         return self.get_preset(self._config.preset_name)
 
@@ -815,7 +812,7 @@ nameserver {secondary}
 # Convenience functions
 # ============================================================================
 
-_dns_service: Optional[DNSService] = None
+_dns_service: DNSService | None = None
 
 
 def get_dns_service() -> DNSService:

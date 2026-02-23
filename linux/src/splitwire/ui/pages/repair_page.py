@@ -10,14 +10,16 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw
 from typing import TYPE_CHECKING
+
+from gi.repository import Adw, Gtk
 
 from splitwire.core import get_text
 from splitwire.services import (
-    get_discord_service,
     DiscordVersion,
+    get_discord_service,
 )
+
 from .base_page import BasePage
 
 if TYPE_CHECKING:

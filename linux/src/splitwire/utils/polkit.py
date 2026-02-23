@@ -6,12 +6,11 @@ privileges from a GUI application.
 """
 
 import os
-import subprocess
 import shutil
+import subprocess
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from splitwire.core.logger import get_logger
 
@@ -44,7 +43,6 @@ class ElevationResult:
 class PolkitError(Exception):
     """Exception raised for polkit-related errors."""
 
-    pass
 
 
 class PolkitHelper:
@@ -64,7 +62,7 @@ class PolkitHelper:
     POLICY_PATH = "/usr/share/polkit-1/actions/com.splitwire.turkey.policy"
 
     def __init__(self):
-        self._elevation_method: Optional[ElevationMethod] = None
+        self._elevation_method: ElevationMethod | None = None
         self._is_root = os.geteuid() == 0
 
     @property
@@ -118,7 +116,7 @@ class PolkitHelper:
     def run_elevated(
         self,
         command: list[str],
-        action_id: Optional[str] = None,
+        action_id: str | None = None,
         timeout: int = 60,
         capture_output: bool = True,
     ) -> ElevationResult:
@@ -187,15 +185,14 @@ class PolkitHelper:
                     stderr=result.stderr,
                     method=ElevationMethod.ROOT,
                 )
-            else:
-                result = subprocess.run(command, timeout=timeout)
-                return ElevationResult(
-                    success=result.returncode == 0,
-                    returncode=result.returncode,
-                    stdout="",
-                    stderr="",
-                    method=ElevationMethod.ROOT,
-                )
+            result = subprocess.run(command, timeout=timeout)
+            return ElevationResult(
+                success=result.returncode == 0,
+                returncode=result.returncode,
+                stdout="",
+                stderr="",
+                method=ElevationMethod.ROOT,
+            )
         except subprocess.TimeoutExpired:
             return ElevationResult(
                 success=False,
@@ -210,7 +207,7 @@ class PolkitHelper:
             )
 
     def _run_pkexec(
-        self, command: list[str], action_id: Optional[str], timeout: int, capture_output: bool
+        self, command: list[str], action_id: str | None, timeout: int, capture_output: bool
     ) -> ElevationResult:
         """Run command with pkexec."""
         # Build pkexec command
@@ -422,7 +419,7 @@ class PolkitHelper:
 
 
 # Global instance for convenience
-_polkit_helper: Optional[PolkitHelper] = None
+_polkit_helper: PolkitHelper | None = None
 
 
 def get_polkit_helper() -> PolkitHelper:

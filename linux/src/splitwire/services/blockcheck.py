@@ -10,13 +10,12 @@ import re
 import subprocess
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Callable
 
 from splitwire.core import get_logger, get_shell
-
 
 # ============================================================================
 # Constants
@@ -132,10 +131,10 @@ class BlockcheckService:
         self._logger = get_logger()
         self._shell = get_shell()
         self._progress = ScanProgress()
-        self._result: Optional[BlockcheckResult] = None
-        self._process: Optional[subprocess.Popen] = None
+        self._result: BlockcheckResult | None = None
+        self._process: subprocess.Popen | None = None
         self._progress_callbacks: list[Callable[[ScanProgress], None]] = []
-        self._scan_thread: Optional[threading.Thread] = None
+        self._scan_thread: threading.Thread | None = None
         self._cancelled = False
 
         # Ensure config directory exists
@@ -157,7 +156,7 @@ class BlockcheckService:
         """Get current scan progress."""
         return self._progress
 
-    def get_last_result(self) -> Optional[BlockcheckResult]:
+    def get_last_result(self) -> BlockcheckResult | None:
         """Get result from last scan."""
         if self._result:
             return self._result
@@ -175,7 +174,7 @@ class BlockcheckService:
     def start_scan(
         self,
         mode: ScanMode = ScanMode.STANDARD,
-        targets: Optional[list[str]] = None,
+        targets: list[str] | None = None,
         async_mode: bool = True,
     ) -> bool:
         """
@@ -211,8 +210,7 @@ class BlockcheckService:
             )
             self._scan_thread.start()
             return True
-        else:
-            return self._run_scan(mode, targets)
+        return self._run_scan(mode, targets)
 
     def cancel_scan(self) -> bool:
         """Cancel a running scan."""
@@ -273,10 +271,9 @@ class BlockcheckService:
         """Get target domains for scan mode."""
         if mode == ScanMode.QUICK:
             return QUICK_TARGETS
-        elif mode == ScanMode.STANDARD:
+        if mode == ScanMode.STANDARD:
             return STANDARD_TARGETS
-        else:
-            return FULL_TARGETS
+        return FULL_TARGETS
 
     def _run_scan(self, mode: ScanMode, targets: list[str]) -> bool:
         """Run the actual blockcheck scan."""
@@ -522,7 +519,7 @@ class BlockcheckService:
         except Exception as e:
             self._logger.error(f"Failed to save result: {e}")
 
-    def _load_saved_result(self) -> Optional[BlockcheckResult]:
+    def _load_saved_result(self) -> BlockcheckResult | None:
         """Load saved result from file."""
         if not BLOCKCHECK_RESULTS.exists():
             return None
@@ -585,7 +582,7 @@ class BlockcheckService:
 # Module-level singleton
 # ============================================================================
 
-_blockcheck_service: Optional[BlockcheckService] = None
+_blockcheck_service: BlockcheckService | None = None
 
 
 def get_blockcheck_service() -> BlockcheckService:

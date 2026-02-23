@@ -10,9 +10,9 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, Gio, GLib, Gdk
-from typing import Optional
 import sys
+
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from splitwire.core import (
     get_config_manager,
@@ -30,7 +30,7 @@ class SplitWireApp(Adw.Application):
             application_id="com.splitwire.turkey", flags=Gio.ApplicationFlags.DEFAULT_FLAGS
         )
 
-        self.window: Optional[SplitWireWindow] = None
+        self.window: SplitWireWindow | None = None
         self._logger = None
         self._config = None
         self._debug = False

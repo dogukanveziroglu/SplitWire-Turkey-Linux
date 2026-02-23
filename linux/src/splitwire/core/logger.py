@@ -9,7 +9,6 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Optional
 
 
 class ColoredFormatter(logging.Formatter):
@@ -61,7 +60,7 @@ class SplitWireLogger:
     def __init__(
         self,
         name: str = APP_NAME,
-        log_dir: Optional[Path] = None,
+        log_dir: Path | None = None,
         debug: bool = False,
         console: bool = True,
     ):
@@ -208,10 +207,10 @@ class SplitWireLogger:
             return []
 
         try:
-            with open(self.log_file, "r", encoding="utf-8") as f:
+            with open(self.log_file, encoding="utf-8") as f:
                 all_lines = f.readlines()
                 return all_lines[-lines:]
-        except IOError:
+        except OSError:
             return []
 
     def clear_logs(self) -> bool:
@@ -225,7 +224,7 @@ class SplitWireLogger:
             for log_file in self._log_dir.glob("*.log*"):
                 log_file.unlink()
             return True
-        except IOError:
+        except OSError:
             return False
 
     def get_log_size(self) -> int:
@@ -242,7 +241,7 @@ class SplitWireLogger:
 
 
 # Global logger instance
-_main_logger: Optional[SplitWireLogger] = None
+_main_logger: SplitWireLogger | None = None
 
 
 def get_logger() -> SplitWireLogger:
@@ -253,7 +252,7 @@ def get_logger() -> SplitWireLogger:
     return _main_logger
 
 
-def init_logger(debug: bool = False, log_dir: Optional[Path] = None) -> SplitWireLogger:
+def init_logger(debug: bool = False, log_dir: Path | None = None) -> SplitWireLogger:
     """
     Initialize the global logger.
 

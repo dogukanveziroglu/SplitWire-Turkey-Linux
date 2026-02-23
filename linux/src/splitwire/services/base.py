@@ -5,14 +5,14 @@ Provides abstract base class for all services (WireGuard, Zapret, ByeDPI, etc.)
 with common interface for installation, removal, and lifecycle management.
 """
 
+import time
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Callable
-import time
 
-from splitwire.core import get_logger, get_shell, CommandResult, CommandStatus
+from splitwire.core import CommandResult, CommandStatus, get_logger, get_shell
 
 
 class ServiceStatus(Enum):
@@ -46,13 +46,13 @@ class ServiceInfo:
     description: str
     service_type: ServiceType
     status: ServiceStatus = ServiceStatus.NOT_INSTALLED
-    version: Optional[str] = None
-    config_path: Optional[Path] = None
-    log_path: Optional[Path] = None
-    systemd_unit: Optional[str] = None
-    pid: Optional[int] = None
-    uptime: Optional[float] = None
-    error_message: Optional[str] = None
+    version: str | None = None
+    config_path: Path | None = None
+    log_path: Path | None = None
+    systemd_unit: str | None = None
+    pid: int | None = None
+    uptime: float | None = None
+    error_message: str | None = None
     metadata: dict = field(default_factory=dict)
 
 
@@ -134,7 +134,6 @@ class BaseService(ABC):
         Returns:
             True if installation successful
         """
-        pass
 
     @abstractmethod
     def remove(self) -> bool:
@@ -144,7 +143,6 @@ class BaseService(ABC):
         Returns:
             True if removal successful
         """
-        pass
 
     @abstractmethod
     def start(self) -> bool:
@@ -154,7 +152,6 @@ class BaseService(ABC):
         Returns:
             True if started successfully
         """
-        pass
 
     @abstractmethod
     def stop(self) -> bool:
@@ -164,7 +161,6 @@ class BaseService(ABC):
         Returns:
             True if stopped successfully
         """
-        pass
 
     @abstractmethod
     def status(self) -> ServiceStatus:
@@ -174,7 +170,6 @@ class BaseService(ABC):
         Returns:
             Current ServiceStatus
         """
-        pass
 
     @abstractmethod
     def is_installed(self) -> bool:
@@ -184,7 +179,6 @@ class BaseService(ABC):
         Returns:
             True if installed
         """
-        pass
 
     # =========================================================================
     # Default implementations - can be overridden
@@ -282,7 +276,7 @@ class BaseService(ABC):
         result = self._shell.run(["systemctl", "is-enabled", systemd_unit], timeout=10)
         return result.success and "enabled" in result.stdout.lower()
 
-    def _get_systemd_unit(self) -> Optional[str]:
+    def _get_systemd_unit(self) -> str | None:
         """
         Get the systemd unit name for this service.
 
@@ -327,7 +321,7 @@ class BaseService(ABC):
         """
         return self._shell.command_exists(binary)
 
-    def _get_binary_path(self, binary: str) -> Optional[str]:
+    def _get_binary_path(self, binary: str) -> str | None:
         """
         Get full path to a binary.
 
@@ -339,7 +333,7 @@ class BaseService(ABC):
         """
         return self._shell.get_command_path(binary)
 
-    def _systemctl(self, action: str, unit: Optional[str] = None) -> CommandResult:
+    def _systemctl(self, action: str, unit: str | None = None) -> CommandResult:
         """
         Run systemctl command.
 
@@ -381,7 +375,7 @@ class SystemdService(BaseService):
         display_name: str,
         description: str,
         service_type: ServiceType,
-        systemd_unit: Optional[str] = None,
+        systemd_unit: str | None = None,
     ):
         """
         Initialize systemd service.
@@ -396,7 +390,7 @@ class SystemdService(BaseService):
         super().__init__(name, display_name, description, service_type)
         self._systemd_unit = systemd_unit
 
-    def _get_systemd_unit(self) -> Optional[str]:
+    def _get_systemd_unit(self) -> str | None:
         """Get systemd unit name."""
         return self._systemd_unit or f"splitwire-{self._name}.service"
 
@@ -409,10 +403,9 @@ class SystemdService(BaseService):
             self._logger.info(f"{self._display_name} started")
             self._notify_status_change(ServiceStatus.RUNNING)
             return True
-        else:
-            self._logger.error(f"Failed to start {self._display_name}: {result.stderr}")
-            self._notify_status_change(ServiceStatus.FAILED)
-            return False
+        self._logger.error(f"Failed to start {self._display_name}: {result.stderr}")
+        self._notify_status_change(ServiceStatus.FAILED)
+        return False
 
     def stop(self) -> bool:
         """Stop the systemd service."""
@@ -423,9 +416,8 @@ class SystemdService(BaseService):
             self._logger.info(f"{self._display_name} stopped")
             self._notify_status_change(ServiceStatus.STOPPED)
             return True
-        else:
-            self._logger.error(f"Failed to stop {self._display_name}: {result.stderr}")
-            return False
+        self._logger.error(f"Failed to stop {self._display_name}: {result.stderr}")
+        return False
 
     def status(self) -> ServiceStatus:
         """Get systemd service status."""
@@ -437,12 +429,11 @@ class SystemdService(BaseService):
 
         if stdout == "active":
             return ServiceStatus.RUNNING
-        elif stdout == "inactive":
+        if stdout == "inactive":
             return ServiceStatus.STOPPED
-        elif stdout == "failed":
+        if stdout == "failed":
             return ServiceStatus.FAILED
-        else:
-            return ServiceStatus.UNKNOWN
+        return ServiceStatus.UNKNOWN
 
     def is_installed(self) -> bool:
         """Check if systemd unit file exists."""

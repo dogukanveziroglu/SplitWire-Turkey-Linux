@@ -9,10 +9,10 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, Gio, GLib
-from typing import Optional, Dict
 
-from splitwire.core import get_text, get_logger
+from gi.repository import Adw, Gio, GLib, Gtk
+
+from splitwire.core import get_logger, get_text
 
 
 class SplitWireWindow(Adw.ApplicationWindow):
@@ -22,8 +22,8 @@ class SplitWireWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
 
         self._logger = get_logger()
-        self._pages: Dict[str, Gtk.Widget] = {}
-        self._current_page: Optional[str] = None
+        self._pages: dict[str, Gtk.Widget] = {}
+        self._current_page: str | None = None
 
         # Setup window properties
         self.set_title("SplitWire-Turkey")
@@ -209,11 +209,10 @@ class SplitWireWindow(Adw.ApplicationWindow):
     def _add_pages(self):
         """Add all pages to the stack."""
         # Import pages here to avoid circular imports
-        from splitwire.ui.pages.main_page import MainPage
-        from splitwire.ui.pages.byedpi_page import ByeDPIPage
-
-        from splitwire.ui.pages.repair_page import RepairPage
         from splitwire.ui.pages.advanced_page import AdvancedPage
+        from splitwire.ui.pages.byedpi_page import ByeDPIPage
+        from splitwire.ui.pages.main_page import MainPage
+        from splitwire.ui.pages.repair_page import RepairPage
         from splitwire.ui.pages.settings_page import SettingsPage
 
         # Main page (WireGuard)
@@ -356,6 +355,6 @@ class SplitWireWindow(Adw.ApplicationWindow):
         """Set the status bar message."""
         self._status_label.set_label(message)
 
-    def get_page(self, name: str) -> Optional[Gtk.Widget]:
+    def get_page(self, name: str) -> Gtk.Widget | None:
         """Get a page by name."""
         return self._pages.get(name)

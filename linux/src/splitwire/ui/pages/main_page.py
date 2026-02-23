@@ -10,19 +10,21 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, GLib
-from typing import List, TYPE_CHECKING
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from splitwire.core import get_text, get_config, save_config
+from gi.repository import Adw, GLib, Gtk
+
+from splitwire.core import get_config, get_text, save_config
 from splitwire.services import (
-    get_wireguard_service,
-    get_split_tunnel_service,
-    get_dns_service,
-    ServiceStatus,
     KNOWN_APPS,
+    ServiceStatus,
+    get_dns_service,
+    get_split_tunnel_service,
+    get_wireguard_service,
 )
 from splitwire.services.wireguard import TunnelMode
+
 from .base_page import BasePage
 
 if TYPE_CHECKING:
@@ -38,9 +40,9 @@ class MainPage(BasePage):
         self._dns_service = get_dns_service()
         # Load custom apps from config
         config = get_config()
-        self._custom_apps: List[str] = list(config.wireguard.custom_apps or [])
+        self._custom_apps: list[str] = list(config.wireguard.custom_apps or [])
         # Track which known apps are enabled (all enabled by default)
-        self._enabled_apps: dict[str, bool] = {app_id: True for app_id in KNOWN_APPS.keys()}
+        self._enabled_apps: dict[str, bool] = dict.fromkeys(KNOWN_APPS.keys(), True)
         super().__init__(window)
 
     def _build_ui(self):
@@ -605,7 +607,7 @@ class MainPage(BasePage):
 
     # Helper methods
 
-    def _get_selected_apps(self) -> List[str]:
+    def _get_selected_apps(self) -> list[str]:
         """
         Get list of enabled apps for tunneling.
 

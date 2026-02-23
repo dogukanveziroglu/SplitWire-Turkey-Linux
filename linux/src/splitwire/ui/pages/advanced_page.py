@@ -10,18 +10,20 @@ import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 
-from gi.repository import Gtk, Adw, GLib
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
+
+from gi.repository import Adw, GLib, Gtk
 
 from splitwire.core import get_text
 from splitwire.services import (
-    get_wireguard_service,
-    get_split_tunnel_service,
-    get_byedpi_service,
-    get_proxy_route_service,
-    get_dns_service,
     ServiceStatus,
+    get_byedpi_service,
+    get_dns_service,
+    get_proxy_route_service,
+    get_split_tunnel_service,
+    get_wireguard_service,
 )
+
 from .base_page import BasePage
 
 if TYPE_CHECKING:
@@ -54,7 +56,7 @@ class AdvancedPage(BasePage):
                 "service": get_dns_service(),
             },
         }
-        self._status_rows: Dict[str, dict] = {}
+        self._status_rows: dict[str, dict] = {}
         super().__init__(window)
 
     def _build_ui(self):
@@ -383,8 +385,8 @@ class AdvancedPage(BasePage):
                         self._logger.error(f"Error removing {key}: {e}")
 
                 # Remove config and data directories
-                import shutil
                 import os
+                import shutil
 
                 config_dir = os.path.expanduser("~/.config/splitwire")
                 data_dir = os.path.expanduser("~/.local/share/splitwire")
@@ -409,8 +411,8 @@ class AdvancedPage(BasePage):
 
     def _on_open_logs(self, button):
         """Handle open logs button."""
-        import subprocess
         import os
+        import subprocess
 
         logs_dir = os.path.expanduser("~/.cache/splitwire/logs")
         os.makedirs(logs_dir, exist_ok=True)

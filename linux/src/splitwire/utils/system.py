@@ -10,7 +10,6 @@ import subprocess
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from splitwire.core.logger import get_logger
 
@@ -142,7 +141,7 @@ class SystemDetector:
     """Detects system capabilities and compatibility."""
 
     def __init__(self):
-        self._info: Optional[SystemInfo] = None
+        self._info: SystemInfo | None = None
 
     def detect(self) -> SystemInfo:
         """Run full system detection."""
@@ -224,9 +223,7 @@ class SystemDetector:
                         self._info.ubuntu.minor = int(parts[1])
 
                 # Check if supported (22.04+)
-                if self._info.ubuntu.major > 22:
-                    self._info.ubuntu.is_supported = True
-                elif self._info.ubuntu.major == 22 and self._info.ubuntu.minor >= 4:
+                if self._info.ubuntu.major > 22 or (self._info.ubuntu.major == 22 and self._info.ubuntu.minor >= 4):
                     self._info.ubuntu.is_supported = True
         except Exception:
             pass
@@ -400,19 +397,19 @@ def print_system_info(info: SystemInfo) -> None:
     print(f"  - iptables: {'Yes' if info.iptables_available else 'No'}")
     print(f"  - nftables: {'Yes' if info.nftables_available else 'No'}")
 
-    print(f"\nWireGuard:")
+    print("\nWireGuard:")
     print(f"  - Module loaded: {'Yes' if info.wireguard_module_loaded else 'No'}")
     print(f"  - Tools installed: {'Yes' if info.wireguard_tools_installed else 'No'}")
     print(f"  - wg-quick: {'Yes' if info.wg_quick_available else 'No'}")
 
-    print(f"\nNFQUEUE (Zapret):")
+    print("\nNFQUEUE (Zapret):")
     print(f"  - Available: {'Yes' if info.nfqueue_available else 'No'}")
     print(f"  - libnetfilter-queue: {'Yes' if info.libnetfilter_queue_installed else 'No'}")
 
     print(f"\nDNS Manager: {info.dns_manager.value}")
     print(f"  - resolvectl: {'Yes' if info.resolvectl_available else 'No'}")
 
-    print(f"\ncgroups:")
+    print("\ncgroups:")
     print(f"  - v2: {'Yes' if info.cgroups_v2 else 'No'}")
     print(f"  - cgproxy: {'Yes' if info.cgproxy_available else 'No'}")
 

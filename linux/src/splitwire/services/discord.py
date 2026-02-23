@@ -9,13 +9,11 @@ import json
 import shutil
 import subprocess
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional
-from datetime import datetime
 
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
-
 
 # ============================================================================
 # Constants
@@ -104,10 +102,10 @@ class DiscordInstallation:
 
     version: DiscordVersion
     method: InstallMethod
-    path: Optional[str] = None
-    binary_path: Optional[str] = None
-    config_dir: Optional[Path] = None
-    cache_dir: Optional[Path] = None
+    path: str | None = None
+    binary_path: str | None = None
+    config_dir: Path | None = None
+    cache_dir: Path | None = None
     is_running: bool = False
     has_cache: bool = False
     cache_size_mb: float = 0.0
@@ -119,7 +117,7 @@ class WebCordInstallation:
 
     installed: bool = False
     method: InstallMethod = InstallMethod.NOT_INSTALLED
-    path: Optional[str] = None
+    path: str | None = None
     is_running: bool = False
 
 
@@ -127,7 +125,7 @@ class WebCordInstallation:
 class DiscordConfig:
     """Discord service configuration."""
 
-    last_repair_date: Optional[str] = None
+    last_repair_date: str | None = None
     auto_clear_cache: bool = False
     preferred_version: str = "stable"
 
@@ -164,7 +162,7 @@ class DiscordService(BaseService):
         )
         self._config = DiscordConfig()
         self._installations: dict[DiscordVersion, DiscordInstallation] = {}
-        self._webcord: Optional[WebCordInstallation] = None
+        self._webcord: WebCordInstallation | None = None
         self._ensure_directories()
         self._load_config()
 
@@ -370,7 +368,7 @@ class DiscordService(BaseService):
         result = self._shell.run(["flatpak", "info", flatpak_id], timeout=10)
         return result.success
 
-    def _find_binary(self, version: DiscordVersion) -> Optional[str]:
+    def _find_binary(self, version: DiscordVersion) -> str | None:
         """Find Discord binary in PATH."""
         binaries = DISCORD_BINARIES.get(version.value, [])
         self._logger.debug(f"[DISCORD] Searching for {version.value} binary in: {binaries}")
@@ -619,13 +617,12 @@ class DiscordService(BaseService):
 
         if method == InstallMethod.DEB:
             return self._install_deb(version)
-        elif method == InstallMethod.FLATPAK:
+        if method == InstallMethod.FLATPAK:
             return self._install_flatpak(version)
-        elif method == InstallMethod.SNAP:
+        if method == InstallMethod.SNAP:
             return self._install_snap(version)
-        else:
-            self._logger.error(f"Unsupported installation method: {method}")
-            return False
+        self._logger.error(f"Unsupported installation method: {method}")
+        return False
 
     def _install_deb(self, version: DiscordVersion) -> bool:
         """Install Discord via DEB package."""
@@ -843,9 +840,8 @@ class DiscordService(BaseService):
             self._logger.error("Failed to install WebCord via Flatpak")
             return False
 
-        else:
-            self._logger.error(f"Unsupported WebCord installation method: {method}")
-            return False
+        self._logger.error(f"Unsupported WebCord installation method: {method}")
+        return False
 
     def uninstall_webcord(self) -> bool:
         """Uninstall WebCord."""
@@ -859,7 +855,7 @@ class DiscordService(BaseService):
                 ["flatpak", "uninstall", "-y", "io.github.nickvision.webcord"], timeout=60
             )
             return result.success
-        elif webcord.method == InstallMethod.APPIMAGE and webcord.path:
+        if webcord.method == InstallMethod.APPIMAGE and webcord.path:
             try:
                 Path(webcord.path).unlink()
                 return True
@@ -949,7 +945,7 @@ class DiscordService(BaseService):
             self._logger.error(f"Failed to launch WebCord: {e}")
             return False
 
-    def kill_discord(self, version: Optional[DiscordVersion] = None) -> bool:
+    def kill_discord(self, version: DiscordVersion | None = None) -> bool:
         """
         Kill Discord process(es).
 
@@ -1036,7 +1032,7 @@ class DiscordService(BaseService):
 # Convenience functions
 # ============================================================================
 
-_discord_service: Optional[DiscordService] = None
+_discord_service: DiscordService | None = None
 
 
 def get_discord_service() -> DiscordService:

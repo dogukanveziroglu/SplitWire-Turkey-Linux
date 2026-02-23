@@ -7,19 +7,17 @@ ciadpi is the Linux version of ByeDPI.
 
 import json
 import os
+import platform
 import signal
 import subprocess
 import tempfile
 import time
+import urllib.request
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
-import urllib.request
-import platform
 
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
-
 
 # ============================================================================
 # Constants
@@ -171,7 +169,7 @@ class ByeDPIService(BaseService):
             service_type=ServiceType.PROXY,
         )
         self._config = ByeDPIConfig()
-        self._process: Optional[subprocess.Popen] = None
+        self._process: subprocess.Popen | None = None
         self._custom_presets: dict[str, ByeDPIPreset] = {}
         self._ensure_directories()
         self._load_config()
@@ -251,7 +249,7 @@ class ByeDPIService(BaseService):
 
     def install(
         self,
-        preset: Optional[str] = None,
+        preset: str | None = None,
         include_browsers: bool = False,
         one_shot: bool = False,
         as_service: bool = True,
@@ -294,16 +292,14 @@ class ByeDPIService(BaseService):
                 # Run directly without service
                 if not self._start_process():
                     return False
-            else:
-                # Install and start as service
-                if as_service:
-                    if not self._install_systemd_service():
-                        return False
-                    if not self.start():
-                        return False
-                else:
-                    if not self._start_process():
-                        return False
+            # Install and start as service
+            elif as_service:
+                if not self._install_systemd_service():
+                    return False
+                if not self.start():
+                    return False
+            elif not self._start_process():
+                return False
 
             self._config.enabled = True
             self._save_config()
@@ -351,8 +347,7 @@ class ByeDPIService(BaseService):
                 self._logger.info("ByeDPI started via systemd")
                 self._notify_status_change(ServiceStatus.RUNNING)
                 return True
-            else:
-                self._logger.error(f"Failed to start service: {result.stderr}")
+            self._logger.error(f"Failed to start service: {result.stderr}")
                 # Fall back to direct start
 
         # Start directly
@@ -384,7 +379,7 @@ class ByeDPIService(BaseService):
             stdout = result.stdout.strip().lower()
             if stdout == "active":
                 return ServiceStatus.RUNNING
-            elif stdout == "failed":
+            if stdout == "failed":
                 return ServiceStatus.FAILED
 
         # Check for running process
@@ -413,11 +408,11 @@ class ByeDPIService(BaseService):
         presets.update(self._custom_presets)
         return presets
 
-    def get_preset(self, name: str) -> Optional[ByeDPIPreset]:
+    def get_preset(self, name: str) -> ByeDPIPreset | None:
         """Get a specific preset by name."""
         return self.get_all_presets().get(name)
 
-    def get_current_preset(self) -> Optional[ByeDPIPreset]:
+    def get_current_preset(self) -> ByeDPIPreset | None:
         """Get the currently selected preset."""
         return self.get_preset(self._config.preset_name)
 
@@ -506,8 +501,8 @@ class ByeDPIService(BaseService):
 
     def configure(
         self,
-        preset: Optional[str] = None,
-        custom_params: Optional[str] = None,
+        preset: str | None = None,
+        custom_params: str | None = None,
         include_browsers: bool = False,
     ) -> bool:
         """
@@ -770,7 +765,7 @@ class ByeDPIService(BaseService):
         except Exception as e:
             self._logger.warning(f"Failed to save PID: {e}")
 
-    def _get_pid(self) -> Optional[int]:
+    def _get_pid(self) -> int | None:
         """Get PID from file."""
         if BYEDPI_PID_FILE.exists():
             try:
@@ -873,7 +868,7 @@ WantedBy=multi-user.target
 # Convenience functions
 # ============================================================================
 
-_byedpi_service: Optional[ByeDPIService] = None
+_byedpi_service: ByeDPIService | None = None
 
 
 def get_byedpi_service() -> ByeDPIService:

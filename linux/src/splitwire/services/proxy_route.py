@@ -13,11 +13,9 @@ import tempfile
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
-from splitwire.services.split_tunnel import KNOWN_APPS, BROWSER_APPS
-
+from splitwire.services.split_tunnel import BROWSER_APPS, KNOWN_APPS
 
 # ============================================================================
 # Constants
@@ -160,7 +158,7 @@ class ProxyRouteService(BaseService):
 
     def install(
         self,
-        apps: Optional[list[str]] = None,
+        apps: list[str] | None = None,
         include_browsers: bool = False,
         proxy_host: str = DEFAULT_PROXY_HOST,
         proxy_port: int = DEFAULT_PROXY_PORT,
@@ -367,10 +365,10 @@ class ProxyRouteService(BaseService):
 
     def configure(
         self,
-        apps: Optional[list[str]] = None,
+        apps: list[str] | None = None,
         include_browsers: bool = False,
-        proxy_host: Optional[str] = None,
-        proxy_port: Optional[int] = None,
+        proxy_host: str | None = None,
+        proxy_port: int | None = None,
     ) -> bool:
         """
         Configure proxy routing (wrapper for install).
@@ -392,7 +390,7 @@ class ProxyRouteService(BaseService):
             method=self._config.method,
         )
 
-    def run_app_through_proxy(self, app_path: str, args: Optional[list[str]] = None) -> bool:
+    def run_app_through_proxy(self, app_path: str, args: list[str] | None = None) -> bool:
         """
         Run an application through the proxy.
 
@@ -405,11 +403,10 @@ class ProxyRouteService(BaseService):
         """
         if self._config.method == ProxyMethod.CGPROXY:
             return self._run_via_cgproxy(app_path, args)
-        elif self._config.method == ProxyMethod.ENV:
+        if self._config.method == ProxyMethod.ENV:
             return self._run_via_env(app_path, args)
-        else:
-            self._logger.warning("Run through proxy only supported for cgproxy/env")
-            return False
+        self._logger.warning("Run through proxy only supported for cgproxy/env")
+        return False
 
     # =========================================================================
     # cgproxy methods
@@ -467,7 +464,7 @@ class ProxyRouteService(BaseService):
         """Remove cgproxy configuration."""
         self._run_privileged(["rm", "-f", "/etc/cgproxy/config.json"])
 
-    def _run_via_cgproxy(self, app_path: str, args: Optional[list[str]] = None) -> bool:
+    def _run_via_cgproxy(self, app_path: str, args: list[str] | None = None) -> bool:
         """Run app through cgproxy."""
         if not self._shell.command_exists("cgproxy"):
             self._logger.error("cgproxy not installed")
@@ -580,7 +577,7 @@ redsocks {{
     # Environment variable method
     # =========================================================================
 
-    def _run_via_env(self, app_path: str, args: Optional[list[str]] = None) -> bool:
+    def _run_via_env(self, app_path: str, args: list[str] | None = None) -> bool:
         """Run app with proxy environment variables."""
         proxy_url = f"socks5://{self._config.proxy_host}:{self._config.proxy_port}"
 
@@ -630,7 +627,7 @@ redsocks {{
         return True
 
     def _build_app_list(
-        self, apps: Optional[list[str]], include_browsers: bool
+        self, apps: list[str] | None, include_browsers: bool
     ) -> list[ProxiedApp]:
         """Build list of apps to route through proxy."""
         result = []
@@ -701,7 +698,7 @@ redsocks {{
 # Convenience functions
 # ============================================================================
 
-_proxy_route_service: Optional[ProxyRouteService] = None
+_proxy_route_service: ProxyRouteService | None = None
 
 
 def get_proxy_route_service() -> ProxyRouteService:

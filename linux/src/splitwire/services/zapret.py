@@ -13,10 +13,8 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from splitwire.services.base import BaseService, ServiceStatus, ServiceType
-
 
 # ============================================================================
 # Constants
@@ -191,8 +189,8 @@ class ZapretService(BaseService):
         )
         self._config = ZapretConfig()
         self._presets: dict[str, ZapretPreset] = {}
-        self._nfqws_process: Optional[subprocess.Popen] = None
-        self._tpws_process: Optional[subprocess.Popen] = None
+        self._nfqws_process: subprocess.Popen | None = None
+        self._tpws_process: subprocess.Popen | None = None
 
         # Load presets
         self._load_presets()
@@ -392,7 +390,7 @@ class ZapretService(BaseService):
     # nfqws Management
     # =========================================================================
 
-    def _start_nfqws(self, preset: Optional[ZapretPreset], one_shot: bool = False) -> bool:
+    def _start_nfqws(self, preset: ZapretPreset | None, one_shot: bool = False) -> bool:
         """Start nfqws process."""
         if not NFQWS_BINARY.exists():
             self._logger.error(f"nfqws binary not found at {NFQWS_BINARY}")
@@ -482,7 +480,7 @@ class ZapretService(BaseService):
         self._logger.debug(f"[ZAPRET] nfqws process running: {is_running}")
         return is_running
 
-    def _build_nfqws_args(self, preset: Optional[ZapretPreset]) -> list[str]:
+    def _build_nfqws_args(self, preset: ZapretPreset | None) -> list[str]:
         """Build nfqws command line arguments."""
         args = []
 
@@ -515,7 +513,7 @@ class ZapretService(BaseService):
     # tpws Management
     # =========================================================================
 
-    def _start_tpws(self, preset: Optional[ZapretPreset], one_shot: bool = False) -> bool:
+    def _start_tpws(self, preset: ZapretPreset | None, one_shot: bool = False) -> bool:
         """Start tpws process."""
         if not TPWS_BINARY.exists():
             self._logger.error(f"tpws binary not found at {TPWS_BINARY}")
@@ -604,7 +602,7 @@ class ZapretService(BaseService):
         self._logger.debug(f"[ZAPRET] tpws process running: {is_running}")
         return is_running
 
-    def _build_tpws_args(self, preset: Optional[ZapretPreset]) -> list[str]:
+    def _build_tpws_args(self, preset: ZapretPreset | None) -> list[str]:
         """Build tpws command line arguments."""
         args = []
 
@@ -818,7 +816,7 @@ class ZapretService(BaseService):
         """Get all available presets."""
         return self._presets.copy()
 
-    def get_preset(self, name: str) -> Optional[ZapretPreset]:
+    def get_preset(self, name: str) -> ZapretPreset | None:
         """Get a specific preset by name."""
         return self._presets.get(name)
 
@@ -854,7 +852,7 @@ class ZapretService(BaseService):
         self._save_presets()
         return True
 
-    def _get_current_preset(self) -> Optional[ZapretPreset]:
+    def _get_current_preset(self) -> ZapretPreset | None:
         """Get currently active preset."""
         return self._presets.get(self._config.preset_name)
 
@@ -1036,9 +1034,9 @@ class ZapretService(BaseService):
 
     def configure(
         self,
-        params: Optional[str] = None,
-        preset: Optional[str] = None,
-        mode: Optional[ZapretMode] = None,
+        params: str | None = None,
+        preset: str | None = None,
+        mode: ZapretMode | None = None,
     ) -> bool:
         """
         Configure Zapret with specified parameters.
@@ -1069,7 +1067,7 @@ class ZapretService(BaseService):
         self._logger.info(f"Zapret configured with preset={preset}, mode={self._config.mode.value}")
         return True
 
-    def run_once(self, params: Optional[str] = None, preset: Optional[str] = None) -> bool:
+    def run_once(self, params: str | None = None, preset: str | None = None) -> bool:
         """
         Run Zapret once without installing as a service.
 
@@ -1231,7 +1229,7 @@ class ZapretService(BaseService):
 
     def _install_systemd_service(self) -> bool:
         """Install systemd service file."""
-        service_content = f"""[Unit]
+        service_content = """[Unit]
 Description=SplitWire Zapret Packet Processing
 After=network.target
 
@@ -1281,7 +1279,7 @@ WantedBy=multi-user.target
 # Module-level singleton
 # ============================================================================
 
-_zapret_service: Optional[ZapretService] = None
+_zapret_service: ZapretService | None = None
 
 
 def get_zapret_service() -> ZapretService:

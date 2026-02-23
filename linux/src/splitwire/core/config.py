@@ -7,10 +7,9 @@ Config is stored in ~/.config/splitwire/config.json
 
 import json
 import os
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
-from typing import Optional
+from dataclasses import asdict, dataclass, field
 from enum import Enum
+from pathlib import Path
 
 from splitwire.core.logger import get_logger
 
@@ -122,7 +121,7 @@ class ConfigManager:
     APP_NAME = "splitwire"
     CONFIG_FILE = "config.json"
 
-    def __init__(self, config_dir: Optional[Path] = None):
+    def __init__(self, config_dir: Path | None = None):
         """
         Initialize config manager.
 
@@ -132,7 +131,7 @@ class ConfigManager:
         self._config_dir = config_dir or self._get_xdg_config_dir()
         self._data_dir = self._get_xdg_data_dir()
         self._cache_dir = self._get_xdg_cache_dir()
-        self._config: Optional[AppConfig] = None
+        self._config: AppConfig | None = None
         self._config_file = self._config_dir / self.CONFIG_FILE
 
         # Ensure directories exist
@@ -196,7 +195,7 @@ class ConfigManager:
         _logger.info(f"[CONFIG] Loading config from {self._config_file}")
         if self._config_file.exists():
             try:
-                with open(self._config_file, "r", encoding="utf-8") as f:
+                with open(self._config_file, encoding="utf-8") as f:
                     data = json.load(f)
                 self._config = self._dict_to_config(data)
                 self._config.first_run = False
@@ -315,7 +314,7 @@ class ConfigManager:
 
 
 # Global instance for convenience
-_config_manager: Optional[ConfigManager] = None
+_config_manager: ConfigManager | None = None
 
 
 def get_config_manager() -> ConfigManager:

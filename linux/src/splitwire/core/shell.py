@@ -12,11 +12,11 @@ import asyncio
 import os
 import shlex
 import subprocess
+import threading
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Callable, Union
-import threading
 
 from splitwire.core.logger import get_logger
 
@@ -77,8 +77,8 @@ class ShellExecutor:
     def __init__(
         self,
         timeout: int = DEFAULT_TIMEOUT,
-        env: Optional[dict[str, str]] = None,
-        cwd: Optional[Path] = None,
+        env: dict[str, str] | None = None,
+        cwd: Path | None = None,
     ):
         """
         Initialize shell executor.
@@ -92,7 +92,7 @@ class ShellExecutor:
         self._env = self._build_env(env)
         self._cwd = cwd
 
-    def _build_env(self, extra_env: Optional[dict[str, str]] = None) -> dict[str, str]:
+    def _build_env(self, extra_env: dict[str, str] | None = None) -> dict[str, str]:
         """Build environment dictionary."""
         env = os.environ.copy()
 
@@ -112,14 +112,14 @@ class ShellExecutor:
 
     def run(
         self,
-        command: Union[str, list[str]],
-        timeout: Optional[int] = None,
+        command: str | list[str],
+        timeout: int | None = None,
         capture_output: bool = True,
         check: bool = False,
-        cwd: Optional[Path] = None,
-        env: Optional[dict[str, str]] = None,
+        cwd: Path | None = None,
+        env: dict[str, str] | None = None,
         shell: bool = False,
-        input_data: Optional[str] = None,
+        input_data: str | None = None,
     ) -> CommandResult:
         """
         Run a command synchronously.
@@ -260,11 +260,11 @@ class ShellExecutor:
 
     async def run_async(
         self,
-        command: Union[str, list[str]],
-        timeout: Optional[int] = None,
+        command: str | list[str],
+        timeout: int | None = None,
         capture_output: bool = True,
-        cwd: Optional[Path] = None,
-        env: Optional[dict[str, str]] = None,
+        cwd: Path | None = None,
+        env: dict[str, str] | None = None,
     ) -> CommandResult:
         """
         Run a command asynchronously.
@@ -391,11 +391,11 @@ class ShellExecutor:
 
     def run_with_output(
         self,
-        command: Union[str, list[str]],
+        command: str | list[str],
         callback: Callable[[str], None],
-        timeout: Optional[int] = None,
-        cwd: Optional[Path] = None,
-        env: Optional[dict[str, str]] = None,
+        timeout: int | None = None,
+        cwd: Path | None = None,
+        env: dict[str, str] | None = None,
     ) -> CommandResult:
         """
         Run a command with real-time output streaming.
@@ -460,13 +460,13 @@ class ShellExecutor:
                         if line:
                             stdout_lines.append(line.rstrip())
                             callback(line.rstrip())
-                except (IOError, OSError):
+                except OSError:
                     pass  # Pipe closed during read (process killed)
                 finally:
                     if process.stdout:
                         try:
                             process.stdout.close()
-                        except (IOError, OSError):
+                        except OSError:
                             pass
 
             reader_thread = threading.Thread(target=read_output)
@@ -549,7 +549,7 @@ class ShellExecutor:
         result = self.run(["which", command], timeout=5)
         return result.success
 
-    def get_command_path(self, command: str) -> Optional[str]:
+    def get_command_path(self, command: str) -> str | None:
         """
         Get full path of a command.
 
@@ -566,7 +566,7 @@ class ShellExecutor:
 
 
 # Global instance
-_shell: Optional[ShellExecutor] = None
+_shell: ShellExecutor | None = None
 
 
 def get_shell() -> ShellExecutor:
@@ -577,12 +577,12 @@ def get_shell() -> ShellExecutor:
     return _shell
 
 
-def run(command: Union[str, list[str]], **kwargs) -> CommandResult:
+def run(command: str | list[str], **kwargs) -> CommandResult:
     """Run a command (convenience function)."""
     return get_shell().run(command, **kwargs)
 
 
-async def run_async(command: Union[str, list[str]], **kwargs) -> CommandResult:
+async def run_async(command: str | list[str], **kwargs) -> CommandResult:
     """Run a command asynchronously (convenience function)."""
     return await get_shell().run_async(command, **kwargs)
 

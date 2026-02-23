@@ -9,7 +9,6 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
 
 from splitwire.core.logger import get_logger
 
@@ -186,7 +185,7 @@ class DependencyChecker:
     def __init__(self):
         self.system_deps = [Dependency(**d.__dict__) for d in SYSTEM_DEPENDENCIES]
         self.python_deps = [Dependency(**d.__dict__) for d in PYTHON_DEPENDENCIES]
-        self._apt_available: Optional[bool] = None
+        self._apt_available: bool | None = None
 
     def _run_command(self, cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
         """Run a command and return (returncode, stdout, stderr)."""

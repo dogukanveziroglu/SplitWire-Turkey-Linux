@@ -6,9 +6,9 @@ Compatible with the Windows version's language file format.
 """
 
 import json
-from pathlib import Path
-from typing import Optional, Any
 from functools import lru_cache
+from pathlib import Path
+from typing import Any
 
 from splitwire.core.logger import get_logger
 
@@ -18,7 +18,6 @@ _logger = get_logger()
 class LanguageError(Exception):
     """Exception raised for language-related errors."""
 
-    pass
 
 
 class LanguageManager:
@@ -43,7 +42,7 @@ class LanguageManager:
 
     DEFAULT_LANGUAGE = "en"
 
-    def __init__(self, language: str = DEFAULT_LANGUAGE, resources_dir: Optional[Path] = None):
+    def __init__(self, language: str = DEFAULT_LANGUAGE, resources_dir: Path | None = None):
         """
         Initialize language manager.
 
@@ -138,9 +137,9 @@ class LanguageManager:
             return {}
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 return json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
+        except (OSError, json.JSONDecodeError) as e:
             _logger.error(f"[LANG] Failed to load language file {path}: {e}")
             return {}
 
@@ -186,7 +185,7 @@ class LanguageManager:
         # Return default or key path as fallback
         return default if default else key_str
 
-    def _get_nested(self, data: dict, keys: list[str]) -> Optional[str]:
+    def _get_nested(self, data: dict, keys: list[str]) -> str | None:
         """Get nested value from dictionary."""
         current = data
         for key in keys:
@@ -219,8 +218,7 @@ class LanguageManager:
             if kwargs:
                 # Try named format first
                 return text.format(**kwargs)
-            else:
-                return text
+            return text
         except (KeyError, IndexError):
             return text
 
@@ -265,7 +263,7 @@ class LanguageManager:
 
 
 # Global instance for convenience
-_language_manager: Optional[LanguageManager] = None
+_language_manager: LanguageManager | None = None
 
 
 def get_language_manager() -> LanguageManager:
