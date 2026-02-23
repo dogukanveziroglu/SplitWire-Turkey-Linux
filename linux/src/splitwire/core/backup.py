@@ -16,9 +16,9 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core.logger import get_logger
+import logging
 
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class BackupType(Enum):
@@ -153,16 +153,16 @@ class BackupManager:
         backup_path = self._get_backup_path(backup_id)
         timestamp = datetime.now().isoformat()
 
-        _logger.info(f"[BACKUP] Creating {backup_type.value} backup: {backup_id}")
+        logger.info(f"[BACKUP] Creating {backup_type.value} backup: {backup_id}")
 
         # Determine files to backup
         files_to_backup = self._get_files_for_backup(backup_type)
 
         if not files_to_backup:
-            _logger.error(f"[BACKUP] No files found for backup type: {backup_type.value}")
+            logger.error(f"[BACKUP] No files found for backup type: {backup_type.value}")
             raise BackupError(f"No files found for backup type: {backup_type.value}")
 
-        _logger.debug(f"[BACKUP] Files to backup: {len(files_to_backup)}")
+        logger.debug(f"[BACKUP] Files to backup: {len(files_to_backup)}")
 
         # Create tarball
         try:
@@ -179,9 +179,9 @@ class BackupManager:
                         else:
                             arcname = path_str
                         tar.add(str(path), arcname=arcname)
-                        _logger.debug(f"[BACKUP] Added: {path}")
+                        logger.debug(f"[BACKUP] Added: {path}")
         except Exception as e:
-            _logger.error(f"[BACKUP] Failed to create archive: {e}")
+            logger.error(f"[BACKUP] Failed to create archive: {e}")
             if backup_path.exists():
                 backup_path.unlink()
             raise BackupError(f"Failed to create backup archive: {e}")
@@ -208,7 +208,7 @@ class BackupManager:
         # Cleanup old backups
         self._cleanup_old_backups()
 
-        _logger.info(f"[BACKUP] Backup created successfully: {backup_id} ({backup_size} bytes)")
+        logger.info(f"[BACKUP] Backup created successfully: {backup_id} ({backup_size} bytes)")
         return metadata
 
     def _get_files_for_backup(self, backup_type: BackupType) -> list[Path]:
@@ -269,16 +269,16 @@ class BackupManager:
         metadata_path = self._get_metadata_path(backup_id)
 
         if not backup_path.exists():
-            _logger.error(f"[BACKUP] Backup not found: {backup_id}")
+            logger.error(f"[BACKUP] Backup not found: {backup_id}")
             raise BackupError(f"Backup not found: {backup_id}")
 
         # Load metadata
         metadata = self.get_backup_metadata(backup_id)
         if metadata is None:
-            _logger.error(f"[BACKUP] Backup metadata not found: {backup_id}")
+            logger.error(f"[BACKUP] Backup metadata not found: {backup_id}")
             raise BackupError(f"Backup metadata not found: {backup_id}")
 
-        _logger.info(f"[BACKUP] Restoring backup: {backup_id} (dry_run={dry_run})")
+        logger.info(f"[BACKUP] Restoring backup: {backup_id} (dry_run={dry_run})")
         restored_files = []
 
         try:
@@ -302,13 +302,13 @@ class BackupManager:
                         # Extract file
                         member.name = real_path
                         tar.extract(member, path="/")
-                        _logger.debug(f"[BACKUP] Restored: {real_path}")
+                        logger.debug(f"[BACKUP] Restored: {real_path}")
 
         except Exception as e:
-            _logger.error(f"[BACKUP] Failed to restore backup: {e}")
+            logger.error(f"[BACKUP] Failed to restore backup: {e}")
             raise BackupError(f"Failed to restore backup: {e}")
 
-        _logger.info(f"[BACKUP] Restore completed: {len(restored_files)} files")
+        logger.info(f"[BACKUP] Restore completed: {len(restored_files)} files")
         return restored_files
 
     def delete_backup(self, backup_id: str) -> bool:
@@ -486,7 +486,7 @@ class SnapshotManager:
         snapshot_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         snapshot_path = self._snapshot_dir / snapshot_id
 
-        _logger.info(f"[SNAPSHOT] Creating snapshot for operation: {operation}")
+        logger.info(f"[SNAPSHOT] Creating snapshot for operation: {operation}")
 
         # Create snapshot directory
         snapshot_path.mkdir(parents=True, exist_ok=True)
@@ -499,7 +499,7 @@ class SnapshotManager:
                 dest = snapshot_path / path.name
                 shutil.copy2(str(path), str(dest))
                 backed_up.append(file_path)
-                _logger.debug(f"[SNAPSHOT] Backed up: {file_path}")
+                logger.debug(f"[SNAPSHOT] Backed up: {file_path}")
 
         # Capture service states
         services_state = self._capture_services_state()
@@ -522,7 +522,7 @@ class SnapshotManager:
             json.dump(asdict(snapshot), f, indent=2)
 
         self._current_snapshot = snapshot
-        _logger.info(f"[SNAPSHOT] Snapshot created: {snapshot_id} ({len(backed_up)} files)")
+        logger.info(f"[SNAPSHOT] Snapshot created: {snapshot_id} ({len(backed_up)} files)")
         return snapshot
 
     def rollback(self, snapshot_id: str | None = None) -> bool:
@@ -539,20 +539,20 @@ class SnapshotManager:
             snapshot_id = self._current_snapshot.id
 
         if snapshot_id is None:
-            _logger.warning("[SNAPSHOT] No snapshot ID provided for rollback")
+            logger.warning("[SNAPSHOT] No snapshot ID provided for rollback")
             return False
 
-        _logger.info(f"[SNAPSHOT] Rolling back to snapshot: {snapshot_id}")
+        logger.info(f"[SNAPSHOT] Rolling back to snapshot: {snapshot_id}")
         snapshot_path = self._snapshot_dir / snapshot_id
 
         if not snapshot_path.exists():
-            _logger.error(f"[SNAPSHOT] Snapshot not found: {snapshot_id}")
+            logger.error(f"[SNAPSHOT] Snapshot not found: {snapshot_id}")
             return False
 
         # Load snapshot metadata
         meta_path = snapshot_path / "snapshot.json"
         if not meta_path.exists():
-            _logger.error(f"[SNAPSHOT] Snapshot metadata not found: {snapshot_id}")
+            logger.error(f"[SNAPSHOT] Snapshot metadata not found: {snapshot_id}")
             return False
 
         try:
@@ -567,14 +567,14 @@ class SnapshotManager:
 
                 if backup.exists():
                     shutil.copy2(str(backup), str(original))
-                    _logger.debug(f"[SNAPSHOT] Restored: {original_path}")
+                    logger.debug(f"[SNAPSHOT] Restored: {original_path}")
                     restored_count += 1
 
-            _logger.info(f"[SNAPSHOT] Rollback completed: {restored_count} files restored")
+            logger.info(f"[SNAPSHOT] Rollback completed: {restored_count} files restored")
             return True
 
         except Exception as e:
-            _logger.error(f"[SNAPSHOT] Failed to rollback snapshot: {e}")
+            logger.error(f"[SNAPSHOT] Failed to rollback snapshot: {e}")
             return False
 
     def cleanup_snapshot(self, snapshot_id: str | None = None) -> bool:
@@ -616,7 +616,7 @@ class SnapshotManager:
                 )
                 states[service] = result.stdout.strip()
             except Exception as e:
-                _logger.debug(f"Failed to get state of {service}: {e}")
+                logger.debug(f"Failed to get state of {service}: {e}")
                 states[service] = "unknown"
 
         return states

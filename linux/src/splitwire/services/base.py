@@ -12,7 +12,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core import CommandResult, CommandStatus, get_logger, get_shell
+import logging
+
+from splitwire.core import CommandResult, CommandStatus, get_shell
 
 
 class ServiceStatus(Enum):
@@ -81,7 +83,9 @@ class BaseService(ABC):
         self._display_name = display_name
         self._description = description
         self._service_type = service_type
-        self._logger = get_logger()
+        self._logger = logging.getLogger(
+            f"splitwire.services.{name}"
+        )
         self._shell = get_shell()
         self._status_callbacks: list[Callable[[ServiceStatus], None]] = []
 

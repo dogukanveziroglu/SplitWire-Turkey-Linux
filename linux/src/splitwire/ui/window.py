@@ -12,7 +12,9 @@ gi.require_version("Adw", "1")
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
-from splitwire.core import get_logger, get_text
+import logging
+
+from splitwire.core import get_text
 
 
 class SplitWireWindow(Adw.ApplicationWindow):
@@ -21,7 +23,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._logger = get_logger()
+        self._logger = logging.getLogger(__name__)
         self._pages: dict[str, Gtk.Widget] = {}
         self._current_page: str | None = None
 

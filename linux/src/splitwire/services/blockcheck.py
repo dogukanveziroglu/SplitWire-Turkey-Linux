@@ -15,7 +15,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core import get_logger, get_shell
+import logging
+
+from splitwire.core import get_shell
 
 # ============================================================================
 # Constants
@@ -128,7 +130,7 @@ class BlockcheckService:
     """
 
     def __init__(self):
-        self._logger = get_logger()
+        self._logger = logging.getLogger(__name__)
         self._shell = get_shell()
         self._progress = ScanProgress()
         self._result: BlockcheckResult | None = None

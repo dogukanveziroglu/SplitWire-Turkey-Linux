@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 from gi.repository import Adw, GLib, Gtk
 
-from splitwire.core import get_logger
+import logging
 
 if TYPE_CHECKING:
     from splitwire.ui.window import SplitWireWindow
@@ -33,7 +33,7 @@ class BasePage(Gtk.Box):
         )
 
         self._window = window
-        self._logger = get_logger()
+        self._logger = logging.getLogger(__name__)
         self._is_busy = False
 
         # Build the page content

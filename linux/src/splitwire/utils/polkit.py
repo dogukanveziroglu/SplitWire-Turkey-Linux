@@ -12,9 +12,9 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core.logger import get_logger
+import logging
 
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class ElevationMethod(Enum):
@@ -80,29 +80,29 @@ class PolkitHelper:
     def _detect_elevation_method(self) -> ElevationMethod:
         """Detect the best available elevation method."""
         if self._is_root:
-            _logger.debug("[POLKIT] Running as root, no elevation needed")
+            logger.debug("[POLKIT] Running as root, no elevation needed")
             return ElevationMethod.ROOT
 
         # Check pkexec (preferred for GUI)
         if shutil.which("pkexec"):
-            _logger.debug("[POLKIT] Elevation method: pkexec")
+            logger.debug("[POLKIT] Elevation method: pkexec")
             return ElevationMethod.PKEXEC
 
         # Check sudo
         if shutil.which("sudo"):
-            _logger.debug("[POLKIT] Elevation method: sudo")
+            logger.debug("[POLKIT] Elevation method: sudo")
             return ElevationMethod.SUDO
 
         # Legacy options
         if shutil.which("gksudo"):
-            _logger.debug("[POLKIT] Elevation method: gksudo")
+            logger.debug("[POLKIT] Elevation method: gksudo")
             return ElevationMethod.GKSUDO
 
         if shutil.which("kdesudo"):
-            _logger.debug("[POLKIT] Elevation method: kdesudo")
+            logger.debug("[POLKIT] Elevation method: kdesudo")
             return ElevationMethod.KDESUDO
 
-        _logger.warning("[POLKIT] No elevation method available")
+        logger.warning("[POLKIT] No elevation method available")
         return ElevationMethod.NONE
 
     def can_elevate(self) -> bool:
@@ -135,7 +135,7 @@ class PolkitHelper:
         method = self.elevation_method
         cmd_str = " ".join(command)
         cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
-        _logger.debug(f"[POLKIT] Running elevated ({method.value}): {cmd_preview}")
+        logger.debug(f"[POLKIT] Running elevated ({method.value}): {cmd_preview}")
 
         if method == ElevationMethod.ROOT:
             # Already root, run directly
@@ -147,7 +147,7 @@ class PolkitHelper:
         elif method in (ElevationMethod.GKSUDO, ElevationMethod.KDESUDO):
             result = self._run_legacy_sudo(command, method, timeout, capture_output)
         else:
-            _logger.error("[POLKIT] No elevation method available")
+            logger.error("[POLKIT] No elevation method available")
             return ElevationResult(
                 success=False,
                 returncode=-1,
@@ -158,16 +158,16 @@ class PolkitHelper:
 
         # Log result
         if result.success:
-            _logger.info(f"[POLKIT] Elevation successful: {cmd_preview}")
+            logger.info(f"[POLKIT] Elevation successful: {cmd_preview}")
         elif result.cancelled:
-            _logger.warning("[POLKIT] User cancelled elevation")
+            logger.warning("[POLKIT] User cancelled elevation")
         else:
-            _logger.error(f"[POLKIT] Elevation failed (exit={result.returncode}): {cmd_preview}")
+            logger.error(f"[POLKIT] Elevation failed (exit={result.returncode}): {cmd_preview}")
             if result.stderr:
                 stderr_preview = (
                     result.stderr[:200] + "..." if len(result.stderr) > 200 else result.stderr
                 )
-                _logger.error(f"[POLKIT] stderr: {stderr_preview}")
+                logger.error(f"[POLKIT] stderr: {stderr_preview}")
 
         return result
 

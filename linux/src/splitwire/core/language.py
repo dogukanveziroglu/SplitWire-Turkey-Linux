@@ -10,9 +10,9 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-from splitwire.core.logger import get_logger
+import logging
 
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class LanguageError(Exception):
@@ -90,20 +90,20 @@ class LanguageManager:
             True if language was changed successfully
         """
         if language not in self.LANGUAGES:
-            _logger.warning(f"[LANG] Unsupported language: {language}")
+            logger.warning(f"[LANG] Unsupported language: {language}")
             return False
 
         if language == self._language:
             return True
 
-        _logger.info(f"[LANG] Changing language from {self._language} to {language}")
+        logger.info(f"[LANG] Changing language from {self._language} to {language}")
         self._language = language
         self._load_translations()
         return True
 
     def _load_translations(self) -> None:
         """Load translations for current language."""
-        _logger.info(f"[LANG] Loading language: {self._language}")
+        logger.info(f"[LANG] Loading language: {self._language}")
 
         # Always load fallback (English) regardless of current language
         fallback_file = self._resources_dir / f"{self.DEFAULT_LANGUAGE}.json"
@@ -115,7 +115,7 @@ class LanguageManager:
 
         # Log loaded keys count
         key_count = self._count_keys(self._translations)
-        _logger.debug(f"[LANG] Loaded {key_count} translation keys for {self._language}")
+        logger.debug(f"[LANG] Loaded {key_count} translation keys for {self._language}")
 
         # Clear the cache when translations change
         self.get_text.cache_clear()
@@ -133,14 +133,14 @@ class LanguageManager:
     def _load_json_file(self, path: Path) -> dict[str, Any]:
         """Load a JSON translation file."""
         if not path.exists():
-            _logger.warning(f"[LANG] Language file not found: {path}")
+            logger.warning(f"[LANG] Language file not found: {path}")
             return {}
 
         try:
             with open(path, encoding="utf-8") as f:
                 return json.load(f)
         except (OSError, json.JSONDecodeError) as e:
-            _logger.error(f"[LANG] Failed to load language file {path}: {e}")
+            logger.error(f"[LANG] Failed to load language file {path}: {e}")
             return {}
 
     @lru_cache(maxsize=512)
@@ -175,12 +175,12 @@ class LanguageManager:
         result = self._get_nested(self._fallback_translations, key_path)
         if result is not None:
             key_str = ".".join(key_path)
-            _logger.warning(f"[LANG] Fallback to English for key: {key_str}")
+            logger.warning(f"[LANG] Fallback to English for key: {key_str}")
             return result
 
         # Missing from all languages -- return key path as bug indicator
         key_str = ".".join(key_path)
-        _logger.warning(f"[LANG] Missing translation: {key_str}")
+        logger.warning(f"[LANG] Missing translation: {key_str}")
 
         # Return default or key path as fallback
         return default if default else key_str

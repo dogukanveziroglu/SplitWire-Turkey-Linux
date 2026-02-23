@@ -11,9 +11,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core.logger import get_logger
+import logging
 
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class FirewallBackend(Enum):
@@ -145,7 +145,7 @@ class SystemDetector:
 
     def detect(self) -> SystemInfo:
         """Run full system detection."""
-        _logger.info("[SYSTEM] Detecting system capabilities...")
+        logger.info("[SYSTEM] Detecting system capabilities...")
         self._info = SystemInfo()
 
         self._detect_ubuntu_version()
@@ -161,17 +161,17 @@ class SystemDetector:
         self._detect_user_privileges()
 
         # Log detected information
-        _logger.debug(f"[SYSTEM] OS: {self._info.ubuntu}")
-        _logger.debug(f"[SYSTEM] Kernel: {self._info.kernel_version}")
-        _logger.debug(f"[SYSTEM] Init: {self._info.init_system.value}")
-        _logger.debug(f"[SYSTEM] Firewall: {self._info.firewall_backend.value}")
-        _logger.debug(
+        logger.debug(f"[SYSTEM] OS: {self._info.ubuntu}")
+        logger.debug(f"[SYSTEM] Kernel: {self._info.kernel_version}")
+        logger.debug(f"[SYSTEM] Init: {self._info.init_system.value}")
+        logger.debug(f"[SYSTEM] Firewall: {self._info.firewall_backend.value}")
+        logger.debug(
             f"[SYSTEM] WireGuard: tools={self._info.wireguard_tools_installed}, module={self._info.wireguard_module_loaded}"
         )
-        _logger.debug(f"[SYSTEM] NFQUEUE: {self._info.nfqueue_available}")
-        _logger.debug(f"[SYSTEM] Cgroups v2: {self._info.cgroups_v2}")
-        _logger.debug(f"[SYSTEM] DNS Manager: {self._info.dns_manager.value}")
-        _logger.info("[SYSTEM] System detection completed")
+        logger.debug(f"[SYSTEM] NFQUEUE: {self._info.nfqueue_available}")
+        logger.debug(f"[SYSTEM] Cgroups v2: {self._info.cgroups_v2}")
+        logger.debug(f"[SYSTEM] DNS Manager: {self._info.dns_manager.value}")
+        logger.info("[SYSTEM] System detection completed")
 
         return self._info
 
@@ -184,7 +184,7 @@ class SystemDetector:
             return -1, "", "Command timed out"
         except FileNotFoundError:
             return -1, "", "Command not found"
-        except Exception as e:
+        except OSError as e:
             return -1, "", str(e)
 
     def _command_exists(self, cmd: str) -> bool:
@@ -225,7 +225,7 @@ class SystemDetector:
                 # Check if supported (22.04+)
                 if self._info.ubuntu.major > 22 or (self._info.ubuntu.major == 22 and self._info.ubuntu.minor >= 4):
                     self._info.ubuntu.is_supported = True
-        except Exception:
+        except (OSError, ValueError, KeyError):
             pass
 
     def _detect_kernel(self) -> None:
@@ -259,7 +259,7 @@ class SystemDetector:
                 self._info.init_system = InitSystem.SYSTEMD
             elif pid1 == "init":
                 self._info.init_system = InitSystem.SYSVINIT
-        except Exception:
+        except OSError:
             pass
 
     def _detect_firewall(self) -> None:
@@ -383,45 +383,76 @@ def get_system_info() -> SystemInfo:
 
 
 def print_system_info(info: SystemInfo) -> None:
-    """Print system information in a formatted way."""
-    print("=" * 50)
-    print("SplitWire-Turkey System Information")
-    print("=" * 50)
+    """Log system information in a formatted way."""
+    logger.info("=" * 50)
+    logger.info("SplitWire-Turkey System Information")
+    logger.info("=" * 50)
 
-    print(f"\nOS: {info.ubuntu}")
-    print(f"Kernel: {info.kernel_version}")
-    print(f"Architecture: {info.architecture}")
+    logger.info("OS: %s", info.ubuntu)
+    logger.info("Kernel: %s", info.kernel_version)
+    logger.info("Architecture: %s", info.architecture)
 
-    print(f"\nInit System: {info.init_system.value}")
-    print(f"Firewall: {info.firewall_backend.value}")
-    print(f"  - iptables: {'Yes' if info.iptables_available else 'No'}")
-    print(f"  - nftables: {'Yes' if info.nftables_available else 'No'}")
+    logger.info("Init System: %s", info.init_system.value)
+    logger.info("Firewall: %s", info.firewall_backend.value)
+    logger.info(
+        "  iptables: %s", "Yes" if info.iptables_available else "No"
+    )
+    logger.info(
+        "  nftables: %s", "Yes" if info.nftables_available else "No"
+    )
 
-    print("\nWireGuard:")
-    print(f"  - Module loaded: {'Yes' if info.wireguard_module_loaded else 'No'}")
-    print(f"  - Tools installed: {'Yes' if info.wireguard_tools_installed else 'No'}")
-    print(f"  - wg-quick: {'Yes' if info.wg_quick_available else 'No'}")
+    logger.info("WireGuard:")
+    logger.info(
+        "  Module loaded: %s",
+        "Yes" if info.wireguard_module_loaded else "No",
+    )
+    logger.info(
+        "  Tools installed: %s",
+        "Yes" if info.wireguard_tools_installed else "No",
+    )
+    logger.info(
+        "  wg-quick: %s",
+        "Yes" if info.wg_quick_available else "No",
+    )
 
-    print("\nNFQUEUE (Zapret):")
-    print(f"  - Available: {'Yes' if info.nfqueue_available else 'No'}")
-    print(f"  - libnetfilter-queue: {'Yes' if info.libnetfilter_queue_installed else 'No'}")
+    logger.info("NFQUEUE (Zapret):")
+    logger.info(
+        "  Available: %s",
+        "Yes" if info.nfqueue_available else "No",
+    )
+    logger.info(
+        "  libnetfilter-queue: %s",
+        "Yes" if info.libnetfilter_queue_installed else "No",
+    )
 
-    print(f"\nDNS Manager: {info.dns_manager.value}")
-    print(f"  - resolvectl: {'Yes' if info.resolvectl_available else 'No'}")
+    logger.info("DNS Manager: %s", info.dns_manager.value)
+    logger.info(
+        "  resolvectl: %s",
+        "Yes" if info.resolvectl_available else "No",
+    )
 
-    print("\ncgroups:")
-    print(f"  - v2: {'Yes' if info.cgroups_v2 else 'No'}")
-    print(f"  - cgproxy: {'Yes' if info.cgproxy_available else 'No'}")
+    logger.info("cgroups:")
+    logger.info(
+        "  v2: %s", "Yes" if info.cgroups_v2 else "No"
+    )
+    logger.info(
+        "  cgproxy: %s", "Yes" if info.cgproxy_available else "No"
+    )
 
-    print(f"\nPython: {info.python_version}")
-    print(f"Running as root: {'Yes' if info.is_root else 'No'}")
-    print(f"Can sudo: {'Yes' if info.can_sudo else 'N/A' if info.is_root else 'No'}")
+    logger.info("Python: %s", info.python_version)
+    logger.info(
+        "Running as root: %s", "Yes" if info.is_root else "No"
+    )
+    logger.info(
+        "Can sudo: %s",
+        "Yes" if info.can_sudo else "N/A" if info.is_root else "No",
+    )
 
-    print("\n" + "=" * 50)
+    logger.info("=" * 50)
     if info.is_compatible():
-        print("System is COMPATIBLE with SplitWire-Turkey")
+        logger.info("System is COMPATIBLE with SplitWire-Turkey")
     else:
-        print("System has COMPATIBILITY ISSUES:")
+        logger.warning("System has COMPATIBILITY ISSUES:")
         for issue in info.get_compatibility_issues():
-            print(f"  - {issue}")
-    print("=" * 50)
+            logger.warning("  - %s", issue)
+    logger.info("=" * 50)

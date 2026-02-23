@@ -16,7 +16,9 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core import get_logger, get_shell
+import logging
+
+from splitwire.core import get_shell
 
 
 class SystemdUnitType(Enum):
@@ -124,7 +126,7 @@ class SystemdManager:
 
     def __init__(self):
         """Initialize systemd manager."""
-        self._logger = get_logger()
+        self._logger = logging.getLogger(__name__)
         self._shell = get_shell()
         self._unit_files_dir = Path(__file__).parent.parent.parent.parent / "systemd"
 

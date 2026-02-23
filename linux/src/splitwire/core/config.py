@@ -11,9 +11,9 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core.logger import get_logger
+import logging
 
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class Theme(Enum):
@@ -192,22 +192,22 @@ class ConfigManager:
         Returns:
             Loaded configuration (or defaults if file doesn't exist)
         """
-        _logger.info(f"[CONFIG] Loading config from {self._config_file}")
+        logger.info(f"[CONFIG] Loading config from {self._config_file}")
         if self._config_file.exists():
             try:
                 with open(self._config_file, encoding="utf-8") as f:
                     data = json.load(f)
                 self._config = self._dict_to_config(data)
                 self._config.first_run = False
-                _logger.debug(
+                logger.debug(
                     f"[CONFIG] Config loaded: theme={self._config.theme}, language={self._config.language}"
                 )
             except (json.JSONDecodeError, KeyError, TypeError) as e:
                 # Config file corrupted, use defaults
-                _logger.error(f"[CONFIG] Failed to load config (corrupted), using defaults: {e}")
+                logger.error(f"[CONFIG] Failed to load config (corrupted), using defaults: {e}")
                 self._config = AppConfig()
         else:
-            _logger.debug("[CONFIG] Config file not found, using defaults")
+            logger.debug("[CONFIG] Config file not found, using defaults")
             self._config = AppConfig()
 
         return self._config
@@ -222,15 +222,15 @@ class ConfigManager:
         if self._config is None:
             self._config = AppConfig()
 
-        _logger.info(f"[CONFIG] Saving config to {self._config_file}")
+        logger.info(f"[CONFIG] Saving config to {self._config_file}")
         try:
             data = self._config_to_dict(self._config)
             with open(self._config_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            _logger.debug("[CONFIG] Config saved successfully")
+            logger.debug("[CONFIG] Config saved successfully")
             return True
-        except Exception as e:
-            _logger.error(f"[CONFIG] Failed to save config: {e}")
+        except (OSError, TypeError, ValueError) as e:
+            logger.error("[CONFIG] Failed to save config: %s", e)
             return False
 
     def reset(self) -> AppConfig:
@@ -240,7 +240,7 @@ class ConfigManager:
         Returns:
             New default configuration
         """
-        _logger.info("[CONFIG] Resetting config to defaults")
+        logger.info("[CONFIG] Resetting config to defaults")
         self._config = AppConfig()
         self.save()
         return self._config

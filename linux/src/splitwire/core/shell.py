@@ -18,9 +18,9 @@ from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 
-from splitwire.core.logger import get_logger
+import logging
 
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class CommandStatus(Enum):
@@ -165,7 +165,7 @@ class ShellExecutor:
 
         # Log command execution
         cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
-        _logger.debug(f"[SHELL] Executing: {cmd_preview}")
+        logger.debug(f"[SHELL] Executing: {cmd_preview}")
 
         try:
             if capture_output:
@@ -209,12 +209,12 @@ class ShellExecutor:
 
             # Log result
             if result.returncode == 0:
-                _logger.debug(f"[SHELL] Success (exit=0, {duration:.2f}s): {cmd_preview}")
+                logger.debug(f"[SHELL] Success (exit=0, {duration:.2f}s): {cmd_preview}")
             else:
-                _logger.error(f"[SHELL] Failed (exit={result.returncode}): {cmd_preview}")
+                logger.error(f"[SHELL] Failed (exit={result.returncode}): {cmd_preview}")
                 if stderr:
                     stderr_preview = stderr[:200] + "..." if len(stderr) > 200 else stderr
-                    _logger.error(f"[SHELL] stderr: {stderr_preview}")
+                    logger.error(f"[SHELL] stderr: {stderr_preview}")
 
             if check and result.returncode != 0:
                 raise subprocess.CalledProcessError(result.returncode, cmd_str, stdout, stderr)
@@ -223,7 +223,7 @@ class ShellExecutor:
 
         except subprocess.TimeoutExpired:
             duration = time.time() - start_time
-            _logger.warning(f"[SHELL] Timeout after {run_timeout}s: {cmd_preview}")
+            logger.warning(f"[SHELL] Timeout after {run_timeout}s: {cmd_preview}")
             return CommandResult(
                 status=CommandStatus.TIMEOUT,
                 returncode=-1,
@@ -236,7 +236,7 @@ class ShellExecutor:
         except FileNotFoundError:
             duration = time.time() - start_time
             not_found_cmd = cmd[0] if isinstance(cmd, list) else cmd.split()[0]
-            _logger.error(f"[SHELL] Command not found: {not_found_cmd}")
+            logger.error(f"[SHELL] Command not found: {not_found_cmd}")
             return CommandResult(
                 status=CommandStatus.NOT_FOUND,
                 returncode=-1,
@@ -246,9 +246,9 @@ class ShellExecutor:
                 duration=duration,
             )
 
-        except Exception as e:
+        except (subprocess.SubprocessError, OSError, ValueError) as e:
             duration = time.time() - start_time
-            _logger.error(f"[SHELL] Exception during execution: {e}")
+            logger.error("[SHELL] Exception during execution: %s", e)
             return CommandResult(
                 status=CommandStatus.FAILED,
                 returncode=-1,
@@ -304,7 +304,7 @@ class ShellExecutor:
 
         # Log command execution
         cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
-        _logger.debug(f"[SHELL] Async executing: {cmd_preview}")
+        logger.debug(f"[SHELL] Async executing: {cmd_preview}")
 
         try:
             if capture_output:
@@ -334,7 +334,7 @@ class ShellExecutor:
                 process.kill()
                 await process.wait()
                 duration = time.time() - start_time
-                _logger.warning(f"[SHELL] Async timeout after {run_timeout}s: {cmd_preview}")
+                logger.warning(f"[SHELL] Async timeout after {run_timeout}s: {cmd_preview}")
                 return CommandResult(
                     status=CommandStatus.TIMEOUT,
                     returncode=-1,
@@ -349,12 +349,12 @@ class ShellExecutor:
 
             # Log result
             if process.returncode == 0:
-                _logger.debug(f"[SHELL] Async success (exit=0, {duration:.2f}s): {cmd_preview}")
+                logger.debug(f"[SHELL] Async success (exit=0, {duration:.2f}s): {cmd_preview}")
             else:
-                _logger.error(f"[SHELL] Async failed (exit={process.returncode}): {cmd_preview}")
+                logger.error(f"[SHELL] Async failed (exit={process.returncode}): {cmd_preview}")
                 if stderr:
                     stderr_preview = stderr[:200] + "..." if len(stderr) > 200 else stderr
-                    _logger.error(f"[SHELL] stderr: {stderr_preview}")
+                    logger.error(f"[SHELL] stderr: {stderr_preview}")
 
             return CommandResult(
                 status=status,
@@ -367,7 +367,7 @@ class ShellExecutor:
 
         except FileNotFoundError:
             duration = time.time() - start_time
-            _logger.error(f"[SHELL] Command not found: {cmd[0]}")
+            logger.error(f"[SHELL] Command not found: {cmd[0]}")
             return CommandResult(
                 status=CommandStatus.NOT_FOUND,
                 returncode=-1,
@@ -377,9 +377,9 @@ class ShellExecutor:
                 duration=duration,
             )
 
-        except Exception as e:
+        except (OSError, ValueError) as e:
             duration = time.time() - start_time
-            _logger.error(f"[SHELL] Async exception: {e}")
+            logger.error("[SHELL] Async exception: %s", e)
             return CommandResult(
                 status=CommandStatus.FAILED,
                 returncode=-1,
@@ -438,7 +438,7 @@ class ShellExecutor:
 
         # Log streaming command
         cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
-        _logger.debug(f"[SHELL] Streaming execution: {cmd_preview}")
+        logger.debug(f"[SHELL] Streaming execution: {cmd_preview}")
 
         try:
             process = subprocess.Popen(
@@ -482,7 +482,7 @@ class ShellExecutor:
                     process.kill()
                     reader_thread.join()
                 duration = time.time() - start_time
-                _logger.warning(f"[SHELL] Streaming timeout after {run_timeout}s: {cmd_preview}")
+                logger.warning(f"[SHELL] Streaming timeout after {run_timeout}s: {cmd_preview}")
                 return CommandResult(
                     status=CommandStatus.TIMEOUT,
                     returncode=-1,
@@ -499,9 +499,9 @@ class ShellExecutor:
 
             # Log result
             if returncode == 0:
-                _logger.debug(f"[SHELL] Streaming success (exit=0, {duration:.2f}s): {cmd_preview}")
+                logger.debug(f"[SHELL] Streaming success (exit=0, {duration:.2f}s): {cmd_preview}")
             else:
-                _logger.error(f"[SHELL] Streaming failed (exit={returncode}): {cmd_preview}")
+                logger.error(f"[SHELL] Streaming failed (exit={returncode}): {cmd_preview}")
 
             return CommandResult(
                 status=status,
@@ -514,7 +514,7 @@ class ShellExecutor:
 
         except FileNotFoundError:
             duration = time.time() - start_time
-            _logger.error(f"[SHELL] Command not found: {cmd[0]}")
+            logger.error(f"[SHELL] Command not found: {cmd[0]}")
             return CommandResult(
                 status=CommandStatus.NOT_FOUND,
                 returncode=-1,
@@ -524,9 +524,9 @@ class ShellExecutor:
                 duration=duration,
             )
 
-        except Exception as e:
+        except (subprocess.SubprocessError, OSError) as e:
             duration = time.time() - start_time
-            _logger.error(f"[SHELL] Streaming exception: {e}")
+            logger.error("[SHELL] Streaming exception: %s", e)
             return CommandResult(
                 status=CommandStatus.FAILED,
                 returncode=-1,
