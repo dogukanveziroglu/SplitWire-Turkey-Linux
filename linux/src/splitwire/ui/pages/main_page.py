@@ -41,7 +41,12 @@ if TYPE_CHECKING:
 class MainPage(BasePage):
     """WireGuard/WireSock setup page."""
 
-    def __init__(self, window: "SplitWireWindow"):
+    def __init__(self, window: "SplitWireWindow") -> None:
+        """Initialize main page with VPN service references.
+
+        Args:
+            window: Parent application window.
+        """
         self._wg_service = get_wireguard_service()
         self._st_service = get_split_tunnel_service()
         self._dns_service = get_dns_service()
@@ -63,7 +68,9 @@ class MainPage(BasePage):
         """Build the connection status indicator."""
         self._status_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
-            halign=Gtk.Align.CENTER, spacing=8, margin_bottom=8,
+            halign=Gtk.Align.CENTER,
+            spacing=8,
+            margin_bottom=8,
         )
         self.append(self._status_box)
 
@@ -94,19 +101,22 @@ class MainPage(BasePage):
         self._switch_browser = self.create_switch_row(
             title=get_text("main", "browser_tunneling"),
             subtitle=get_text("tooltips", "browser_tunneling"),
-            active=False, callback=self._on_browser_tunneling_changed,
+            active=False,
+            callback=self._on_browser_tunneling_changed,
         )
         group.add(self._switch_browser)
         self._switch_full_tunnel = self.create_switch_row(
             title=get_text("main", "full_tunnel"),
             subtitle=get_text("tooltips", "full_tunnel"),
-            active=True, callback=self._on_full_tunnel_changed,
+            active=True,
+            callback=self._on_full_tunnel_changed,
         )
         group.add(self._switch_full_tunnel)
         self._switch_refresh = self.create_switch_row(
             title=get_text("main", "refresh_timer"),
             subtitle=get_text("tooltips", "wiresock_repeater"),
-            active=False, callback=self._on_refresh_timer_changed,
+            active=False,
+            callback=self._on_refresh_timer_changed,
         )
         group.add(self._switch_refresh)
         self._advanced_expander = Adw.ExpanderRow(
@@ -121,7 +131,10 @@ class MainPage(BasePage):
         """Build folder/config buttons inside advanced expander."""
         custom_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
-            spacing=8, halign=Gtk.Align.CENTER, margin_top=8, margin_bottom=8,
+            spacing=8,
+            halign=Gtk.Align.CENTER,
+            margin_top=8,
+            margin_bottom=8,
         )
         self._advanced_expander.add_row(Adw.ActionRow(child=custom_box))
         self._btn_add_folder = Gtk.Button(
@@ -139,7 +152,9 @@ class MainPage(BasePage):
 
         adv_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
-            spacing=8, halign=Gtk.Align.CENTER, margin_top=8,
+            spacing=8,
+            halign=Gtk.Align.CENTER,
+            margin_top=8,
         )
         self._advanced_expander.add_row(Adw.ActionRow(child=adv_box))
         self._btn_custom = Gtk.Button(
@@ -161,7 +176,8 @@ class MainPage(BasePage):
         self.append(remove_box)
         self._btn_remove = self.create_action_button(
             label=get_text("main", "remove_service"),
-            callback=self._on_remove_service, destructive=True,
+            callback=self._on_remove_service,
+            destructive=True,
         )
         remove_box.append(self._btn_remove)
         help_box = Gtk.Box(halign=Gtk.Align.END, valign=Gtk.Align.END, vexpand=True)
@@ -221,7 +237,8 @@ class MainPage(BasePage):
         else:
             msg = (
                 get_text("messages", "error_generic").format(error)
-                if error else get_text("status", "error")
+                if error
+                else get_text("status", "error")
             )
             self.show_toast(msg)
         self.set_status("")
@@ -230,11 +247,10 @@ class MainPage(BasePage):
         """Handle standard setup button click."""
         self._logger.info("[UI:Main] Starting standard setup...")
         self.set_status(get_text("status", "installing"))
-        tunnel_mode = (
-            TunnelMode.FULL if self._switch_full_tunnel.get_active() else TunnelMode.SPLIT
-        )
+        tunnel_mode = TunnelMode.FULL if self._switch_full_tunnel.get_active() else TunnelMode.SPLIT
 
         def task():
+            """Run WireGuard setup and persist settings on success."""
             result = do_wireguard_setup(self._wg_service, self._dns_service, tunnel_mode)
             if result[0]:
                 self._save_settings()
@@ -252,7 +268,8 @@ class MainPage(BasePage):
         self.run_async(
             lambda: do_disconnect(self._wg_service, self._dns_service),
             lambda r: self._finish_operation(
-                r, get_text("messages", "service_stopped").format("WireGuard"),
+                r,
+                get_text("messages", "service_stopped").format("WireGuard"),
             ),
         )
 
@@ -279,7 +296,8 @@ class MainPage(BasePage):
         self._enabled_apps[app_id] = check.get_active()
         self._logger.info(
             "[UI:Main] App toggled: %s %s",
-            app_id, "enabled" if check.get_active() else "disabled",
+            app_id,
+            "enabled" if check.get_active() else "disabled",
         )
         self._save_settings()
 
@@ -319,6 +337,7 @@ class MainPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def task():
+            """Run custom WireGuard setup and persist settings on success."""
             result = do_wireguard_setup(self._wg_service, self._dns_service)
             if result[0]:
                 self._save_settings()
@@ -332,7 +351,8 @@ class MainPage(BasePage):
     def _on_generate_config(self, button):
         """Handle generate config button click."""
         dialog = Gtk.FileDialog(
-            title=get_text("dialogs", "save_config"), initial_name="splitwire.conf",
+            title=get_text("dialogs", "save_config"),
+            initial_name="splitwire.conf",
         )
         dialog.save(self._window, None, self._on_config_save_selected)
 
@@ -373,7 +393,9 @@ class MainPage(BasePage):
         self.set_status(get_text("status", "removing"))
         self.run_async(
             lambda: do_remove_services(
-                self._wg_service, self._st_service, self._dns_service,
+                self._wg_service,
+                self._st_service,
+                self._dns_service,
             ),
             lambda r: self._finish_operation(r, get_text("messages", "service_removed")),
         )
@@ -407,13 +429,19 @@ class MainPage(BasePage):
     def _save_settings(self):
         """Save current settings to config file."""
         save_page_settings(
-            self._enabled_apps, self._custom_apps,
-            self._switch_browser, self._switch_refresh, self._switch_full_tunnel,
+            self._enabled_apps,
+            self._custom_apps,
+            self._switch_browser,
+            self._switch_refresh,
+            self._switch_full_tunnel,
         )
 
     def _load_settings(self):
         """Load settings from config file and update UI."""
         self._custom_apps = load_page_settings(
-            self._enabled_apps, self._custom_apps,
-            self._switch_browser, self._switch_refresh, self._switch_full_tunnel,
+            self._enabled_apps,
+            self._custom_apps,
+            self._switch_browser,
+            self._switch_refresh,
+            self._switch_full_tunnel,
         )

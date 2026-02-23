@@ -13,6 +13,9 @@ from .models import JournalEntry
 
 logger = logging.getLogger(__name__)
 
+# Journal query timeout (seconds)
+TIMEOUT_JOURNAL_QUERY = 30
+
 
 def get_logs(
     shell,
@@ -37,8 +40,12 @@ def get_logs(
         List of log lines
     """
     cmd = [
-        "journalctl", "-u", unit_name,
-        "-n", str(lines), "--no-pager",
+        "journalctl",
+        "-u",
+        unit_name,
+        "-n",
+        str(lines),
+        "--no-pager",
     ]
 
     if since:
@@ -48,16 +55,14 @@ def get_logs(
     if priority is not None:
         cmd.extend(["-p", str(priority)])
 
-    result = shell.run(cmd, timeout=30)
+    result = shell.run(cmd, timeout=TIMEOUT_JOURNAL_QUERY)
 
     if result.success:
         return result.stdout.strip().split("\n")
     return []
 
 
-def get_logs_json(
-    shell, unit_name: str, lines: int = 100
-) -> list[JournalEntry]:
+def get_logs_json(shell, unit_name: str, lines: int = 100) -> list[JournalEntry]:
     """
     Get journal logs as structured entries.
 
@@ -71,10 +76,16 @@ def get_logs_json(
     """
     result = shell.run(
         [
-            "journalctl", "-u", unit_name,
-            "-n", str(lines), "--no-pager", "-o", "json",
+            "journalctl",
+            "-u",
+            unit_name,
+            "-n",
+            str(lines),
+            "--no-pager",
+            "-o",
+            "json",
         ],
-        timeout=30,
+        timeout=TIMEOUT_JOURNAL_QUERY,
     )
 
     entries = []
@@ -92,9 +103,7 @@ def get_logs_json(
     return entries
 
 
-def _parse_journal_json_line(
-    line: str, unit_name: str
-) -> JournalEntry | None:
+def _parse_journal_json_line(line: str, unit_name: str) -> JournalEntry | None:
     """Parse a single JSON journal line into a JournalEntry."""
     if not line:
         return None
@@ -109,15 +118,11 @@ def _parse_journal_json_line(
             hostname=data.get("_HOSTNAME"),
         )
     except (json.JSONDecodeError, KeyError, ValueError) as e:
-        logger.debug(
-            "[SYSTEMD] Failed to parse journal JSON line: %s", e
-        )
+        logger.debug("[SYSTEMD] Failed to parse journal JSON line: %s", e)
         return None
 
 
-def follow_logs(
-    unit_name: str, callback: Callable[[str], None]
-) -> None:
+def follow_logs(unit_name: str, callback: Callable[[str], None]) -> None:
     """
     Follow journal logs in real-time (blocking).
 
@@ -141,7 +146,5 @@ def follow_logs(
 
 def clear_logs(shell, _unit_name: str) -> bool:
     """Clear journal logs for a unit (requires root)."""
-    result = shell.run(
-        ["sudo", "journalctl", "--rotate"], timeout=30
-    )
+    result = shell.run(["sudo", "journalctl", "--rotate"], timeout=TIMEOUT_JOURNAL_QUERY)
     return result.success

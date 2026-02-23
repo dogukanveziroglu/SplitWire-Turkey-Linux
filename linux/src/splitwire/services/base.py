@@ -68,6 +68,14 @@ class BaseService(ABC):
     - Configuration management
     """
 
+    # Timeout defaults (seconds) -- subclasses may override
+    TIMEOUT_SYSTEMCTL_ACTION = 30  # start/stop/restart/enable/disable
+    TIMEOUT_SYSTEMCTL_QUERY = 10  # is-enabled, is-active, status checks
+    TIMEOUT_PRIVILEGED_CMD = 30  # sudo operations
+    TIMEOUT_FILE_OPERATION = 30  # cp, rm, chmod, write
+    TIMEOUT_DOWNLOAD = 120  # network downloads
+    TIMEOUT_PROCESS_KILL = 5  # process termination
+
     def __init__(self, name: str, display_name: str, description: str, service_type: ServiceType):
         """
         Initialize base service.
@@ -240,7 +248,10 @@ class BaseService(ABC):
             self._logger.warning(f"No systemd unit for {self._name}")
             return False
 
-        result = self._shell.run(["sudo", "systemctl", "enable", systemd_unit], timeout=30)
+        result = self._shell.run(
+            ["sudo", "systemctl", "enable", systemd_unit],
+            timeout=self.TIMEOUT_SYSTEMCTL_ACTION,
+        )
         if result.success:
             self._logger.info(f"Enabled autostart for {self._display_name}")
         else:
@@ -258,7 +269,10 @@ class BaseService(ABC):
         if not systemd_unit:
             return False
 
-        result = self._shell.run(["sudo", "systemctl", "disable", systemd_unit], timeout=30)
+        result = self._shell.run(
+            ["sudo", "systemctl", "disable", systemd_unit],
+            timeout=self.TIMEOUT_SYSTEMCTL_ACTION,
+        )
         if result.success:
             self._logger.info(f"Disabled autostart for {self._display_name}")
         return result.success
@@ -274,7 +288,10 @@ class BaseService(ABC):
         if not systemd_unit:
             return False
 
-        result = self._shell.run(["systemctl", "is-enabled", systemd_unit], timeout=10)
+        result = self._shell.run(
+            ["systemctl", "is-enabled", systemd_unit],
+            timeout=self.TIMEOUT_SYSTEMCTL_QUERY,
+        )
         return result.success and "enabled" in result.stdout.lower()
 
     def _get_systemd_unit(self) -> str | None:
@@ -356,7 +373,7 @@ class BaseService(ABC):
         else:
             cmd = ["systemctl", action, unit]
 
-        return self._shell.run(cmd, timeout=30)
+        return self._shell.run(cmd, timeout=self.TIMEOUT_SYSTEMCTL_ACTION)
 
 
 class SystemdService(BaseService):
@@ -439,5 +456,8 @@ class SystemdService(BaseService):
             return False
 
         # Check if unit file exists
-        result = self._shell.run(["systemctl", "list-unit-files", unit], timeout=10)
+        result = self._shell.run(
+            ["systemctl", "list-unit-files", unit],
+            timeout=self.TIMEOUT_SYSTEMCTL_QUERY,
+        )
         return unit in result.stdout

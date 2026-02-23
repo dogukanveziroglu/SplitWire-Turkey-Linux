@@ -51,6 +51,11 @@ class SystemdManager:
     - Journal log access
     """
 
+    # Timeout constants (seconds)
+    TIMEOUT_UNIT_ACTION = 60  # start/stop/restart
+    TIMEOUT_UNIT_QUICK = 30  # enable/disable/reload/mask/daemon-reload/cp/rm
+    TIMEOUT_UNIT_QUERY = 10  # is-active/is-enabled/is-failed/show/chmod
+
     # System paths
     SYSTEM_UNIT_DIR = SYSTEM_UNIT_DIR
     USER_UNIT_DIR = Path.home() / ".config/systemd/user"
@@ -62,9 +67,7 @@ class SystemdManager:
         """Initialize systemd manager."""
         self._logger = logging.getLogger(__name__)
         self._shell = get_shell()
-        self._unit_files_dir = (
-            Path(__file__).parent.parent.parent.parent / "systemd"
-        )
+        self._unit_files_dir = Path(__file__).parent.parent.parent.parent / "systemd"
 
     def install_unit(
         self,
@@ -90,14 +93,10 @@ class SystemdManager:
         if content is None:
             content = self._get_bundled_unit_content(unit_name)
             if content is None:
-                self._logger.error(
-                    f"No bundled unit file found for: {unit_name}"
-                )
+                self._logger.error(f"No bundled unit file found for: {unit_name}")
                 return False
 
-        return self._write_and_activate_unit(
-            unit_name, content, enable, start
-        )
+        return self._write_and_activate_unit(unit_name, content, enable, start)
 
     def _write_and_activate_unit(
         self,
@@ -108,26 +107,22 @@ class SystemdManager:
     ) -> bool:
         """Write unit file to system directory and optionally activate."""
         try:
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".service", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".service", delete=False) as f:
                 f.write(content)
                 temp_path = f.name
 
             target_path = self.SYSTEM_UNIT_DIR / unit_name
             result = self._shell.run(
-                ["sudo", "cp", temp_path, str(target_path)], timeout=30
+                ["sudo", "cp", temp_path, str(target_path)], timeout=self.TIMEOUT_UNIT_QUICK
             )
             os.unlink(temp_path)
 
             if not result.success:
-                self._logger.error(
-                    f"Failed to copy unit file: {result.stderr}"
-                )
+                self._logger.error(f"Failed to copy unit file: {result.stderr}")
                 return False
 
             self._shell.run(
-                ["sudo", "chmod", "644", str(target_path)], timeout=10
+                ["sudo", "chmod", "644", str(target_path)], timeout=self.TIMEOUT_UNIT_QUERY
             )
             self.daemon_reload()
 
@@ -163,17 +158,15 @@ class SystemdManager:
         target_path = self.SYSTEM_UNIT_DIR / unit_name
         if target_path.exists():
             result = self._shell.run(
-                ["sudo", "rm", "-f", str(target_path)], timeout=30
+                ["sudo", "rm", "-f", str(target_path)], timeout=self.TIMEOUT_UNIT_QUICK
             )
             if not result.success:
-                self._logger.error(
-                    f"Failed to remove unit file: {result.stderr}"
-                )
+                self._logger.error(f"Failed to remove unit file: {result.stderr}")
                 return False
 
         self.daemon_reload()
         self._shell.run(
-            ["sudo", "systemctl", "reset-failed", unit_name], timeout=10
+            ["sudo", "systemctl", "reset-failed", unit_name], timeout=self.TIMEOUT_UNIT_QUERY
         )
 
         self._logger.info(f"Successfully removed: {unit_name}")
@@ -188,16 +181,12 @@ class SystemdManager:
         """Reload systemd daemon to pick up unit file changes."""
         self._logger.debug("[SYSTEMD] Running daemon-reload...")
         result = self._shell.run(
-            ["sudo", "systemctl", "daemon-reload"], timeout=30
+            ["sudo", "systemctl", "daemon-reload"], timeout=self.TIMEOUT_UNIT_QUICK
         )
         if result.success:
-            self._logger.debug(
-                "[SYSTEMD] daemon-reload completed successfully"
-            )
+            self._logger.debug("[SYSTEMD] daemon-reload completed successfully")
         else:
-            self._logger.error(
-                f"[SYSTEMD] daemon-reload failed: {result.stderr}"
-            )
+            self._logger.error(f"[SYSTEMD] daemon-reload failed: {result.stderr}")
         return result.success
 
     def _get_bundled_unit_content(self, unit_name: str) -> str | None:
@@ -211,85 +200,73 @@ class SystemdManager:
         """Start a systemd unit."""
         self._logger.info(f"Starting: {unit_name}")
         result = self._shell.run(
-            ["sudo", "systemctl", "start", unit_name], timeout=60
+            ["sudo", "systemctl", "start", unit_name], timeout=self.TIMEOUT_UNIT_ACTION
         )
         if not result.success:
-            self._logger.error(
-                f"Failed to start {unit_name}: {result.stderr}"
-            )
+            self._logger.error(f"Failed to start {unit_name}: {result.stderr}")
         return result.success
 
     def stop(self, unit_name: str) -> bool:
         """Stop a systemd unit."""
         self._logger.info(f"Stopping: {unit_name}")
         result = self._shell.run(
-            ["sudo", "systemctl", "stop", unit_name], timeout=60
+            ["sudo", "systemctl", "stop", unit_name], timeout=self.TIMEOUT_UNIT_ACTION
         )
         if not result.success and "not loaded" not in result.stderr.lower():
-            self._logger.error(
-                f"Failed to stop {unit_name}: {result.stderr}"
-            )
+            self._logger.error(f"Failed to stop {unit_name}: {result.stderr}")
         return result.success
 
     def restart(self, unit_name: str) -> bool:
         """Restart a systemd unit."""
         self._logger.info(f"Restarting: {unit_name}")
         result = self._shell.run(
-            ["sudo", "systemctl", "restart", unit_name], timeout=60
+            ["sudo", "systemctl", "restart", unit_name], timeout=self.TIMEOUT_UNIT_ACTION
         )
         if not result.success:
-            self._logger.error(
-                f"Failed to restart {unit_name}: {result.stderr}"
-            )
+            self._logger.error(f"Failed to restart {unit_name}: {result.stderr}")
         return result.success
 
     def reload(self, unit_name: str) -> bool:
         """Reload a systemd unit (send SIGHUP)."""
         self._logger.info(f"Reloading: {unit_name}")
         result = self._shell.run(
-            ["sudo", "systemctl", "reload", unit_name], timeout=30
+            ["sudo", "systemctl", "reload", unit_name], timeout=self.TIMEOUT_UNIT_QUICK
         )
         if not result.success:
-            self._logger.error(
-                f"Failed to reload {unit_name}: {result.stderr}"
-            )
+            self._logger.error(f"Failed to reload {unit_name}: {result.stderr}")
         return result.success
 
     def enable(self, unit_name: str) -> bool:
         """Enable a systemd unit (start on boot)."""
         self._logger.info(f"Enabling: {unit_name}")
         result = self._shell.run(
-            ["sudo", "systemctl", "enable", unit_name], timeout=30
+            ["sudo", "systemctl", "enable", unit_name], timeout=self.TIMEOUT_UNIT_QUICK
         )
         if not result.success:
-            self._logger.error(
-                f"Failed to enable {unit_name}: {result.stderr}"
-            )
+            self._logger.error(f"Failed to enable {unit_name}: {result.stderr}")
         return result.success
 
     def disable(self, unit_name: str) -> bool:
         """Disable a systemd unit (don't start on boot)."""
         self._logger.info(f"Disabling: {unit_name}")
         result = self._shell.run(
-            ["sudo", "systemctl", "disable", unit_name], timeout=30
+            ["sudo", "systemctl", "disable", unit_name], timeout=self.TIMEOUT_UNIT_QUICK
         )
         if not result.success and "does not exist" not in result.stderr.lower():
-            self._logger.error(
-                f"Failed to disable {unit_name}: {result.stderr}"
-            )
+            self._logger.error(f"Failed to disable {unit_name}: {result.stderr}")
         return result.success
 
     def mask(self, unit_name: str) -> bool:
         """Mask a systemd unit (prevent starting)."""
         result = self._shell.run(
-            ["sudo", "systemctl", "mask", unit_name], timeout=30
+            ["sudo", "systemctl", "mask", unit_name], timeout=self.TIMEOUT_UNIT_QUICK
         )
         return result.success
 
     def unmask(self, unit_name: str) -> bool:
         """Unmask a systemd unit."""
         result = self._shell.run(
-            ["sudo", "systemctl", "unmask", unit_name], timeout=30
+            ["sudo", "systemctl", "unmask", unit_name], timeout=self.TIMEOUT_UNIT_QUICK
         )
         return result.success
 
@@ -331,7 +308,7 @@ class SystemdManager:
     def _get_active_state(self, unit_name: str) -> SystemdActiveState:
         """Query systemctl for the active state of a unit."""
         result = self._shell.run(
-            ["systemctl", "is-active", unit_name], timeout=10
+            ["systemctl", "is-active", unit_name], timeout=self.TIMEOUT_UNIT_QUERY
         )
         active_str = result.stdout.strip().lower()
         try:
@@ -342,7 +319,7 @@ class SystemdManager:
     def _get_enabled_state(self, unit_name: str) -> SystemdEnabledState:
         """Query systemctl for the enabled state of a unit."""
         result = self._shell.run(
-            ["systemctl", "is-enabled", unit_name], timeout=10
+            ["systemctl", "is-enabled", unit_name], timeout=self.TIMEOUT_UNIT_QUERY
         )
         enabled_str = result.stdout.strip().lower()
         try:
@@ -350,9 +327,7 @@ class SystemdManager:
         except ValueError:
             return SystemdEnabledState.UNKNOWN
 
-    def _populate_show_properties(
-        self, unit_name: str, status: SystemdUnitStatus
-    ) -> None:
+    def _populate_show_properties(self, unit_name: str, status: SystemdUnitStatus) -> None:
         """Populate status from systemctl show properties."""
         show_result = self._shell.run(
             [
@@ -363,7 +338,7 @@ class SystemdManager:
                 "MemoryCurrent,TasksCurrent,CPUUsageNSec,InvocationID,"
                 "ActiveEnterTimestamp,InactiveEnterTimestamp",
             ],
-            timeout=10,
+            timeout=self.TIMEOUT_UNIT_QUERY,
         )
         if show_result.success:
             _parse_show_output(show_result.stdout, status)
@@ -371,21 +346,21 @@ class SystemdManager:
     def is_active(self, unit_name: str) -> bool:
         """Check if a unit is active (running)."""
         result = self._shell.run(
-            ["systemctl", "is-active", "--quiet", unit_name], timeout=10
+            ["systemctl", "is-active", "--quiet", unit_name], timeout=self.TIMEOUT_UNIT_QUERY
         )
         return result.returncode == 0
 
     def is_enabled(self, unit_name: str) -> bool:
         """Check if a unit is enabled."""
         result = self._shell.run(
-            ["systemctl", "is-enabled", "--quiet", unit_name], timeout=10
+            ["systemctl", "is-enabled", "--quiet", unit_name], timeout=self.TIMEOUT_UNIT_QUERY
         )
         return result.returncode == 0
 
     def is_failed(self, unit_name: str) -> bool:
         """Check if a unit is in failed state."""
         result = self._shell.run(
-            ["systemctl", "is-failed", "--quiet", unit_name], timeout=10
+            ["systemctl", "is-failed", "--quiet", unit_name], timeout=self.TIMEOUT_UNIT_QUERY
         )
         return result.returncode == 0
 
@@ -398,19 +373,13 @@ class SystemdManager:
         priority: int | None = None,
     ) -> list[str]:
         """Get journal logs for a unit."""
-        return journal.get_logs(
-            self._shell, unit_name, lines, since, until, priority
-        )
+        return journal.get_logs(self._shell, unit_name, lines, since, until, priority)
 
-    def get_logs_json(
-        self, unit_name: str, lines: int = 100
-    ) -> list[JournalEntry]:
+    def get_logs_json(self, unit_name: str, lines: int = 100) -> list[JournalEntry]:
         """Get journal logs as structured entries."""
         return journal.get_logs_json(self._shell, unit_name, lines)
 
-    def follow_logs(
-        self, unit_name: str, callback: Callable[[str], None]
-    ) -> None:
+    def follow_logs(self, unit_name: str, callback: Callable[[str], None]) -> None:
         """Follow journal logs in real-time (blocking)."""
         journal.follow_logs(unit_name, callback)
 
@@ -422,9 +391,7 @@ class SystemdManager:
         self,
     ) -> dict[str, SystemdUnitStatus]:
         """Get status of all SplitWire services."""
-        self._logger.debug(
-            "[SYSTEMD] Getting status of all SplitWire services..."
-        )
+        self._logger.debug("[SYSTEMD] Getting status of all SplitWire services...")
         status_dict = {}
         for key, unit_name in self.SPLITWIRE_SERVICES.items():
             status_dict[key] = self.get_status(unit_name)
@@ -437,9 +404,7 @@ class SystemdManager:
             )
         return status_dict
 
-    def install_splitwire_service(
-        self, service_key: str, config: dict | None = None
-    ) -> bool:
+    def install_splitwire_service(self, service_key: str, config: dict | None = None) -> bool:
         """
         Install a SplitWire service.
 
@@ -475,9 +440,7 @@ class SystemdManager:
         """Remove all SplitWire services."""
         success = True
         for unit_name in self.SPLITWIRE_SERVICES.values():
-            if self.unit_exists(unit_name) and not self.remove_unit(
-                unit_name
-            ):
+            if self.unit_exists(unit_name) and not self.remove_unit(unit_name):
                 success = False
         return success
 

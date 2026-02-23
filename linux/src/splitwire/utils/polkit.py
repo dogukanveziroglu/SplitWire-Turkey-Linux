@@ -82,7 +82,15 @@ class PolkitHelper:
     ACTION_DNS = "com.splitwire.turkey.dns"
     ACTION_SYSTEM = "com.splitwire.turkey.system"
 
-    POLICY_PATH = "/usr/share/polkit-1/actions/com.splitwire.turkey.policy"
+    POLICY_PATH = Path("/usr/share/polkit-1/actions/com.splitwire.turkey.policy")
+
+    # Timeout constants (seconds)
+    TIMEOUT_ELEVATED_DEFAULT = 60  # run_elevated default
+    TIMEOUT_WG_QUICK = 30  # wg-quick up/down
+    TIMEOUT_SYSTEMCTL = 30  # systemctl action
+    TIMEOUT_IPTABLES = 10  # iptables rule changes
+    TIMEOUT_FILE_COPY = 10  # cp to root-owned locations
+    TIMEOUT_FILE_WRITE = 30  # tee to root-owned files
 
     def __init__(self) -> None:
         """Initialize PolkitHelper and detect elevation method."""
@@ -143,13 +151,13 @@ class PolkitHelper:
         Returns:
             True if the policy file is present on disk.
         """
-        return Path(self.POLICY_PATH).exists()
+        return self.POLICY_PATH.exists()
 
     def run_elevated(
         self,
         command: list[str],
         action_id: str | None = None,
-        timeout: int = 60,
+        timeout: int = TIMEOUT_ELEVATED_DEFAULT,
         capture_output: bool = True,
     ) -> ElevationResult:
         """Run a command with elevated privileges.
@@ -400,7 +408,9 @@ class PolkitHelper:
             ElevationResult from the wg-quick command.
         """
         return self.run_elevated(
-            ["wg-quick", action, interface], action_id=self.ACTION_WIREGUARD, timeout=30
+            ["wg-quick", action, interface],
+            action_id=self.ACTION_WIREGUARD,
+            timeout=self.TIMEOUT_WG_QUICK,
         )
 
     def run_systemctl(self, action: str, service: str) -> ElevationResult:
@@ -414,7 +424,9 @@ class PolkitHelper:
             ElevationResult from the systemctl command.
         """
         return self.run_elevated(
-            ["systemctl", action, service], action_id=self.ACTION_SYSTEM, timeout=30
+            ["systemctl", action, service],
+            action_id=self.ACTION_SYSTEM,
+            timeout=self.TIMEOUT_SYSTEMCTL,
         )
 
     def run_iptables(self, args: list[str]) -> ElevationResult:
@@ -426,7 +438,11 @@ class PolkitHelper:
         Returns:
             ElevationResult from the iptables command.
         """
-        return self.run_elevated(["iptables", *args], action_id=self.ACTION_ZAPRET, timeout=10)
+        return self.run_elevated(
+            ["iptables", *args],
+            action_id=self.ACTION_ZAPRET,
+            timeout=self.TIMEOUT_IPTABLES,
+        )
 
     def copy_file_as_root(self, src: str, dst: str) -> ElevationResult:
         """Copy a file to a root-owned location.
@@ -438,7 +454,11 @@ class PolkitHelper:
         Returns:
             ElevationResult from the cp command.
         """
-        return self.run_elevated(["cp", src, dst], action_id=self.ACTION_SYSTEM, timeout=10)
+        return self.run_elevated(
+            ["cp", src, dst],
+            action_id=self.ACTION_SYSTEM,
+            timeout=self.TIMEOUT_FILE_COPY,
+        )
 
     def write_file_as_root(self, content: str, path: str) -> ElevationResult:
         """Write content to a root-owned file using pkexec tee.
@@ -461,7 +481,7 @@ class PolkitHelper:
                 text=True,
                 env=self._get_pkexec_env(),
             )
-            stdout, stderr = proc.communicate(input=content, timeout=30)
+            stdout, stderr = proc.communicate(input=content, timeout=self.TIMEOUT_FILE_WRITE)
 
             return ElevationResult(
                 success=proc.returncode == 0,

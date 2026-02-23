@@ -211,6 +211,10 @@ class SystemDetector:
     and Python environment to build a SystemInfo report.
     """
 
+    # Timeout constants (seconds)
+    TIMEOUT_COMMAND_CHECK = 5  # general command execution
+    TIMEOUT_NFQUEUE_CHECK = 3  # iptables -m nfqueue --help
+
     def __init__(self) -> None:
         """Initialize system detector."""
         self._info: SystemInfo | None = None
@@ -259,7 +263,11 @@ class SystemDetector:
 
         return self._info
 
-    def _run_command(self, cmd: list[str], timeout: int = 5) -> tuple[int, str, str]:
+    def _run_command(
+        self,
+        cmd: list[str],
+        timeout: int = TIMEOUT_COMMAND_CHECK,
+    ) -> tuple[int, str, str]:
         """Run a command and return (returncode, stdout, stderr)."""
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -396,7 +404,10 @@ class SystemDetector:
         """Detect NFQUEUE support for Zapret."""
         # Check if NFQUEUE target is available
         # Try to list iptables extensions
-        code, stdout, _ = self._run_command(["iptables", "-m", "nfqueue", "--help"], timeout=3)
+        code, stdout, _ = self._run_command(
+            ["iptables", "-m", "nfqueue", "--help"],
+            timeout=self.TIMEOUT_NFQUEUE_CHECK,
+        )
         # If help text is shown, NFQUEUE is available
         self._info.nfqueue_available = code == 0 or "NFQUEUE" in stdout
 

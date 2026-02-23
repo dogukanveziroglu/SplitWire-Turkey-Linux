@@ -49,6 +49,9 @@ class DiscordService(BaseService):
     for Discord Stable, PTB, Canary, and WebCord.
     """
 
+    # Discord-specific timeouts (seconds)
+    TIMEOUT_PROCESS_KILL = 5  # pkill operations
+
     def __init__(self):
         """Initialize Discord service."""
         super().__init__(
@@ -348,7 +351,7 @@ class DiscordService(BaseService):
         """Kill specific Discord version."""
         binaries = DISCORD_BINARIES.get(version.value, [])
         for binary in binaries:
-            self._shell.run(["pkill", "-f", binary], timeout=5)
+            self._shell.run(["pkill", "-f", binary], timeout=self.TIMEOUT_PROCESS_KILL)
         time.sleep(1)
         return not self._is_discord_running(version)
 

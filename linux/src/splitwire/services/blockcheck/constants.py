@@ -8,16 +8,8 @@ from pathlib import Path
 
 ZAPRET_INSTALL_DIR = Path("/opt/zapret")
 BLOCKCHECK_SCRIPT = ZAPRET_INSTALL_DIR / "blockcheck.sh"
-BLOCKCHECK_LOG = (
-    Path.home() / ".config" / "splitwire" / "zapret" / "blockcheck.log"
-)
-BLOCKCHECK_RESULTS = (
-    Path.home()
-    / ".config"
-    / "splitwire"
-    / "zapret"
-    / "blockcheck_results.json"
-)
+BLOCKCHECK_LOG = Path.home() / ".config" / "splitwire" / "zapret" / "blockcheck.log"
+BLOCKCHECK_RESULTS = Path.home() / ".config" / "splitwire" / "zapret" / "blockcheck_results.json"
 
 # Quick scan targets (minimal, fast)
 QUICK_TARGETS = [

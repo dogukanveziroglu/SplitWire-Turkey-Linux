@@ -17,6 +17,10 @@ from .constants import (
     CIADPI_RELEASE_URL,
 )
 
+# Download-specific timeouts (seconds)
+TIMEOUT_API_REQUEST = 30
+TIMEOUT_BINARY_DOWNLOAD = 120
+
 
 def is_binary_installed() -> bool:
     """Check if ciadpi binary is installed and executable."""
@@ -40,7 +44,7 @@ def fetch_release_info(logger) -> dict | None:
         CIADPI_RELEASE_URL,
         headers={"User-Agent": "SplitWire-Turkey"},
     )
-    with urllib.request.urlopen(req, timeout=30) as response:
+    with urllib.request.urlopen(req, timeout=TIMEOUT_API_REQUEST) as response:
         return json.loads(response.read().decode())
 
 
@@ -102,7 +106,10 @@ def download_and_extract(url: str, run_privileged_fn, logger) -> bool:
 
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "SplitWire-Turkey"})
-        with urllib.request.urlopen(req, timeout=120) as resp, open(tmp_path, "wb") as f:
+        with (
+            urllib.request.urlopen(req, timeout=TIMEOUT_BINARY_DOWNLOAD) as resp,
+            open(tmp_path, "wb") as f,
+        ):
             f.write(resp.read())
 
         if not _extract_binary(tarfile, tmp_path, run_privileged_fn, logger):

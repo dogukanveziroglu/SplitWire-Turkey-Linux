@@ -33,7 +33,12 @@ if TYPE_CHECKING:
 class AdvancedPage(BasePage):
     """Advanced service management page."""
 
-    def __init__(self, window: "SplitWireWindow"):
+    def __init__(self, window: "SplitWireWindow") -> None:
+        """Initialize advanced page with service references.
+
+        Args:
+            window: Parent application window.
+        """
         self._services = {
             "wireguard": {
                 "name": "WireGuard",
@@ -195,6 +200,7 @@ class AdvancedPage(BasePage):
         self._logger.debug("[UI:Advanced] Refreshing all service statuses...")
 
         def do_refresh():
+            """Query status of every registered service."""
             results = {}
             for key, info in self._services.items():
                 service = info["service"]
@@ -211,6 +217,7 @@ class AdvancedPage(BasePage):
             return results
 
         def on_complete(results):
+            """Update UI rows with queried service statuses."""
             for key, (status, installed) in results.items():
                 self._update_service_status(key, status, installed)
 
@@ -261,12 +268,14 @@ class AdvancedPage(BasePage):
             self.set_status(get_text("status", "removing"))
 
             def do_remove():
+                """Stop and remove the selected service."""
                 service = info["service"]
                 service.stop()
                 service.remove()
                 return True
 
             def on_complete(result):
+                """Refresh status and notify user after removal."""
                 self._refresh_all_status()
                 if result:
                     self.show_toast(get_text("messages", "remove_success").format(info["name"]))
@@ -294,6 +303,7 @@ class AdvancedPage(BasePage):
             self.set_status(get_text("status", "removing"))
 
             def do_remove_all():
+                """Stop and remove every registered service."""
                 for key, info in self._services.items():
                     try:
                         service = info["service"]
@@ -304,6 +314,7 @@ class AdvancedPage(BasePage):
                 return True
 
             def on_complete(result):
+                """Refresh status and notify user after bulk removal."""
                 self._refresh_all_status()
                 if result:
                     self.show_toast(get_text("messages", "all_services_removed"))
@@ -331,11 +342,13 @@ class AdvancedPage(BasePage):
             self.set_status(get_text("status", "checking"))
 
             def do_reset():
+                """Restore DNS settings from backup."""
                 dns_service = self._services["dns"]["service"]
                 dns_service.restore_backup()
                 return True
 
             def on_complete(result):
+                """Refresh status and notify user after DNS reset."""
                 self._refresh_all_status()
                 if result:
                     self.show_toast(get_text("messages", "dns_reset"))
@@ -363,6 +376,7 @@ class AdvancedPage(BasePage):
             self.set_status(get_text("status", "removing"))
 
             def do_uninstall():
+                """Remove all services, config, data, and cache directories."""
                 # Remove all services first
                 for key, info in self._services.items():
                     try:
@@ -387,6 +401,7 @@ class AdvancedPage(BasePage):
                 return True
 
             def on_complete(result):
+                """Notify user and schedule application exit after uninstall."""
                 if result:
                     self.show_toast(get_text("messages", "uninstall_complete"))
                     # Quit the application

@@ -20,6 +20,17 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Discord install-specific timeouts (seconds)
+TIMEOUT_DOWNLOAD = 120  # wget download
+TIMEOUT_DEB_INSTALL = 60  # dpkg -i
+TIMEOUT_APT_FIX = 120  # apt-get install -f
+TIMEOUT_FLATPAK_INSTALL = 300  # flatpak install
+TIMEOUT_SNAP_INSTALL = 300  # snap install
+TIMEOUT_FLATHUB_REMOTE = 30  # flatpak remote-add
+TIMEOUT_UNINSTALL_DEB = 30  # dpkg -r
+TIMEOUT_UNINSTALL_FLATPAK = 60  # flatpak uninstall
+TIMEOUT_UNINSTALL_SNAP = 60  # snap remove
+
 
 def install_discord(
     service: DiscordService,
@@ -49,15 +60,21 @@ def _install_deb(service: DiscordService, version: DiscordVersion) -> bool:
         with tempfile.TemporaryDirectory() as tmpdir:
             deb_path = Path(tmpdir) / f"discord-{version.value}.deb"
             logger.info("Downloading Discord %s...", version.value)
-            result = service._shell.run(["wget", "-q", "-O", str(deb_path), url], timeout=120)
+            result = service._shell.run(
+                ["wget", "-q", "-O", str(deb_path), url],
+                timeout=TIMEOUT_DOWNLOAD,
+            )
             if not result.success:
                 logger.error("Download failed: %s", result.stderr)
                 return False
             logger.info("Installing DEB package...")
-            result = service._run_privileged(["dpkg", "-i", str(deb_path)], timeout=60)
+            result = service._run_privileged(
+                ["dpkg", "-i", str(deb_path)],
+                timeout=TIMEOUT_DEB_INSTALL,
+            )
             if not result.success:
                 logger.info("Fixing dependencies...")
-                service._run_privileged(["apt-get", "install", "-f", "-y"], timeout=120)
+                service._run_privileged(["apt-get", "install", "-f", "-y"], timeout=TIMEOUT_APT_FIX)
             logger.info("Discord %s installed successfully", version.value)
             return True
     except Exception as e:
@@ -74,7 +91,10 @@ def _install_flatpak(service: DiscordService, version: DiscordVersion) -> bool:
         logger.error("Flatpak is not installed")
         return False
     _ensure_flathub(service)
-    result = service._shell.run(["flatpak", "install", "-y", "flathub", flatpak_id], timeout=300)
+    result = service._shell.run(
+        ["flatpak", "install", "-y", "flathub", flatpak_id],
+        timeout=TIMEOUT_FLATPAK_INSTALL,
+    )
     if result.success:
         logger.info("Discord %s installed via Flatpak", version.value)
     else:
@@ -90,7 +110,7 @@ def _install_snap(service: DiscordService, version: DiscordVersion) -> bool:
     if not service._shell.command_exists("snap"):
         logger.error("Snap is not installed")
         return False
-    result = service._run_privileged(["snap", "install", snap_name], timeout=300)
+    result = service._run_privileged(["snap", "install", snap_name], timeout=TIMEOUT_SNAP_INSTALL)
     if result.success:
         logger.info("Discord %s installed via Snap", version.value)
     else:
@@ -108,7 +128,7 @@ def _ensure_flathub(service: DiscordService) -> None:
             "flathub",
             "https://flathub.org/repo/flathub.flatpakrepo",
         ],
-        timeout=30,
+        timeout=TIMEOUT_FLATHUB_REMOTE,
     )
 
 
@@ -117,7 +137,7 @@ def reinstall_deb(service: DiscordService, version: DiscordVersion) -> bool:
     deb_name = DEB_DISCORD_NAMES.get(version.value)
     if not deb_name:
         return False
-    service._run_privileged(["dpkg", "-r", deb_name], timeout=30)
+    service._run_privileged(["dpkg", "-r", deb_name], timeout=TIMEOUT_UNINSTALL_DEB)
     return _install_deb(service, version)
 
 
@@ -126,7 +146,10 @@ def reinstall_flatpak(service: DiscordService, version: DiscordVersion) -> bool:
     flatpak_id = FLATPAK_DISCORD_IDS.get(version.value)
     if not flatpak_id:
         return False
-    service._shell.run(["flatpak", "uninstall", "-y", flatpak_id], timeout=60)
+    service._shell.run(
+        ["flatpak", "uninstall", "-y", flatpak_id],
+        timeout=TIMEOUT_UNINSTALL_FLATPAK,
+    )
     return _install_flatpak(service, version)
 
 
@@ -135,7 +158,7 @@ def reinstall_snap(service: DiscordService, version: DiscordVersion) -> bool:
     snap_name = SNAP_DISCORD_NAMES.get(version.value)
     if not snap_name:
         return False
-    service._run_privileged(["snap", "remove", snap_name], timeout=60)
+    service._run_privileged(["snap", "remove", snap_name], timeout=TIMEOUT_UNINSTALL_SNAP)
     return _install_snap(service, version)
 
 
@@ -152,13 +175,19 @@ def uninstall_discord(service: DiscordService, version: DiscordVersion) -> bool:
 
     if installation.method == InstallMethod.DEB:
         deb_name = DEB_DISCORD_NAMES.get(version.value)
-        result = service._run_privileged(["dpkg", "-r", deb_name], timeout=30)
+        result = service._run_privileged(["dpkg", "-r", deb_name], timeout=TIMEOUT_UNINSTALL_DEB)
     elif installation.method == InstallMethod.FLATPAK:
         flatpak_id = FLATPAK_DISCORD_IDS.get(version.value)
-        result = service._shell.run(["flatpak", "uninstall", "-y", flatpak_id], timeout=60)
+        result = service._shell.run(
+            ["flatpak", "uninstall", "-y", flatpak_id],
+            timeout=TIMEOUT_UNINSTALL_FLATPAK,
+        )
     elif installation.method == InstallMethod.SNAP:
         snap_name = SNAP_DISCORD_NAMES.get(version.value)
-        result = service._run_privileged(["snap", "remove", snap_name], timeout=60)
+        result = service._run_privileged(
+            ["snap", "remove", snap_name],
+            timeout=TIMEOUT_UNINSTALL_SNAP,
+        )
     else:
         logger.warning("Cannot uninstall %s installation", installation.method.value)
         return False
@@ -182,7 +211,7 @@ def install_webcord(service: DiscordService, method: InstallMethod) -> bool:
     ]
     for flatpak_id in webcord_ids:
         result = service._shell.run(
-            ["flatpak", "install", "-y", "flathub", flatpak_id], timeout=300
+            ["flatpak", "install", "-y", "flathub", flatpak_id], timeout=TIMEOUT_FLATPAK_INSTALL
         )
         if result.success:
             logger.info("WebCord installed via Flatpak")
@@ -198,7 +227,8 @@ def uninstall_webcord(service: DiscordService) -> bool:
         return True
     if webcord.method == InstallMethod.FLATPAK:
         result = service._shell.run(
-            ["flatpak", "uninstall", "-y", "io.github.nickvision.webcord"], timeout=60
+            ["flatpak", "uninstall", "-y", "io.github.nickvision.webcord"],
+            timeout=TIMEOUT_UNINSTALL_FLATPAK,
         )
         return result.success
     if webcord.method == InstallMethod.APPIMAGE and webcord.path:

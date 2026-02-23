@@ -25,6 +25,11 @@ from .constants import (
 )
 from .models import TunnelMode
 
+# WGCF-specific timeouts (seconds)
+TIMEOUT_WGCF_COMMAND = 60
+TIMEOUT_API_REQUEST = 30
+TIMEOUT_BINARY_DOWNLOAD = 120
+
 
 def ensure_wgcf(logger) -> bool:
     """
@@ -65,7 +70,7 @@ def register_warp_account(shell, logger) -> bool:
     result = shell.run(
         [str(WGCF_BINARY), "register", "--accept-tos"],
         cwd=WGCF_DIR,
-        timeout=60,
+        timeout=TIMEOUT_WGCF_COMMAND,
     )
 
     if result.success:
@@ -93,7 +98,7 @@ def generate_warp_profile(shell, logger) -> bool:
     result = shell.run(
         [str(WGCF_BINARY), "generate"],
         cwd=WGCF_DIR,
-        timeout=60,
+        timeout=TIMEOUT_WGCF_COMMAND,
     )
 
     if result.success and WGCF_PROFILE_FILE.exists():
@@ -177,7 +182,7 @@ def download_wgcf(logger) -> bool:
         req = Request(WGCF_GITHUB_API)
         req.add_header("User-Agent", "SplitWire-Turkey")
 
-        with urlopen(req, timeout=30) as response:
+        with urlopen(req, timeout=TIMEOUT_API_REQUEST) as response:
             release_info = json.loads(response.read().decode())
 
         url = _find_download_url(release_info, logger)
@@ -211,7 +216,7 @@ def _download_and_install(url: str, logger) -> bool:
     req = Request(url)
     req.add_header("User-Agent", "SplitWire-Turkey")
 
-    with urlopen(req, timeout=120) as response:
+    with urlopen(req, timeout=TIMEOUT_BINARY_DOWNLOAD) as response:
         binary_data = response.read()
 
     WGCF_BINARY.write_bytes(binary_data)

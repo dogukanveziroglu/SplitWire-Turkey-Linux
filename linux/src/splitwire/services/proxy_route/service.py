@@ -32,6 +32,10 @@ class ProxyRouteService(BaseService):
     - redsocks: iptables-based transparent proxy redirect
     """
 
+    # Proxy route-specific timeouts (seconds)
+    TIMEOUT_REDSOCKS_ACTION = 30  # systemctl start/stop redsocks
+    TIMEOUT_REDSOCKS_QUERY = 10  # systemctl is-active redsocks
+
     def __init__(self):
         """Initialize proxy route service."""
         super().__init__(
@@ -51,9 +55,7 @@ class ProxyRouteService(BaseService):
     def _load_config(self) -> None:
         """Load configuration from file."""
         if PROXY_ROUTE_CONFIG_FILE.exists():
-            self._logger.debug(
-                f"[PROXY] Loading config from {PROXY_ROUTE_CONFIG_FILE}"
-            )
+            self._logger.debug(f"[PROXY] Loading config from {PROXY_ROUTE_CONFIG_FILE}")
             try:
                 data = json.loads(PROXY_ROUTE_CONFIG_FILE.read_text())
                 self._config = self._parse_config_data(data)
@@ -64,9 +66,7 @@ class ProxyRouteService(BaseService):
                     self._config.method.value,
                 )
             except Exception as e:
-                self._logger.warning(
-                    f"[PROXY] Failed to load config: {e}"
-                )
+                self._logger.warning(f"[PROXY] Failed to load config: {e}")
 
     @staticmethod
     def _parse_config_data(data: dict) -> ProxyRouteConfig:
@@ -92,9 +92,7 @@ class ProxyRouteService(BaseService):
 
     def _save_config(self) -> None:
         """Save configuration to file."""
-        self._logger.debug(
-            f"[PROXY] Saving config to {PROXY_ROUTE_CONFIG_FILE}"
-        )
+        self._logger.debug(f"[PROXY] Saving config to {PROXY_ROUTE_CONFIG_FILE}")
         data = {
             "enabled": self._config.enabled,
             "method": self._config.method.value,
@@ -113,9 +111,7 @@ class ProxyRouteService(BaseService):
             ],
         }
         PROXY_ROUTE_CONFIG_FILE.write_text(json.dumps(data, indent=2))
-        self._logger.debug(
-            f"[PROXY] Config saved: {len(self._config.apps)} apps"
-        )
+        self._logger.debug(f"[PROXY] Config saved: {len(self._config.apps)} apps")
 
     # =========================================================================
     # BaseService implementation
@@ -131,9 +127,7 @@ class ProxyRouteService(BaseService):
         **kwargs,
     ) -> bool:
         """Install and configure proxy routing."""
-        self._logger.info(
-            f"Installing proxy routing via {method.value}"
-        )
+        self._logger.info(f"Installing proxy routing via {method.value}")
         self._notify_status_change(ServiceStatus.INSTALLING)
 
         try:
@@ -156,14 +150,13 @@ class ProxyRouteService(BaseService):
             if method == ProxyMethod.CGPROXY:
                 if not backends.setup_cgproxy(
                     self._run_privileged,
-                    proxy_host, proxy_port, app_paths,
+                    proxy_host,
+                    proxy_port,
+                    app_paths,
                 ):
                     return False
-            elif (
-                method == ProxyMethod.REDSOCKS
-                and not backends.setup_redsocks(
-                    self._run_privileged, proxy_host, proxy_port
-                )
+            elif method == ProxyMethod.REDSOCKS and not backends.setup_redsocks(
+                self._run_privileged, proxy_host, proxy_port
             ):
                 return False
 
@@ -204,14 +197,12 @@ class ProxyRouteService(BaseService):
         self._logger.info("Starting proxy routing")
         if self._config.method == ProxyMethod.REDSOCKS:
             result = self._run_privileged(
-                ["systemctl", "start", REDSOCKS_SERVICE], timeout=30
+                ["systemctl", "start", REDSOCKS_SERVICE], timeout=self.TIMEOUT_REDSOCKS_ACTION
             )
             if result.success:
                 backends.add_iptables_rules(self._run_privileged)
             else:
-                self._logger.error(
-                    f"Failed to start redsocks: {result.stderr}"
-                )
+                self._logger.error(f"Failed to start redsocks: {result.stderr}")
                 return False
 
         self._notify_status_change(ServiceStatus.RUNNING)
@@ -223,7 +214,7 @@ class ProxyRouteService(BaseService):
         if self._config.method == ProxyMethod.REDSOCKS:
             backends.remove_iptables_rules(self._run_privileged)
             self._run_privileged(
-                ["systemctl", "stop", REDSOCKS_SERVICE], timeout=30
+                ["systemctl", "stop", REDSOCKS_SERVICE], timeout=self.TIMEOUT_REDSOCKS_ACTION
             )
         self._notify_status_change(ServiceStatus.STOPPED)
         return True
@@ -234,7 +225,7 @@ class ProxyRouteService(BaseService):
             return ServiceStatus.NOT_INSTALLED
         if self._config.method == ProxyMethod.REDSOCKS:
             result = self._shell.run(
-                ["systemctl", "is-active", REDSOCKS_SERVICE], timeout=10
+                ["systemctl", "is-active", REDSOCKS_SERVICE], timeout=self.TIMEOUT_REDSOCKS_QUERY
             )
             if result.stdout.strip().lower() == "active":
                 return ServiceStatus.RUNNING
@@ -263,8 +254,10 @@ class ProxyRouteService(BaseService):
                 if Path(path).exists():
                     available.append(
                         ProxiedApp(
-                            name=app_name, path=path,
-                            enabled=False, is_custom=False,
+                            name=app_name,
+                            path=path,
+                            enabled=False,
+                            is_custom=False,
                         )
                     )
                     break
@@ -287,7 +280,10 @@ class ProxyRouteService(BaseService):
 
         self._config.apps.append(
             ProxiedApp(
-                name=name, path=path, enabled=True, is_custom=True,
+                name=name,
+                path=path,
+                enabled=True,
+                is_custom=True,
             )
         )
         self._config.custom_paths.append(path)
@@ -296,9 +292,7 @@ class ProxyRouteService(BaseService):
 
     def remove_custom_app(self, path: str) -> bool:
         """Remove a custom app from proxy list."""
-        self._config.apps = [
-            app for app in self._config.apps if app.path != path
-        ]
+        self._config.apps = [app for app in self._config.apps if app.path != path]
         if path in self._config.custom_paths:
             self._config.custom_paths.remove(path)
         self._save_config()
@@ -306,9 +300,7 @@ class ProxyRouteService(BaseService):
 
     def set_proxy(self, host: str, port: int) -> None:
         """Set proxy server address."""
-        self._logger.info(
-            f"[PROXY] Setting proxy address: {host}:{port}"
-        )
+        self._logger.info(f"[PROXY] Setting proxy address: {host}:{port}")
         self._config.proxy_host = host
         self._config.proxy_port = port
         self._save_config()
@@ -329,9 +321,7 @@ class ProxyRouteService(BaseService):
             method=self._config.method,
         )
 
-    def run_app_through_proxy(
-        self, app_path: str, args: list[str] | None = None
-    ) -> bool:
+    def run_app_through_proxy(self, app_path: str, args: list[str] | None = None) -> bool:
         """Run an application through the proxy."""
         if self._config.method == ProxyMethod.CGPROXY:
             return backends.run_via_cgproxy(self._shell, app_path, args)
@@ -342,9 +332,7 @@ class ProxyRouteService(BaseService):
                 app_path,
                 args,
             )
-        self._logger.warning(
-            "Run through proxy only supported for cgproxy/env"
-        )
+        self._logger.warning("Run through proxy only supported for cgproxy/env")
         return False
 
     # =========================================================================
@@ -356,9 +344,7 @@ class ProxyRouteService(BaseService):
         if method == ProxyMethod.CGPROXY:
             if not self._shell.command_exists("cgproxy"):
                 self._logger.error("cgproxy not installed")
-                self._logger.info(
-                    "Install from: https://github.com/springzfx/cgproxy"
-                )
+                self._logger.info("Install from: https://github.com/springzfx/cgproxy")
                 return False
             if not Path("/sys/fs/cgroup/cgroup.controllers").exists():
                 self._logger.error("cgroups v2 not available")
@@ -367,15 +353,15 @@ class ProxyRouteService(BaseService):
         elif method == ProxyMethod.REDSOCKS:
             if not self._shell.command_exists("redsocks"):
                 self._logger.error("redsocks not installed")
-                self._logger.info(
-                    "Install with: sudo apt install redsocks"
-                )
+                self._logger.info("Install with: sudo apt install redsocks")
                 return False
 
         return True
 
     def _build_app_list(
-        self, apps: list[str] | None, include_browsers: bool,
+        self,
+        apps: list[str] | None,
+        include_browsers: bool,
     ) -> list[ProxiedApp]:
         """Build list of apps to route through proxy."""
         result: list[ProxiedApp] = []
@@ -401,8 +387,10 @@ def _add_requested_apps(
                 if Path(path).exists() and path not in added_paths:
                     result.append(
                         ProxiedApp(
-                            name=app, path=path,
-                            enabled=True, is_custom=False,
+                            name=app,
+                            path=path,
+                            enabled=True,
+                            is_custom=False,
                         )
                     )
                     added_paths.add(path)
@@ -410,8 +398,10 @@ def _add_requested_apps(
         elif Path(app).exists() and app not in added_paths:
             result.append(
                 ProxiedApp(
-                    name=Path(app).stem, path=app,
-                    enabled=True, is_custom=True,
+                    name=Path(app).stem,
+                    path=app,
+                    enabled=True,
+                    is_custom=True,
                 )
             )
             added_paths.add(app)
@@ -428,8 +418,10 @@ def _add_browser_apps(
                 if Path(path).exists() and path not in added_paths:
                     result.append(
                         ProxiedApp(
-                            name=browser, path=path,
-                            enabled=True, is_custom=False,
+                            name=browser,
+                            path=path,
+                            enabled=True,
+                            is_custom=False,
                         )
                     )
                     added_paths.add(path)
@@ -446,8 +438,10 @@ def _add_discord_if_missing(
             if Path(path).exists() and path not in added_paths:
                 result.append(
                     ProxiedApp(
-                        name="discord", path=path,
-                        enabled=True, is_custom=False,
+                        name="discord",
+                        path=path,
+                        enabled=True,
+                        is_custom=False,
                     )
                 )
                 break

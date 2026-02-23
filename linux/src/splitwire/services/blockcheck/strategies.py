@@ -11,20 +11,12 @@ _BASIC_STRATEGIES = [
     {
         "name": "fake+split2 TTL5",
         "mode": "nfqws",
-        "args": (
-            "--dpi-desync=fake,split2 "
-            "--dpi-desync-ttl=5 "
-            "--dpi-desync-fooling=md5sig"
-        ),
+        "args": ("--dpi-desync=fake,split2 --dpi-desync-ttl=5 --dpi-desync-fooling=md5sig"),
     },
     {
         "name": "fake+disorder2 TTL8",
         "mode": "nfqws",
-        "args": (
-            "--dpi-desync=fake,disorder2 "
-            "--dpi-desync-ttl=8 "
-            "--dpi-desync-fooling=md5sig"
-        ),
+        "args": ("--dpi-desync=fake,disorder2 --dpi-desync-ttl=8 --dpi-desync-fooling=md5sig"),
     },
     {
         "name": "split2 only",
@@ -43,11 +35,7 @@ _EXTENDED_STRATEGIES = [
     {
         "name": "fake+split2 badseq",
         "mode": "nfqws",
-        "args": (
-            "--dpi-desync=fake,split2 "
-            "--dpi-desync-ttl=4 "
-            "--dpi-desync-fooling=badseq"
-        ),
+        "args": ("--dpi-desync=fake,split2 --dpi-desync-ttl=4 --dpi-desync-fooling=badseq"),
     },
     {
         "name": "disorder2 TTL10",
@@ -66,20 +54,12 @@ _FULL_STRATEGIES = [
     {
         "name": "fake+split TTL3",
         "mode": "nfqws",
-        "args": (
-            "--dpi-desync=fake,split "
-            "--dpi-desync-ttl=3 "
-            "--dpi-desync-fooling=md5sig"
-        ),
+        "args": ("--dpi-desync=fake,split --dpi-desync-ttl=3 --dpi-desync-fooling=md5sig"),
     },
     {
         "name": "fake+split2 TTL2 badsum",
         "mode": "nfqws",
-        "args": (
-            "--dpi-desync=fake,split2 "
-            "--dpi-desync-ttl=2 "
-            "--dpi-desync-fooling=badsum"
-        ),
+        "args": ("--dpi-desync=fake,split2 --dpi-desync-ttl=2 --dpi-desync-fooling=badsum"),
     },
     {
         "name": "multisplit",
@@ -94,9 +74,7 @@ _FULL_STRATEGIES = [
     {
         "name": "fake+fakedsplit",
         "mode": "nfqws",
-        "args": (
-            "--dpi-desync=fake,fakedsplit --dpi-desync-ttl=4"
-        ),
+        "args": ("--dpi-desync=fake,fakedsplit --dpi-desync-ttl=4"),
     },
 ]
 

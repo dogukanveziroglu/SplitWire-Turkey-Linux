@@ -30,7 +30,12 @@ if TYPE_CHECKING:
 class ByeDPIPage(BasePage):
     """ByeDPI proxy setup page."""
 
-    def __init__(self, window: "SplitWireWindow"):
+    def __init__(self, window: "SplitWireWindow") -> None:
+        """Initialize ByeDPI page with service references.
+
+        Args:
+            window: Parent application window.
+        """
         self._byedpi_service = get_byedpi_service()
         self._proxy_service = get_proxy_route_service()
         super().__init__(window)
@@ -196,6 +201,7 @@ class ByeDPIPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def do_setup():
+            """Install, configure, and start ByeDPI with proxy routing."""
             # Get selected preset
             selected = self._combo_preset.get_selected()
             preset_names = list(BYEDPI_PRESETS.keys())
@@ -223,6 +229,7 @@ class ByeDPIPage(BasePage):
             return True
 
         def on_complete(result):
+            """Update status indicator and notify user after setup."""
             self._update_status_indicator()
             if result:
                 self._logger.info("[UI:ByeDPI] Split tunneling setup completed successfully")
@@ -276,6 +283,7 @@ class ByeDPIPage(BasePage):
             self.set_status(get_text("status", "removing"))
 
             def do_remove():
+                """Stop and remove proxy routing and ByeDPI services."""
                 self._proxy_service.stop()
                 self._proxy_service.remove()
                 self._byedpi_service.stop()
@@ -283,6 +291,7 @@ class ByeDPIPage(BasePage):
                 return True
 
             def on_complete(result):
+                """Update status and notify user after removal."""
                 self._update_status_indicator()
                 if result:
                     self.show_toast(get_text("messages", "service_removed"))

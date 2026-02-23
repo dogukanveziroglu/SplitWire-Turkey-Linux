@@ -38,15 +38,19 @@ class BlockcheckService:
     - Strategy ranking based on success rate
     """
 
-    def __init__(self):
+    # Blockcheck-specific timeouts (seconds)
+    TIMEOUT_CANCEL = 5  # process termination on cancel
+    TIMEOUT_QUICK_TEST = 15  # curl quick test
+    TIMEOUT_STRATEGY_TEST = 10  # curl strategy test
+
+    def __init__(self) -> None:
+        """Initialize the blockcheck service with default state."""
         self._logger = logging.getLogger(__name__)
         self._shell = get_shell()
         self._progress = ScanProgress()
         self._result: BlockcheckResult | None = None
         self._process: subprocess.Popen | None = None
-        self._progress_callbacks: list[
-            Callable[[ScanProgress], None]
-        ] = []
+        self._progress_callbacks: list[Callable[[ScanProgress], None]] = []
         self._scan_thread: threading.Thread | None = None
         self._cancelled = False
 
@@ -72,15 +76,11 @@ class BlockcheckService:
             return self._result
         return self._load_saved_result()
 
-    def add_progress_callback(
-        self, callback: Callable[[ScanProgress], None]
-    ) -> None:
+    def add_progress_callback(self, callback: Callable[[ScanProgress], None]) -> None:
         """Add callback for progress updates."""
         self._progress_callbacks.append(callback)
 
-    def remove_progress_callback(
-        self, callback: Callable[[ScanProgress], None]
-    ) -> None:
+    def remove_progress_callback(self, callback: Callable[[ScanProgress], None]) -> None:
         """Remove progress callback."""
         if callback in self._progress_callbacks:
             self._progress_callbacks.remove(callback)
@@ -135,7 +135,7 @@ class BlockcheckService:
         if self._process and self._process.poll() is None:
             self._process.terminate()
             try:
-                self._process.wait(timeout=5)
+                self._process.wait(timeout=self.TIMEOUT_CANCEL)
             except subprocess.TimeoutExpired:
                 self._process.kill()
 
@@ -145,19 +145,20 @@ class BlockcheckService:
 
     def run_quick_test(self, target: str, strategy: str) -> bool:
         """Test a specific strategy against a target."""
-        self._logger.info(
-            f"Testing strategy '{strategy}' against {target}"
-        )
+        self._logger.info(f"Testing strategy '{strategy}' against {target}")
         cmd = [
-            "curl", "-s", "-o", "/dev/null",
-            "-w", "%{http_code}",
-            "--connect-timeout", "10",
+            "curl",
+            "-s",
+            "-o",
+            "/dev/null",
+            "-w",
+            "%{http_code}",
+            "--connect-timeout",
+            "10",
             f"https://{target}",
         ]
-        result = self._shell.run(cmd, timeout=15)
-        if result.success and result.stdout.strip() in [
-            "200", "301", "302", "403"
-        ]:
+        result = self._shell.run(cmd, timeout=self.TIMEOUT_QUICK_TEST)
+        if result.success and result.stdout.strip() in ["200", "301", "302", "403"]:
             self._logger.info(f"Strategy works for {target}")
             return True
         self._logger.info(f"Strategy failed for {target}")
@@ -165,15 +166,10 @@ class BlockcheckService:
 
     # -- Internal Methods --
 
-    def _run_scan(
-        self, mode: ScanMode, targets: list[str]
-    ) -> bool:
+    def _run_scan(self, mode: ScanMode, targets: list[str]) -> bool:
         """Run the actual blockcheck scan."""
         start_time = time.time()
-        self._logger.info(
-            "Starting blockcheck scan "
-            f"(mode: {mode.value}, targets: {len(targets)})"
-        )
+        self._logger.info(f"Starting blockcheck scan (mode: {mode.value}, targets: {len(targets)})")
 
         try:
             result = BlockcheckResult(scan_mode=mode)
@@ -181,9 +177,7 @@ class BlockcheckService:
             total = len(strategies) * len(targets)
             self._progress.tests_total = total
 
-            working, failed = self._execute_strategies(
-                strategies, targets, result, start_time
-            )
+            working, failed = self._execute_strategies(strategies, targets, result, start_time)
 
             result.working_strategies = working
             result.failed_strategies = failed
@@ -196,8 +190,7 @@ class BlockcheckService:
             self._finalize_progress(result)
 
             self._logger.info(
-                f"Blockcheck completed: {len(working)} working, "
-                f"{len(failed)} failed strategies"
+                f"Blockcheck completed: {len(working)} working, {len(failed)} failed strategies"
             )
             return result.success
 
@@ -259,8 +252,12 @@ class BlockcheckService:
                 break
 
             self._update_progress(
-                strategy, target, strategy_idx,
-                targets, result, start_time,
+                strategy,
+                target,
+                strategy_idx,
+                targets,
+                result,
+                start_time,
             )
             success = self._test_strategy(strategy, target)
             strategy_results["targets"][target] = success
@@ -268,11 +265,13 @@ class BlockcheckService:
             if not success:
                 strategy_works = False
 
-            result.tested_strategies.append({
-                "strategy": strategy["name"],
-                "target": target,
-                "success": success,
-            })
+            result.tested_strategies.append(
+                {
+                    "strategy": strategy["name"],
+                    "target": target,
+                    "success": success,
+                }
+            )
 
         strategy_results["all_passed"] = strategy_works
         return strategy_results
@@ -289,9 +288,7 @@ class BlockcheckService:
         """Update and notify scan progress."""
         total = self._progress.tests_total
         completed = strategy_idx * len(targets) + targets.index(target)
-        self._progress.current_test = (
-            f"{strategy['name']} -> {target}"
-        )
+        self._progress.current_test = f"{strategy['name']} -> {target}"
         self._progress.tests_completed = completed
         self._progress.percent = int((completed / total) * 100) if total else 0
         self._progress.elapsed_seconds = time.time() - start_time
@@ -300,9 +297,7 @@ class BlockcheckService:
     def _finalize_progress(self, result: BlockcheckResult) -> None:
         """Set final progress state after scan completion."""
         self._progress.status = (
-            ScanStatus.COMPLETED
-            if not self._cancelled
-            else ScanStatus.CANCELLED
+            ScanStatus.COMPLETED if not self._cancelled else ScanStatus.CANCELLED
         )
         self._progress.percent = 100
         self._progress.elapsed_seconds = result.duration_seconds
@@ -312,17 +307,20 @@ class BlockcheckService:
         """Test a specific strategy against a target."""
         try:
             cmd = [
-                "curl", "-s", "-o", "/dev/null",
-                "-w", "%{http_code}",
-                "--connect-timeout", "5",
+                "curl",
+                "-s",
+                "-o",
+                "/dev/null",
+                "-w",
+                "%{http_code}",
+                "--connect-timeout",
+                "5",
                 "-k",
                 f"https://{target}",
             ]
-            result = self._shell.run(cmd, timeout=10)
+            result = self._shell.run(cmd, timeout=self.TIMEOUT_STRATEGY_TEST)
             http_code = result.stdout.strip()
-            return http_code in [
-                "200", "301", "302", "403", "000"
-            ]
+            return http_code in ["200", "301", "302", "403", "000"]
         except Exception as e:
             self._logger.debug(f"Strategy test error: {e}")
             return False
@@ -333,9 +331,7 @@ class BlockcheckService:
             try:
                 callback(self._progress)
             except Exception as e:  # noqa: PERF203 -- per-callback isolation
-                self._logger.warning(
-                    f"Progress callback error: {e}"
-                )
+                self._logger.warning(f"Progress callback error: {e}")
 
     def _save_result(self, result: BlockcheckResult) -> None:
         """Save scan result to file."""
@@ -350,9 +346,7 @@ class BlockcheckService:
                 "failed_count": len(result.failed_strategies),
                 "timestamp": time.time(),
             }
-            BLOCKCHECK_RESULTS.write_text(
-                json.dumps(data, indent=2)
-            )
+            BLOCKCHECK_RESULTS.write_text(json.dumps(data, indent=2))
         except Exception as e:
             self._logger.error(f"Failed to save result: {e}")
 
@@ -370,9 +364,7 @@ class BlockcheckService:
                 recommended_mode=data.get("recommended_mode", "nfqws"),
             )
         except Exception as e:
-            self._logger.warning(
-                f"Failed to load saved result: {e}"
-            )
+            self._logger.warning(f"Failed to load saved result: {e}")
             return None
 
     def parse_blockcheck_output(self, output: str) -> BlockcheckResult:
@@ -388,9 +380,7 @@ class BlockcheckService:
         for match in passed_pattern.finditer(output):
             mode = match.group(1).lower()
             args = match.group(2).strip()
-            result.working_strategies.append(
-                {"mode": mode, "args": args}
-            )
+            result.working_strategies.append({"mode": mode, "args": args})
 
         if result.working_strategies:
             best = result.working_strategies[0]
@@ -410,9 +400,7 @@ def _get_targets_for_mode(mode: ScanMode) -> list[str]:
     return FULL_TARGETS
 
 
-def _select_best_strategy(
-    result: BlockcheckResult, working: list[dict]
-) -> None:
+def _select_best_strategy(result: BlockcheckResult, working: list[dict]) -> None:
     """Select the best strategy from working results."""
     if working:
         best = working[0]["strategy"]

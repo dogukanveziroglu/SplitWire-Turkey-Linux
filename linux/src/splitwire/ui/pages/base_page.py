@@ -20,7 +20,13 @@ if TYPE_CHECKING:
 class BasePage(Gtk.Box):
     """Base class for all application pages."""
 
-    def __init__(self, window: "SplitWireWindow", **kwargs):
+    def __init__(self, window: "SplitWireWindow", **kwargs) -> None:
+        """Initialize base page with window reference and build UI.
+
+        Args:
+            window: Parent application window.
+            **kwargs: Additional GTK Box keyword arguments.
+        """
         super().__init__(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=16,
@@ -68,6 +74,7 @@ class BasePage(Gtk.Box):
         import threading
 
         def thread_func():
+            """Run func in background and dispatch callback on the main thread."""
             try:
                 result = func(*args)
                 if callback:

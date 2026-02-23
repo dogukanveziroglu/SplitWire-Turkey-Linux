@@ -52,10 +52,7 @@ def do_wireguard_setup(wg_service, dns_service, tunnel_mode=None):
 
         time.sleep(1)
         if not wg_service.test_connection():
-            logger.warning(
-                "[UI:Main] VPN connection test failed, "
-                "continuing anyway..."
-            )
+            logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
 
         # NOW safe to change DNS (VPN is active)
         dns_service.install(preset="cloudflare")
@@ -101,23 +98,20 @@ def do_remove_services(wg_service, st_service, dns_service):
 
 
 def save_page_settings(
-    enabled_apps, custom_apps,
-    switch_browser, switch_refresh, switch_full_tunnel,
+    enabled_apps,
+    custom_apps,
+    switch_browser,
+    switch_refresh,
+    switch_full_tunnel,
 ):
     """Save main page settings to config file."""
     try:
         config = get_config()
         config.wireguard.enabled_known_apps = enabled_apps.copy()
         config.wireguard.custom_apps = custom_apps.copy()
-        config.wireguard.include_browsers = (
-            switch_browser.get_active()
-        )
-        config.wireguard.refresh_timer_enabled = (
-            switch_refresh.get_active()
-        )
-        config.wireguard.full_tunnel_mode = (
-            switch_full_tunnel.get_active()
-        )
+        config.wireguard.include_browsers = switch_browser.get_active()
+        config.wireguard.refresh_timer_enabled = switch_refresh.get_active()
+        config.wireguard.full_tunnel_mode = switch_full_tunnel.get_active()
         save_config()
         logger.debug("Settings saved")
     except Exception as e:
@@ -125,8 +119,11 @@ def save_page_settings(
 
 
 def load_page_settings(
-    enabled_apps, custom_apps_ref,
-    switch_browser, switch_refresh, switch_full_tunnel,
+    enabled_apps,
+    custom_apps_ref,
+    switch_browser,
+    switch_refresh,
+    switch_full_tunnel,
 ):
     """
     Load main page settings from config file.
@@ -149,12 +146,8 @@ def load_page_settings(
         if config.wireguard.custom_apps:
             result_apps = list(config.wireguard.custom_apps)
         switch_browser.set_active(config.wireguard.include_browsers)
-        switch_refresh.set_active(
-            config.wireguard.refresh_timer_enabled
-        )
-        switch_full_tunnel.set_active(
-            config.wireguard.full_tunnel_mode
-        )
+        switch_refresh.set_active(config.wireguard.refresh_timer_enabled)
+        switch_full_tunnel.set_active(config.wireguard.full_tunnel_mode)
         logger.debug("Settings loaded")
         return result_apps
     except Exception as e:

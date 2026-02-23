@@ -7,6 +7,9 @@ from pathlib import Path
 from .constants import RESOLVED_CONF_DIR, SPLITWIRE_RESOLVED_CONF
 from .models import DoHMode
 
+# NM query timeout (seconds)
+TIMEOUT_NM_QUERY = 10
+
 
 def build_resolved_config(primary: str, secondary: str, doh_mode: DoHMode) -> str:
     """Build systemd-resolved configuration content."""
@@ -136,7 +139,7 @@ def get_active_nm_connections(shell) -> list[str]:
             "show",
             "--active",
         ],
-        timeout=10,
+        timeout=TIMEOUT_NM_QUERY,
     )
     if not result.success:
         return []
@@ -194,7 +197,7 @@ def restore_network_manager(shell, run_privileged_fn) -> None:
             "show",
             "--active",
         ],
-        timeout=10,
+        timeout=TIMEOUT_NM_QUERY,
     )
     if result.success:
         for conn in result.stdout.strip().split("\n"):

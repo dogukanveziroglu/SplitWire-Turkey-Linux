@@ -14,6 +14,11 @@ from pathlib import Path
 
 from .constants import BYEDPI_PID_FILE, PID_DIR
 
+# Process management constants
+KILL_POLL_ATTEMPTS = 10
+KILL_POLL_INTERVAL = 0.1  # seconds
+TERMINATE_TIMEOUT = 5  # seconds
+
 
 def create_pid_dir(run_privileged_fn) -> None:
     """
@@ -93,10 +98,10 @@ def kill_by_pid(run_privileged_fn, logger) -> None:
 
     try:
         os.kill(pid, signal.SIGTERM)
-        for _ in range(10):
+        for _ in range(KILL_POLL_ATTEMPTS):
             try:
                 os.kill(pid, 0)
-                time.sleep(0.1)
+                time.sleep(KILL_POLL_INTERVAL)
             except ProcessLookupError:  # noqa: PERF203 -- poll loop needs per-iteration check
                 break
         else:
@@ -119,7 +124,7 @@ def terminate_process(
     if process:
         process.terminate()
         try:
-            process.wait(timeout=5)
+            process.wait(timeout=TERMINATE_TIMEOUT)
         except subprocess.TimeoutExpired:
             process.kill()
 

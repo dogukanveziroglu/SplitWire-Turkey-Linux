@@ -39,6 +39,13 @@ class WireGuardService(BaseService):
     - Interface status monitoring
     """
 
+    # WireGuard-specific timeouts (seconds)
+    TIMEOUT_WG_QUICK = 30
+    TIMEOUT_CONFIG_CHECK = 5
+    TIMEOUT_CONNECTION_TEST = 10
+    PING_COUNT = 1
+    PING_WAIT_SECONDS = 5
+
     def __init__(self):
         """Initialize WireGuard service."""
         super().__init__(
@@ -163,7 +170,9 @@ class WireGuardService(BaseService):
             self._logger.error("Config file not found")
             return False
 
-        result = self._run_privileged(["wg-quick", "up", self._interface_name], timeout=30)
+        result = self._run_privileged(
+            ["wg-quick", "up", self._interface_name], timeout=self.TIMEOUT_WG_QUICK
+        )
 
         if result.success:
             self._logger.info("WireGuard VPN started")
@@ -177,7 +186,9 @@ class WireGuardService(BaseService):
         """Stop WireGuard VPN connection."""
         self._logger.info("Stopping WireGuard VPN")
 
-        result = self._run_privileged(["wg-quick", "down", self._interface_name], timeout=30)
+        result = self._run_privileged(
+            ["wg-quick", "down", self._interface_name], timeout=self.TIMEOUT_WG_QUICK
+        )
 
         if result.success:
             self._logger.info("WireGuard VPN stopped")
@@ -206,7 +217,7 @@ class WireGuardService(BaseService):
         except PermissionError:
             result = self._shell.run(
                 ["sudo", "test", "-f", str(self._config_file)],
-                timeout=5,
+                timeout=self.TIMEOUT_CONFIG_CHECK,
             )
             return result.success
 
@@ -255,12 +266,12 @@ class WireGuardService(BaseService):
                 "-c",
                 "1",
                 "-W",
-                "5",
+                str(self.PING_WAIT_SECONDS),
                 "-I",
                 self._interface_name,
                 test_host,
             ],
-            timeout=10,
+            timeout=self.TIMEOUT_CONNECTION_TEST,
         )
         return result.success
 

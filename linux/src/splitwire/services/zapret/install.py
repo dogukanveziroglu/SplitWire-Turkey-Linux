@@ -18,6 +18,11 @@ from .constants import (
 if TYPE_CHECKING:
     from .service import ZapretService
 
+# Zapret install-specific timeouts (seconds)
+TIMEOUT_INSTALL = 300  # dependency install, git clone, make build
+TIMEOUT_APT_UPDATE = 120
+TIMEOUT_FILE_OPERATION = 30  # mkdir, tee, cp
+
 
 def install_dependencies(service: ZapretService) -> bool:
     """Install required system dependencies."""
@@ -25,7 +30,7 @@ def install_dependencies(service: ZapretService) -> bool:
     cmd = _build_install_cmd(service)
     if cmd is None:
         return False
-    result = service._run_privileged(cmd, timeout=300)
+    result = service._run_privileged(cmd, timeout=TIMEOUT_INSTALL)
     if not result.success:
         service._logger.error("Failed to install packages: %s", result.stderr)
         return False
@@ -35,7 +40,7 @@ def install_dependencies(service: ZapretService) -> bool:
 def _build_install_cmd(service: ZapretService) -> list[str] | None:
     """Build the package-install command for the current distro."""
     if service._shell.command_exists("apt-get"):
-        service._run_privileged(["apt-get", "update"], timeout=120)
+        service._run_privileged(["apt-get", "update"], timeout=TIMEOUT_APT_UPDATE)
         return [
             "apt-get",
             "install",
@@ -84,12 +89,15 @@ def _build_install_cmd(service: ZapretService) -> list[str] | None:
 def clone_zapret(service: ZapretService) -> bool:
     """Clone or update zapret repository."""
     service._logger.info("Cloning Zapret repository...")
-    service._run_privileged(["mkdir", "-p", str(ZAPRET_INSTALL_DIR.parent)], timeout=30)
+    service._run_privileged(
+        ["mkdir", "-p", str(ZAPRET_INSTALL_DIR.parent)],
+        timeout=TIMEOUT_FILE_OPERATION,
+    )
 
     if ZAPRET_INSTALL_DIR.exists():
         service._logger.info("Updating existing Zapret installation...")
         result = service._run_privileged(
-            ["git", "-C", str(ZAPRET_INSTALL_DIR), "pull"], timeout=300
+            ["git", "-C", str(ZAPRET_INSTALL_DIR), "pull"], timeout=TIMEOUT_INSTALL
         )
     else:
         result = service._run_privileged(
@@ -102,7 +110,7 @@ def clone_zapret(service: ZapretService) -> bool:
                 ZAPRET_REPO,
                 str(ZAPRET_INSTALL_DIR),
             ],
-            timeout=300,
+            timeout=TIMEOUT_INSTALL,
         )
 
     if not result.success:
@@ -118,12 +126,12 @@ def build_zapret(service: ZapretService) -> bool:
     tpws_dir = ZAPRET_INSTALL_DIR / "tpws"
 
     if nfq_dir.exists():
-        result = service._run_privileged(["make", "-C", str(nfq_dir)], timeout=300)
+        result = service._run_privileged(["make", "-C", str(nfq_dir)], timeout=TIMEOUT_INSTALL)
         if not result.success:
             service._logger.warning("nfqws build warning: %s", result.stderr)
 
     if tpws_dir.exists():
-        result = service._run_privileged(["make", "-C", str(tpws_dir)], timeout=300)
+        result = service._run_privileged(["make", "-C", str(tpws_dir)], timeout=TIMEOUT_INSTALL)
         if not result.success:
             service._logger.warning("tpws build warning: %s", result.stderr)
 
@@ -171,7 +179,9 @@ def install_systemd_service(service: ZapretService) -> bool:
         "WantedBy=multi-user.target\n"
     )
     svc = Path("/etc/systemd/system/splitwire-zapret.service")
-    result = service._run_privileged(["tee", str(svc)], input_data=service_content, timeout=30)
+    result = service._run_privileged(
+        ["tee", str(svc)], input_data=service_content, timeout=TIMEOUT_FILE_OPERATION
+    )
     if result.success:
         service._run_privileged(["systemctl", "daemon-reload"])
     return result.success

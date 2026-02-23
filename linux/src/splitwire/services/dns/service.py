@@ -35,6 +35,10 @@ class DNSService(BaseService):
     on Ubuntu systems. Supports multiple DNS presets and custom servers.
     """
 
+    # DNS-specific timeouts (seconds)
+    TIMEOUT_SERVICE_CHECK = 5  # systemctl is-active checks
+    TIMEOUT_RESOLVECTL = 10  # resolvectl status queries
+
     def __init__(self):
         """Initialize DNS service."""
         super().__init__(
@@ -88,13 +92,19 @@ class DNSService(BaseService):
         """Detect which DNS manager is in use."""
         self._logger.info("[DNS] Detecting DNS manager...")
 
-        result = self._shell.run(["systemctl", "is-active", "systemd-resolved"], timeout=5)
+        result = self._shell.run(
+            ["systemctl", "is-active", "systemd-resolved"],
+            timeout=self.TIMEOUT_SERVICE_CHECK,
+        )
         if result.success and result.stdout.strip() == "active":
             self._dns_manager = DNSManager.SYSTEMD_RESOLVED
             self._logger.info("[DNS] Detected: systemd-resolved")
             return
 
-        result = self._shell.run(["systemctl", "is-active", "NetworkManager"], timeout=5)
+        result = self._shell.run(
+            ["systemctl", "is-active", "NetworkManager"],
+            timeout=self.TIMEOUT_SERVICE_CHECK,
+        )
         if result.success and result.stdout.strip() == "active":
             self._dns_manager = DNSManager.NETWORK_MANAGER
             self._logger.info("[DNS] Detected: NetworkManager (fallback)")
@@ -284,7 +294,7 @@ class DNSService(BaseService):
     def is_doh_enabled(self) -> bool:
         """Check if DoH is currently enabled."""
         if self._dns_manager == DNSManager.SYSTEMD_RESOLVED:
-            result = self._shell.run(["resolvectl", "status"], timeout=10)
+            result = self._shell.run(["resolvectl", "status"], timeout=self.TIMEOUT_RESOLVECTL)
             if result.success:
                 return "DNSOverTLS" in result.stdout and "yes" in result.stdout.lower()
         return False
@@ -349,7 +359,7 @@ class DNSService(BaseService):
         raw_config = None
 
         if self._dns_manager == DNSManager.SYSTEMD_RESOLVED:
-            result = self._shell.run(["resolvectl", "status"], timeout=10)
+            result = self._shell.run(["resolvectl", "status"], timeout=self.TIMEOUT_RESOLVECTL)
             if result.success:
                 raw_config = result.stdout
                 dns_servers, search_domains, doh_enabled = parse_resolvectl_output(result.stdout)
@@ -394,7 +404,7 @@ class DNSService(BaseService):
         dns_servers: list[str] = []
         try:
             if self._dns_manager == DNSManager.SYSTEMD_RESOLVED:
-                result = self._shell.run(["resolvectl", "status"], timeout=10)
+                result = self._shell.run(["resolvectl", "status"], timeout=self.TIMEOUT_RESOLVECTL)
                 if result.success:
                     for line in result.stdout.split("\n"):
                         if "DNS Servers:" in line or "Current DNS Server:" in line:

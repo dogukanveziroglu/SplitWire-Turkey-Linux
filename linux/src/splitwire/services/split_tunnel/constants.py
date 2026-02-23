@@ -24,8 +24,7 @@ KNOWN_APPS: dict[str, list[str]] = {
         "/usr/bin/discord",
         "/opt/discord/Discord",
         "/snap/discord/current/usr/share/discord/Discord",
-        "/var/lib/flatpak/app/com.discordapp.Discord"
-        "/current/active/files/discord/Discord",
+        "/var/lib/flatpak/app/com.discordapp.Discord/current/active/files/discord/Discord",
     ],
     "discord-ptb": [
         "/usr/share/discord-ptb/DiscordPTB",
@@ -98,6 +97,11 @@ KNOWN_APPS: dict[str, list[str]] = {
 
 # Browser app names for the "include browsers" option
 BROWSER_APPS = [
-    "firefox", "chrome", "chromium", "brave",
-    "vivaldi", "opera", "edge",
+    "firefox",
+    "chrome",
+    "chromium",
+    "brave",
+    "vivaldi",
+    "opera",
+    "edge",
 ]

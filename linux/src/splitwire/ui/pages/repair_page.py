@@ -29,7 +29,12 @@ if TYPE_CHECKING:
 class RepairPage(BasePage):
     """Discord repair and installation page."""
 
-    def __init__(self, window: "SplitWireWindow"):
+    def __init__(self, window: "SplitWireWindow") -> None:
+        """Initialize repair page with Discord service reference.
+
+        Args:
+            window: Parent application window.
+        """
         self._discord_service = get_discord_service()
         super().__init__(window)
 
@@ -206,6 +211,7 @@ class RepairPage(BasePage):
         self._logger.debug("[UI:Repair] Refreshing Discord status...")
 
         def do_refresh():
+            """Query Discord, PTB, and WebCord installation status."""
             # Get Discord installations
             installations = self._discord_service.get_installations()
             webcord = self._discord_service.get_webcord()
@@ -221,6 +227,7 @@ class RepairPage(BasePage):
             }
 
         def on_complete(result):
+            """Update all status rows from query results."""
             if result:
                 # Update Discord status
                 discord_inst = result.get("discord")
@@ -266,9 +273,11 @@ class RepairPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def do_repair():
+            """Run Discord repair via the service."""
             return self._discord_service.repair_discord()
 
         def on_complete(result):
+            """Refresh status and show repair outcome."""
             self._refresh_status()
             if result and result.success:
                 self.show_toast(get_text("messages", "install_success").format("Discord"))
@@ -309,6 +318,7 @@ class RepairPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def do_install():
+            """Optionally clean-install, then install Discord PTB."""
             if clean:
                 # Remove existing Discord first
                 self._discord_service.clear_all_cache()
@@ -322,6 +332,7 @@ class RepairPage(BasePage):
             return True
 
         def on_complete(result):
+            """Refresh status and notify user after PTB install."""
             self._refresh_status()
             if result:
                 self.show_toast(get_text("messages", "install_success").format("Discord PTB"))
@@ -336,10 +347,12 @@ class RepairPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def do_install():
+            """Install WebCord with optional desktop shortcut."""
             self._discord_service.install_webcord(create_shortcut=create_shortcut)
             return True
 
         def on_complete(result):
+            """Refresh status and notify user after WebCord install."""
             self._refresh_status()
             if result:
                 self.show_toast(get_text("messages", "install_success").format("WebCord"))
@@ -360,10 +373,12 @@ class RepairPage(BasePage):
         self.set_status(get_text("status", "installing"))
 
         def do_install():
+            """Install Discord stable release."""
             self._discord_service.install_discord(DiscordVersion.STABLE)
             return True
 
         def on_complete(result):
+            """Refresh status and notify user after Discord install."""
             self._refresh_status()
             if result:
                 self.show_toast(get_text("messages", "install_success").format("Discord"))
@@ -420,6 +435,7 @@ class RepairPage(BasePage):
             self.set_status(get_text("status", "removing"))
 
             def do_remove():
+                """Uninstall the selected Discord version."""
                 installations = self._discord_service.get_installations()
                 inst = installations.get(version)
                 if inst:
@@ -427,6 +443,7 @@ class RepairPage(BasePage):
                 return True
 
             def on_complete(result):
+                """Refresh status and notify user after Discord removal."""
                 self._refresh_status()
                 if result:
                     self.show_toast(get_text("messages", "service_removed"))
@@ -453,10 +470,12 @@ class RepairPage(BasePage):
             self.set_status(get_text("status", "removing"))
 
             def do_remove():
+                """Uninstall WebCord via the Discord service."""
                 self._discord_service.uninstall_webcord()
                 return True
 
             def on_complete(result):
+                """Refresh status and notify user after WebCord removal."""
                 self._refresh_status()
                 if result:
                     self.show_toast(get_text("messages", "remove_success").format("WebCord"))

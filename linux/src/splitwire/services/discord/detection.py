@@ -26,6 +26,10 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Detection-specific timeouts (seconds)
+TIMEOUT_PACKAGE_QUERY = 10  # dpkg, snap, flatpak queries
+TIMEOUT_PROCESS_CHECK = 5  # pgrep checks
+
 
 def detect_version(service: DiscordService, version: DiscordVersion) -> DiscordInstallation:
     """Detect a specific Discord version."""
@@ -51,7 +55,10 @@ def detect_version(service: DiscordService, version: DiscordVersion) -> DiscordI
 def detect_webcord(service: DiscordService) -> WebCordInstallation:
     """Detect WebCord installation."""
     webcord = WebCordInstallation()
-    result = service._shell.run(["flatpak", "info", "io.github.nickvision.webcord"], timeout=10)
+    result = service._shell.run(
+        ["flatpak", "info", "io.github.nickvision.webcord"],
+        timeout=TIMEOUT_PACKAGE_QUERY,
+    )
     if result.success:
         webcord.installed = True
         webcord.method = InstallMethod.FLATPAK
@@ -70,7 +77,7 @@ def detect_webcord(service: DiscordService) -> WebCordInstallation:
             )
             webcord.path = str(p)
             break
-    result = service._shell.run(["pgrep", "-f", "webcord"], timeout=5)
+    result = service._shell.run(["pgrep", "-f", "webcord"], timeout=TIMEOUT_PROCESS_CHECK)
     webcord.is_running = result.success and bool(result.stdout.strip())
     return webcord
 
@@ -79,7 +86,7 @@ def is_discord_running(service: DiscordService, version: DiscordVersion) -> bool
     """Check if Discord version is running."""
     binaries = DISCORD_BINARIES.get(version.value, [])
     for binary in binaries:
-        result = service._shell.run(["pgrep", "-f", binary], timeout=5)
+        result = service._shell.run(["pgrep", "-f", binary], timeout=TIMEOUT_PROCESS_CHECK)
         if result.success and result.stdout.strip():
             return True
     return False
@@ -154,7 +161,7 @@ def _check_cache(inst: DiscordInstallation) -> None:
 
 def _is_deb_installed(service: DiscordService, package_name: str) -> bool:
     """Check if a DEB package is installed."""
-    result = service._shell.run(["dpkg", "-s", package_name], timeout=10)
+    result = service._shell.run(["dpkg", "-s", package_name], timeout=TIMEOUT_PACKAGE_QUERY)
     return result.success and "Status: install ok installed" in result.stdout
 
 
@@ -163,7 +170,7 @@ def _is_snap_installed(service: DiscordService, version: DiscordVersion) -> bool
     snap_name = SNAP_DISCORD_NAMES.get(version.value)
     if not snap_name:
         return False
-    return service._shell.run(["snap", "list", snap_name], timeout=10).success
+    return service._shell.run(["snap", "list", snap_name], timeout=TIMEOUT_PACKAGE_QUERY).success
 
 
 def _is_flatpak_installed(service: DiscordService, version: DiscordVersion) -> bool:
@@ -171,4 +178,8 @@ def _is_flatpak_installed(service: DiscordService, version: DiscordVersion) -> b
     flatpak_id = FLATPAK_DISCORD_IDS.get(version.value)
     if not flatpak_id:
         return False
-    return service._shell.run(["flatpak", "info", flatpak_id], timeout=10).success
+    result = service._shell.run(
+        ["flatpak", "info", flatpak_id],
+        timeout=TIMEOUT_PACKAGE_QUERY,
+    )
+    return result.success

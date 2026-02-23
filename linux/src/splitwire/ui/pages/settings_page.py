@@ -27,7 +27,14 @@ if TYPE_CHECKING:
 class SettingsPage(BasePage):
     """Application settings page."""
 
-    def __init__(self, window: "SplitWireWindow"):
+    TIMEOUT_UPDATE_CHECK = 10.0  # seconds for GitHub API request
+
+    def __init__(self, window: "SplitWireWindow") -> None:
+        """Initialize settings page.
+
+        Args:
+            window: Parent application window.
+        """
         super().__init__(window)
 
     def _build_ui(self):
@@ -254,7 +261,7 @@ class SettingsPage(BasePage):
             try:
                 response = httpx.get(
                     "https://api.github.com/repos/dogukanveziroglu/SplitWire-Turkey/releases/latest",
-                    timeout=10.0,
+                    timeout=self.TIMEOUT_UPDATE_CHECK,
                 )
                 if response.status_code == 200:
                     data = response.json()

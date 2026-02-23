@@ -37,6 +37,10 @@ class ByeDPIService(BaseService):
     Runs ciadpi as a SOCKS5 proxy for traffic processing.
     """
 
+    # ByeDPI-specific timeouts (seconds)
+    TIMEOUT_SYSTEMCTL_ACTION = 30
+    TIMEOUT_SYSTEMCTL_QUERY = 10
+
     def __init__(self):
         """Initialize ByeDPI service."""
         super().__init__(
@@ -191,7 +195,9 @@ class ByeDPIService(BaseService):
         self._logger.info("Starting ByeDPI")
 
         if self._is_service_installed():
-            result = self._run_privileged(["systemctl", "start", SYSTEMD_SERVICE], timeout=30)
+            result = self._run_privileged(
+                ["systemctl", "start", SYSTEMD_SERVICE], timeout=self.TIMEOUT_SYSTEMCTL_ACTION
+            )
             if result.success:
                 self._logger.info("ByeDPI started via systemd")
                 self._notify_status_change(ServiceStatus.RUNNING)
@@ -204,7 +210,9 @@ class ByeDPIService(BaseService):
         self._logger.info("Stopping ByeDPI")
 
         if self._is_service_installed():
-            result = self._run_privileged(["systemctl", "stop", SYSTEMD_SERVICE], timeout=30)
+            result = self._run_privileged(
+                ["systemctl", "stop", SYSTEMD_SERVICE], timeout=self.TIMEOUT_SYSTEMCTL_ACTION
+            )
             if result.success:
                 self._logger.info("ByeDPI stopped via systemd")
                 self._notify_status_change(ServiceStatus.STOPPED)
@@ -219,7 +227,7 @@ class ByeDPIService(BaseService):
         if self._is_service_installed():
             result = self._shell.run(
                 ["systemctl", "is-active", SYSTEMD_SERVICE],
-                timeout=10,
+                timeout=self.TIMEOUT_SYSTEMCTL_QUERY,
             )
             stdout = result.stdout.strip().lower()
             if stdout == "active":
@@ -397,7 +405,7 @@ class ByeDPIService(BaseService):
         """Check if systemd service is installed."""
         result = self._shell.run(
             ["systemctl", "list-unit-files", SYSTEMD_SERVICE],
-            timeout=10,
+            timeout=self.TIMEOUT_SYSTEMCTL_QUERY,
         )
         return SYSTEMD_SERVICE in result.stdout
 

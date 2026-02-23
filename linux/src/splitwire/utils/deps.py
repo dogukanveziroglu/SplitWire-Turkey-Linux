@@ -216,13 +216,23 @@ class DependencyChecker:
         python_deps: List of Python package dependencies.
     """
 
+    # Timeout constants (seconds)
+    TIMEOUT_CHECK_COMMAND = 10  # dependency check commands
+    TIMEOUT_APT_UPDATE = 120  # apt update
+    TIMEOUT_APT_INSTALL = 300  # apt install (interactive, may be slow)
+    TIMEOUT_PIP_INSTALL = 120  # pip install
+
     def __init__(self) -> None:
         """Initialize checker with copies of dependency lists."""
         self.system_deps = [Dependency(**d.__dict__) for d in SYSTEM_DEPENDENCIES]
         self.python_deps = [Dependency(**d.__dict__) for d in PYTHON_DEPENDENCIES]
         self._apt_available: bool | None = None
 
-    def _run_command(self, cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
+    def _run_command(
+        self,
+        cmd: list[str],
+        timeout: int = TIMEOUT_CHECK_COMMAND,
+    ) -> tuple[int, str, str]:
         """Run a command and return (returncode, stdout, stderr)."""
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
@@ -394,7 +404,7 @@ class DependencyChecker:
 
         cmd = ["sudo", "apt", "update"]
         logger.debug("[DEPS] Running: %s", " ".join(cmd))
-        code, _, _ = self._run_command(cmd, timeout=120)
+        code, _, _ = self._run_command(cmd, timeout=self.TIMEOUT_APT_UPDATE)
         if code != 0:
             logger.warning("[DEPS] apt update failed, continuing anyway...")
 
@@ -403,7 +413,7 @@ class DependencyChecker:
 
         # For installation, we need to run interactively
         try:
-            result = subprocess.run(cmd, timeout=300)
+            result = subprocess.run(cmd, timeout=self.TIMEOUT_APT_INSTALL)
             if result.returncode == 0:
                 logger.info("[DEPS] System packages installed successfully")
             else:
@@ -445,7 +455,7 @@ class DependencyChecker:
         logger.info("[DEPS] Running: %s", " ".join(cmd))
 
         try:
-            result = subprocess.run(cmd, timeout=120)
+            result = subprocess.run(cmd, timeout=self.TIMEOUT_PIP_INSTALL)
             return result.returncode == 0
         except (subprocess.SubprocessError, OSError) as e:
             logger.error("[DEPS] Error installing packages: %s", e)

@@ -18,6 +18,7 @@ from .models import CommandResult, CommandStatus
 logger = logging.getLogger(__name__)
 
 _PREVIEW_LEN = 80
+_READER_JOIN_TIMEOUT = 1  # seconds to wait for reader thread after terminate
 
 
 def _cmd_preview(cmd_str: str) -> str:
@@ -188,7 +189,7 @@ def _handle_timeout(
 ) -> CommandResult:
     """Terminate a streaming process that exceeded timeout."""
     process.terminate()
-    reader.join(timeout=1)
+    reader.join(timeout=_READER_JOIN_TIMEOUT)
     if reader.is_alive():
         process.kill()
         reader.join()

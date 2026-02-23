@@ -53,7 +53,13 @@ class ZapretService(BaseService):
     presets, and custom configurations.
     """
 
-    def __init__(self):
+    # Zapret-specific timeouts (seconds)
+    TIMEOUT_REMOVE_DIR = 60
+    TIMEOUT_PROCESS_KILL = 5
+    TIMEOUT_PROCESS_CHECK = 5
+
+    def __init__(self) -> None:
+        """Initialize Zapret service and load saved configuration."""
         super().__init__(
             name="zapret",
             display_name="Zapret",
@@ -103,7 +109,10 @@ class ZapretService(BaseService):
                 self.stop()
             remove_systemd_service(self)
             if ZAPRET_INSTALL_DIR.exists():
-                result = self._run_privileged(["rm", "-rf", str(ZAPRET_INSTALL_DIR)], timeout=60)
+                result = self._run_privileged(
+                    ["rm", "-rf", str(ZAPRET_INSTALL_DIR)],
+                    timeout=self.TIMEOUT_REMOVE_DIR,
+                )
                 if not result.success:
                     self._logger.warning("Failed to remove %s", ZAPRET_INSTALL_DIR)
             self._logger.info("Zapret removed successfully")
@@ -226,7 +235,7 @@ class ZapretService(BaseService):
                 pid = self._nfqws_process.pid
             if pid:
                 self._kill_pid(pid)
-            self._shell.run(["pkill", "-9", "nfqws"], timeout=5)
+            self._shell.run(["pkill", "-9", "nfqws"], timeout=self.TIMEOUT_PROCESS_KILL)
             if NFQWS_PID_FILE.exists():
                 NFQWS_PID_FILE.unlink()
             self._nfqws_process = None
@@ -237,7 +246,7 @@ class ZapretService(BaseService):
 
     def _is_nfqws_running(self) -> bool:
         """Check if nfqws is running."""
-        result = self._shell.run(["pgrep", "-x", "nfqws"], timeout=5)
+        result = self._shell.run(["pgrep", "-x", "nfqws"], timeout=self.TIMEOUT_PROCESS_CHECK)
         self._logger.debug("[ZAPRET] nfqws process running: %s", result.success)
         return result.success
 
@@ -293,7 +302,7 @@ class ZapretService(BaseService):
                 pid = self._tpws_process.pid
             if pid:
                 self._kill_pid(pid)
-            self._shell.run(["pkill", "-9", "tpws"], timeout=5)
+            self._shell.run(["pkill", "-9", "tpws"], timeout=self.TIMEOUT_PROCESS_KILL)
             if TPWS_PID_FILE.exists():
                 TPWS_PID_FILE.unlink()
             self._tpws_process = None
@@ -304,7 +313,7 @@ class ZapretService(BaseService):
 
     def _is_tpws_running(self) -> bool:
         """Check if tpws is running."""
-        result = self._shell.run(["pgrep", "-x", "tpws"], timeout=5)
+        result = self._shell.run(["pgrep", "-x", "tpws"], timeout=self.TIMEOUT_PROCESS_CHECK)
         self._logger.debug("[ZAPRET] tpws process running: %s", result.success)
         return result.success
 

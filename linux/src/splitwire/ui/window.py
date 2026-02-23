@@ -20,7 +20,8 @@ from splitwire.core import get_text
 class SplitWireWindow(Adw.ApplicationWindow):
     """Main window for SplitWire-Turkey application."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
+        """Initialize the main application window and build the UI."""
         super().__init__(**kwargs)
 
         self._logger = logging.getLogger(__name__)
