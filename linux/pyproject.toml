@@ -43,7 +43,6 @@ dev = [
 
 [project.scripts]
 splitwire = "splitwire.__main__:main"
-splitwire-cli = "splitwire.cli:main"
 
 [project.gui-scripts]
 splitwire-gtk = "splitwire.__main__:main"
@@ -83,7 +82,7 @@ select = [
 "src/splitwire/__main__.py" = ["PLC0415", "E402", "PLR2004", "F401"]
 # Subprocess execution; singleton pattern (PLW0603)
 "src/splitwire/core/shell/*.py" = ["S603", "S607", "PLC0415", "N806", "PLW0603"]
-"src/splitwire/utils/polkit.py" = ["S603", "S607", "PLR2004", "PLW1510", "ARG002", "PLW0603"]
+"src/splitwire/utils/polkit.py" = ["S603", "S607", "PLR2004", "PLW1510", "ARG002", "PLW0603", "PLC0415"]
 # Services: subprocess, lazy imports, signal args, singleton, trusted GitHub URLs
 "src/splitwire/services/*.py" = ["S603", "S607", "PLC0415", "ARG002", "PLW0603", "S310"]
 "src/splitwire/services/**/*.py" = ["S603", "S607", "PLC0415", "ARG002", "PLW0603", "S310"]
@@ -93,7 +92,10 @@ select = [
 "src/splitwire/core/config.py" = ["PLW0603"]
 "src/splitwire/core/language.py" = ["PLW0603"]
 # Dependency checker uses subprocess for package management
-"src/splitwire/utils/deps.py" = ["S603", "S607", "PLW1510", "PLR2004"]
+"src/splitwire/utils/deps.py" = ["S603", "S607", "PLW1510", "PLR2004", "PLC0415"]
+"src/splitwire/utils/deps_install.py" = ["S603", "S607", "PLW1510"]
+# Polkit helpers use subprocess for privilege escalation
+"src/splitwire/utils/polkit_helpers.py" = ["S603", "S607", "PLR2004"]
 # System detector uses subprocess for system inspection
 "src/splitwire/utils/system.py" = ["S603", "S607", "PLW1510", "PLR2004", "PLC0415"]
 

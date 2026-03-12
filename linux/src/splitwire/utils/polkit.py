@@ -170,51 +170,45 @@ class PolkitHelper:
 
         Returns:
             ElevationResult with output and status.
-
-        Example:
-            >>> helper = PolkitHelper()
-            >>> result = helper.run_elevated(["whoami"])
-            >>> isinstance(result, ElevationResult)
-            True
         """
+        from .polkit_helpers import log_elevation_result
+
         method = self.elevation_method
         cmd_str = " ".join(command)
         cmd_preview = cmd_str[:80] + "..." if len(cmd_str) > 80 else cmd_str
-        logger.debug(f"[POLKIT] Running elevated ({method.value}): {cmd_preview}")
+        logger.debug("[POLKIT] Running elevated (%s): %s", method.value, cmd_preview)
+
+        result = self._dispatch_elevation(command, action_id, timeout, capture_output)
+        log_elevation_result(result, cmd_preview)
+        return result
+
+    def _dispatch_elevation(
+        self,
+        command: list[str],
+        action_id: str | None,
+        timeout: int,
+        capture_output: bool,
+    ) -> ElevationResult:
+        """Dispatch to the appropriate elevation backend."""
+        method = self.elevation_method
 
         if method == ElevationMethod.ROOT:
-            # Already root, run directly
-            result = self._run_direct(command, timeout, capture_output)
-        elif method == ElevationMethod.PKEXEC:
-            result = self._run_pkexec(command, action_id, timeout, capture_output)
-        elif method == ElevationMethod.SUDO:
-            result = self._run_sudo(command, timeout, capture_output)
-        elif method in (ElevationMethod.GKSUDO, ElevationMethod.KDESUDO):
-            result = self._run_legacy_sudo(command, method, timeout, capture_output)
-        else:
-            logger.error("[POLKIT] No elevation method available")
-            return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr="No elevation method available",
-                method=ElevationMethod.NONE,
-            )
+            return self._run_direct(command, timeout, capture_output)
+        if method == ElevationMethod.PKEXEC:
+            return self._run_pkexec(command, action_id, timeout, capture_output)
+        if method == ElevationMethod.SUDO:
+            return self._run_sudo(command, timeout, capture_output)
+        if method in (ElevationMethod.GKSUDO, ElevationMethod.KDESUDO):
+            return self._run_legacy_sudo(command, method, timeout, capture_output)
 
-        # Log result
-        if result.success:
-            logger.info(f"[POLKIT] Elevation successful: {cmd_preview}")
-        elif result.cancelled:
-            logger.warning("[POLKIT] User cancelled elevation")
-        else:
-            logger.error(f"[POLKIT] Elevation failed (exit={result.returncode}): {cmd_preview}")
-            if result.stderr:
-                stderr_preview = (
-                    result.stderr[:200] + "..." if len(result.stderr) > 200 else result.stderr
-                )
-                logger.error(f"[POLKIT] stderr: {stderr_preview}")
-
-        return result
+        logger.error("[POLKIT] No elevation method available")
+        return ElevationResult(
+            success=False,
+            returncode=-1,
+            stdout="",
+            stderr="No elevation method available",
+            method=ElevationMethod.NONE,
+        )
 
     def _run_direct(
         self, command: list[str], timeout: int, capture_output: bool
@@ -254,61 +248,10 @@ class PolkitHelper:
     def _run_pkexec(
         self, command: list[str], action_id: str | None, timeout: int, capture_output: bool
     ) -> ElevationResult:
-        """Run command with pkexec."""
-        # Build pkexec command
-        pkexec_cmd = ["pkexec"]
+        """Run command with pkexec (delegates to polkit_helpers)."""
+        from .polkit_helpers import run_pkexec
 
-        # Note: pkexec doesn't support --action directly for arbitrary commands
-        # The action ID is determined by the policy file based on the command
-        pkexec_cmd.extend(command)
-
-        try:
-            if capture_output:
-                result = subprocess.run(
-                    pkexec_cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout,
-                    env=self._get_pkexec_env(),
-                )
-            else:
-                result = subprocess.run(pkexec_cmd, timeout=timeout, env=self._get_pkexec_env())
-                return ElevationResult(
-                    success=result.returncode == 0,
-                    returncode=result.returncode,
-                    stdout="",
-                    stderr="",
-                    method=ElevationMethod.PKEXEC,
-                )
-
-            # Check for user cancellation (pkexec returns 126 when cancelled)
-            cancelled = result.returncode == 126
-
-            return ElevationResult(
-                success=result.returncode == 0,
-                returncode=result.returncode,
-                stdout=result.stdout if capture_output else "",
-                stderr=result.stderr if capture_output else "",
-                cancelled=cancelled,
-                method=ElevationMethod.PKEXEC,
-            )
-
-        except subprocess.TimeoutExpired:
-            return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr="Command timed out",
-                method=ElevationMethod.PKEXEC,
-            )
-        except Exception as e:
-            return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr=str(e),
-                method=ElevationMethod.PKEXEC,
-            )
+        return run_pkexec(self, command, action_id, timeout, capture_output)
 
     def _run_sudo(self, command: list[str], timeout: int, capture_output: bool) -> ElevationResult:
         """Run command with sudo."""
@@ -470,48 +413,9 @@ class PolkitHelper:
         Returns:
             ElevationResult from the tee command.
         """
-        # Use tee to write to file
-        proc = None
-        try:
-            proc = subprocess.Popen(
-                ["pkexec", "tee", path],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                env=self._get_pkexec_env(),
-            )
-            stdout, stderr = proc.communicate(input=content, timeout=self.TIMEOUT_FILE_WRITE)
+        from .polkit_helpers import write_file_as_root as _write
 
-            return ElevationResult(
-                success=proc.returncode == 0,
-                returncode=proc.returncode,
-                stdout=stdout,
-                stderr=stderr,
-                cancelled=proc.returncode == 126,
-                method=ElevationMethod.PKEXEC,
-            )
-        except subprocess.TimeoutExpired:
-            if proc:
-                proc.kill()
-                proc.communicate()  # Clean up
-            return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr="Command timed out",
-                method=ElevationMethod.PKEXEC,
-            )
-        except Exception as e:
-            if proc and proc.poll() is None:
-                proc.kill()
-            return ElevationResult(
-                success=False,
-                returncode=-1,
-                stdout="",
-                stderr=str(e),
-                method=ElevationMethod.PKEXEC,
-            )
+        return _write(self, content, path)
 
 
 # Global instance for convenience
