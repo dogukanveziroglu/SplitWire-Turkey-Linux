@@ -5,15 +5,28 @@ Extracts VPN operation logic and async result handling
 to keep main_page.py under 500 lines.
 """
 
+from __future__ import annotations
+
 import logging
 import time
+from typing import TYPE_CHECKING
 
 from splitwire.core import get_config, get_text, save_config
+
+if TYPE_CHECKING:
+    from splitwire.services.dns.service import DNSManager
+    from splitwire.services.split_tunnel.service import SplitTunnelService
+    from splitwire.services.wireguard import TunnelMode
+    from splitwire.services.wireguard.service import WireGuardService
 
 logger = logging.getLogger(__name__)
 
 
-def do_wireguard_setup(wg_service, dns_service, tunnel_mode=None):
+def do_wireguard_setup(
+    wg_service: WireGuardService,
+    dns_service: DNSManager,
+    tunnel_mode: TunnelMode | None = None,
+) -> tuple[bool, str | None]:
     """
     Run the WireGuard setup sequence.
 
@@ -63,7 +76,10 @@ def do_wireguard_setup(wg_service, dns_service, tunnel_mode=None):
         return (False, str(e))
 
 
-def do_disconnect(wg_service, dns_service):
+def do_disconnect(
+    wg_service: WireGuardService,
+    dns_service: DNSManager,
+) -> tuple[bool, str | None]:
     """
     Disconnect VPN and restore DNS.
 
@@ -79,7 +95,11 @@ def do_disconnect(wg_service, dns_service):
         return (False, str(e))
 
 
-def do_remove_services(wg_service, st_service, dns_service):
+def do_remove_services(
+    wg_service: WireGuardService,
+    st_service: SplitTunnelService,
+    dns_service: DNSManager,
+) -> tuple[bool, str | None]:
     """
     Remove all WireGuard-related services.
 
@@ -98,12 +118,12 @@ def do_remove_services(wg_service, st_service, dns_service):
 
 
 def save_page_settings(
-    enabled_apps,
-    custom_apps,
-    switch_browser,
-    switch_refresh,
-    switch_full_tunnel,
-):
+    enabled_apps: dict[str, bool],
+    custom_apps: list[str],
+    switch_browser: object,
+    switch_refresh: object,
+    switch_full_tunnel: object,
+) -> None:
     """Save main page settings to config file."""
     try:
         config = get_config()
@@ -119,12 +139,12 @@ def save_page_settings(
 
 
 def load_page_settings(
-    enabled_apps,
-    custom_apps_ref,
-    switch_browser,
-    switch_refresh,
-    switch_full_tunnel,
-):
+    enabled_apps: dict[str, bool],
+    custom_apps_ref: list[str],
+    switch_browser: object,
+    switch_refresh: object,
+    switch_full_tunnel: object,
+) -> list[str]:
     """
     Load main page settings from config file.
 

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class BasePage(Gtk.Box):
     """Base class for all application pages."""
 
-    def __init__(self, window: "SplitWireWindow", **kwargs) -> None:
+    def __init__(self, window: "SplitWireWindow", **kwargs: object) -> None:
         """Initialize base page with window reference and build UI.
 
         Args:
@@ -44,36 +44,36 @@ class BasePage(Gtk.Box):
         # Build the page content
         self._build_ui()
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the page UI. Must be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement _build_ui()")
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh page data. Override in subclasses if needed."""
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh translations. Override in subclasses if needed."""
 
-    def show_toast(self, message: str, timeout: int = 3):
+    def show_toast(self, message: str, timeout: int = 3) -> None:
         """Show a toast notification."""
         if self._window:
             self._window.show_toast(message, timeout)
 
-    def set_status(self, message: str):
+    def set_status(self, message: str) -> None:
         """Set status bar message."""
         if self._window:
             self._window.set_status(message)
 
-    def set_busy(self, busy: bool):
+    def set_busy(self, busy: bool) -> None:
         """Set busy state (for long operations)."""
         self._is_busy = busy
         self.set_sensitive(not busy)
 
-    def run_async(self, func: Callable, callback: Callable | None = None, *args):
+    def run_async(self, func: Callable, callback: Callable | None = None, *args: object) -> None:
         """Run a function asynchronously in a thread."""
         import threading
 
-        def thread_func():
+        def thread_func() -> None:
             """Run func in background and dispatch callback on the main thread."""
             try:
                 result = func(*args)

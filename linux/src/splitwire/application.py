@@ -53,7 +53,7 @@ class SplitWireApp(Adw.Application):
         # Setup actions
         self._setup_actions()
 
-    def _setup_actions(self):
+    def _setup_actions(self) -> None:
         """Setup application actions."""
         # Quit action
         quit_action = Gio.SimpleAction.new("quit", None)
@@ -82,7 +82,7 @@ class SplitWireApp(Adw.Application):
         # Load CSS if available
         self._load_css()
 
-    def _init_core_systems(self):
+    def _init_core_systems(self) -> None:
         """Initialize core systems (config, language, logging)."""
         try:
             logger.info("SplitWire-Turkey starting...")
@@ -106,7 +106,7 @@ class SplitWireApp(Adw.Application):
         except (OSError, ValueError, KeyError, TypeError) as e:
             sys.stderr.write(f"Error initializing core systems: {e}\n")
 
-    def _apply_theme(self, theme: str):
+    def _apply_theme(self, theme: str) -> None:
         """Apply the specified theme."""
         style_manager = Adw.StyleManager.get_default()
 
@@ -117,7 +117,7 @@ class SplitWireApp(Adw.Application):
         else:  # system
             style_manager.set_color_scheme(Adw.ColorScheme.DEFAULT)
 
-    def _load_css(self):
+    def _load_css(self) -> None:
         """Load custom CSS styles."""
         css_provider = Gtk.CssProvider()
 
@@ -200,7 +200,7 @@ class SplitWireApp(Adw.Application):
                 Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
 
-    def on_activate(self, _app):
+    def on_activate(self, _app: object) -> None:
         """Called when the application is activated."""
         if not self.window:
             self.window = SplitWireWindow(application=self)
@@ -208,7 +208,7 @@ class SplitWireApp(Adw.Application):
         self.window.present()
         logger.info("Main window presented")
 
-    def on_shutdown(self, _app):
+    def on_shutdown(self, _app: object) -> None:
         """Called when the application is shutting down."""
         logger.info("SplitWire-Turkey shutting down...")
 
@@ -219,11 +219,11 @@ class SplitWireApp(Adw.Application):
             except (OSError, ValueError, TypeError) as e:
                 logger.error("Error saving config: %s", e)
 
-    def on_quit(self, _action, _param):
+    def on_quit(self, _action: object, _param: object) -> None:
         """Handle quit action."""
         self.quit()
 
-    def on_about(self, _action, _param):
+    def on_about(self, _action: object, _param: object) -> None:
         """Show about dialog."""
         about = Adw.AboutWindow(
             transient_for=self.window,
@@ -248,7 +248,7 @@ class SplitWireApp(Adw.Application):
         )
         about.present()
 
-    def on_preferences(self, _action, _param):
+    def on_preferences(self, _action: object, _param: object) -> None:
         """Show preferences (navigate to settings page)."""
         if self.window:
             self.window.navigate_to_settings()
@@ -316,7 +316,7 @@ class SplitWireApp(Adw.Application):
             self.window.show_toast(message, timeout)
 
 
-def main():
+def main() -> int:
     """Main entry point for the application."""
     app = SplitWireApp()
     return app.run(sys.argv)

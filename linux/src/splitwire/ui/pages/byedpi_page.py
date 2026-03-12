@@ -40,7 +40,7 @@ class ByeDPIPage(BasePage):
         self._proxy_service = get_proxy_route_service()
         super().__init__(window)
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the ByeDPI page UI."""
         # Status indicator
         self._status_box = Gtk.Box(
@@ -157,7 +157,7 @@ class ByeDPIPage(BasePage):
         help_btn = self.create_help_button(self._on_help)
         help_box.append(help_btn)
 
-    def _update_status_indicator(self):
+    def _update_status_indicator(self) -> None:
         """Update the status indicator."""
         # Clear existing children
         while child := self._status_box.get_first_child():
@@ -183,11 +183,11 @@ class ByeDPIPage(BasePage):
         label = Gtk.Label(label=status_text)
         self._status_box.append(label)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh page data."""
         self._update_status_indicator()
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh UI translations."""
         self._btn_split_setup.set_label(get_text("byedpi", "split_setup"))
         self._switch_browser.set_title(get_text("main", "browser_tunneling"))
@@ -195,12 +195,12 @@ class ByeDPIPage(BasePage):
 
     # Event handlers
 
-    def _on_split_setup(self, button):
+    def _on_split_setup(self, button: object) -> None:
         """Handle split tunneling setup."""
         self._logger.info("[UI:ByeDPI] Starting split tunneling setup...")
         self.set_status(get_text("status", "installing"))
 
-        def do_setup():
+        def do_setup() -> bool:
             """Install, configure, and start ByeDPI with proxy routing."""
             # Get selected preset
             selected = self._combo_preset.get_selected()
@@ -228,7 +228,7 @@ class ByeDPIPage(BasePage):
 
             return True
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
             """Update status indicator and notify user after setup."""
             self._update_status_indicator()
             if result:
@@ -240,7 +240,7 @@ class ByeDPIPage(BasePage):
 
         self.run_async(do_setup, on_complete)
 
-    def _on_browser_tunneling_changed(self, row, param):
+    def _on_browser_tunneling_changed(self, row: object, param: object) -> None:
         """Handle browser tunneling switch change."""
         active = row.get_active()
         self._logger.info(f"[UI:ByeDPI] Browser tunneling changed: {active}")
@@ -249,7 +249,7 @@ class ByeDPIPage(BasePage):
         else:
             self._lbl_status.set_label("")
 
-    def _on_preset_changed(self, row, param):
+    def _on_preset_changed(self, row: object, param: object) -> None:
         """Handle preset selection change."""
         selected = row.get_selected()
         preset_names = list(BYEDPI_PRESETS.keys())
@@ -263,7 +263,7 @@ class ByeDPIPage(BasePage):
             buffer = self._entry_params.get_buffer()
             buffer.set_text(params)
 
-    def _on_remove(self, button):
+    def _on_remove(self, button: object) -> None:
         """Handle remove button click."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
@@ -276,13 +276,13 @@ class ByeDPIPage(BasePage):
         dialog.connect("response", self._on_remove_confirmed)
         dialog.present()
 
-    def _on_remove_confirmed(self, dialog, response):
+    def _on_remove_confirmed(self, dialog: object, response: str) -> None:
         """Handle remove confirmation."""
         if response == "remove":
             self._logger.info("[UI:ByeDPI] Removing ByeDPI service...")
             self.set_status(get_text("status", "removing"))
 
-            def do_remove():
+            def do_remove() -> bool:
                 """Stop and remove proxy routing and ByeDPI services."""
                 self._proxy_service.stop()
                 self._proxy_service.remove()
@@ -290,7 +290,7 @@ class ByeDPIPage(BasePage):
                 self._byedpi_service.remove()
                 return True
 
-            def on_complete(result):
+            def on_complete(result: object) -> None:
                 """Update status and notify user after removal."""
                 self._update_status_indicator()
                 if result:
@@ -299,7 +299,7 @@ class ByeDPIPage(BasePage):
 
             self.run_async(do_remove, on_complete)
 
-    def _on_help(self, button):
+    def _on_help(self, button: object) -> None:
         """Handle help button click."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,

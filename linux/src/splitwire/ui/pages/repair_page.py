@@ -38,7 +38,7 @@ class RepairPage(BasePage):
         self._discord_service = get_discord_service()
         super().__init__(window)
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the repair page UI."""
         # Main actions group
         actions_group = self.create_preferences_group(title=get_text("repair", "actions"))
@@ -133,7 +133,9 @@ class RepairPage(BasePage):
         help_btn = self.create_help_button(self._on_help)
         help_box.append(help_btn)
 
-    def _create_status_row(self, title: str, key: str, action_callback, remove_callback) -> dict:
+    def _create_status_row(
+        self, title: str, key: str, action_callback: object, remove_callback: object
+    ) -> dict:
         """Create a status row with action and remove buttons."""
         row = Adw.ActionRow(
             title=title,
@@ -188,7 +190,7 @@ class RepairPage(BasePage):
             "key": key,
         }
 
-    def _update_status_row(self, status_dict: dict, installed: bool, running: bool = False):
+    def _update_status_row(self, status_dict: dict, installed: bool, running: bool = False) -> None:
         """Update a status row's appearance."""
         if installed:
             if running:
@@ -206,11 +208,11 @@ class RepairPage(BasePage):
             status_dict["action_btn"].set_label(get_text("buttons", "install"))
             status_dict["remove_btn"].set_visible(False)
 
-    def _refresh_status(self):
+    def _refresh_status(self) -> None:
         """Refresh all status indicators."""
         self._logger.debug("[UI:Repair] Refreshing Discord status...")
 
-        def do_refresh():
+        def do_refresh() -> dict:
             """Query Discord, PTB, and WebCord installation status."""
             # Get Discord installations
             installations = self._discord_service.get_installations()
@@ -226,7 +228,7 @@ class RepairPage(BasePage):
                 "webcord": webcord,
             }
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
             """Update all status rows from query results."""
             if result:
                 # Update Discord status
@@ -255,11 +257,11 @@ class RepairPage(BasePage):
 
         self.run_async(do_refresh, on_complete)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh page data."""
         self._refresh_status()
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh UI translations."""
         self._btn_repair.set_label(get_text("repair", "repair_discord"))
         self._btn_ptb.set_label(get_text("repair", "install_ptb"))
@@ -267,16 +269,16 @@ class RepairPage(BasePage):
 
     # Event handlers
 
-    def _on_repair_discord(self, button):
+    def _on_repair_discord(self, button: object) -> None:
         """Handle repair Discord button."""
         self._logger.info("[UI:Repair] Repairing Discord...")
         self.set_status(get_text("status", "installing"))
 
-        def do_repair():
+        def do_repair() -> object:
             """Run Discord repair via the service."""
             return self._discord_service.repair_discord()
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
             """Refresh status and show repair outcome."""
             self._refresh_status()
             if result and result.success:
@@ -288,7 +290,7 @@ class RepairPage(BasePage):
 
         self.run_async(do_repair, on_complete)
 
-    def _on_install_ptb(self, button):
+    def _on_install_ptb(self, button: object) -> None:
         """Handle install PTB button."""
         self._logger.info("[UI:Repair] Installing Discord PTB...")
         clean_install = self._switch_clean_ptb.get_active()
@@ -308,16 +310,16 @@ class RepairPage(BasePage):
         else:
             self._do_install_ptb()
 
-    def _on_clean_install_confirmed(self, dialog, response):
+    def _on_clean_install_confirmed(self, dialog: object, response: str) -> None:
         """Handle clean install confirmation."""
         if response == "continue":
             self._do_install_ptb(clean=True)
 
-    def _do_install_ptb(self, clean: bool = False):
+    def _do_install_ptb(self, clean: bool = False) -> None:
         """Perform PTB installation."""
         self.set_status(get_text("status", "installing"))
 
-        def do_install():
+        def do_install() -> bool:
             """Optionally clean-install, then install Discord PTB."""
             if clean:
                 # Remove existing Discord first
@@ -331,7 +333,7 @@ class RepairPage(BasePage):
             self._discord_service.install_discord(DiscordVersion.PTB)
             return True
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
             """Refresh status and notify user after PTB install."""
             self._refresh_status()
             if result:
@@ -340,18 +342,18 @@ class RepairPage(BasePage):
 
         self.run_async(do_install, on_complete)
 
-    def _on_install_webcord(self, button):
+    def _on_install_webcord(self, button: object) -> None:
         """Handle install WebCord button."""
         self._logger.info("[UI:Repair] Installing WebCord...")
         create_shortcut = self._switch_webcord_shortcut.get_active()
         self.set_status(get_text("status", "installing"))
 
-        def do_install():
+        def do_install() -> bool:
             """Install WebCord with optional desktop shortcut."""
             self._discord_service.install_webcord(create_shortcut=create_shortcut)
             return True
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
             """Refresh status and notify user after WebCord install."""
             self._refresh_status()
             if result:
@@ -360,7 +362,7 @@ class RepairPage(BasePage):
 
         self.run_async(do_install, on_complete)
 
-    def _on_discord_action(self, button):
+    def _on_discord_action(self, button: object) -> None:
         """Handle Discord action button (install/launch)."""
         label = button.get_label()
         if label == get_text("buttons", "install"):
@@ -368,16 +370,16 @@ class RepairPage(BasePage):
         else:
             self._discord_service.launch_discord(DiscordVersion.STABLE)
 
-    def _do_install_discord(self):
+    def _do_install_discord(self) -> None:
         """Install Discord stable."""
         self.set_status(get_text("status", "installing"))
 
-        def do_install():
+        def do_install() -> bool:
             """Install Discord stable release."""
             self._discord_service.install_discord(DiscordVersion.STABLE)
             return True
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
             """Refresh status and notify user after Discord install."""
             self._refresh_status()
             if result:
@@ -386,11 +388,11 @@ class RepairPage(BasePage):
 
         self.run_async(do_install, on_complete)
 
-    def _on_discord_remove(self, button):
+    def _on_discord_remove(self, button: object) -> None:
         """Handle Discord remove button."""
         self._confirm_remove("Discord", DiscordVersion.STABLE)
 
-    def _on_ptb_action(self, button):
+    def _on_ptb_action(self, button: object) -> None:
         """Handle PTB action button (install/launch)."""
         label = button.get_label()
         if label == get_text("buttons", "install"):
@@ -398,11 +400,11 @@ class RepairPage(BasePage):
         else:
             self._discord_service.launch_discord(DiscordVersion.PTB)
 
-    def _on_ptb_remove(self, button):
+    def _on_ptb_remove(self, button: object) -> None:
         """Handle PTB remove button."""
         self._confirm_remove("Discord PTB", DiscordVersion.PTB)
 
-    def _on_webcord_action(self, button):
+    def _on_webcord_action(self, button: object) -> None:
         """Handle WebCord action button (install/launch)."""
         label = button.get_label()
         if label == get_text("buttons", "install"):
@@ -410,11 +412,11 @@ class RepairPage(BasePage):
         else:
             self._discord_service.launch_webcord()
 
-    def _on_webcord_remove(self, button):
+    def _on_webcord_remove(self, button: object) -> None:
         """Handle WebCord remove button."""
         self._confirm_remove_webcord()
 
-    def _confirm_remove(self, name: str, version: DiscordVersion):
+    def _confirm_remove(self, name: str, version: DiscordVersion) -> None:
         """Show remove confirmation dialog."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
@@ -428,13 +430,13 @@ class RepairPage(BasePage):
         dialog.connect("response", self._on_remove_confirmed)
         dialog.present()
 
-    def _on_remove_confirmed(self, dialog, response):
+    def _on_remove_confirmed(self, dialog: object, response: str) -> None:
         """Handle remove confirmation."""
         if response == "remove":
             version = self._pending_remove_version  # Use instance variable (GTK4 compatible)
             self.set_status(get_text("status", "removing"))
 
-            def do_remove():
+            def do_remove() -> bool:
                 """Uninstall the selected Discord version."""
                 installations = self._discord_service.get_installations()
                 inst = installations.get(version)
@@ -442,7 +444,7 @@ class RepairPage(BasePage):
                     self._discord_service.uninstall_discord(inst)
                 return True
 
-            def on_complete(result):
+            def on_complete(result: object) -> None:
                 """Refresh status and notify user after Discord removal."""
                 self._refresh_status()
                 if result:
@@ -451,7 +453,7 @@ class RepairPage(BasePage):
 
             self.run_async(do_remove, on_complete)
 
-    def _confirm_remove_webcord(self):
+    def _confirm_remove_webcord(self) -> None:
         """Show WebCord remove confirmation dialog."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
@@ -464,17 +466,17 @@ class RepairPage(BasePage):
         dialog.connect("response", self._on_webcord_remove_confirmed)
         dialog.present()
 
-    def _on_webcord_remove_confirmed(self, dialog, response):
+    def _on_webcord_remove_confirmed(self, dialog: object, response: str) -> None:
         """Handle WebCord remove confirmation."""
         if response == "remove":
             self.set_status(get_text("status", "removing"))
 
-            def do_remove():
+            def do_remove() -> bool:
                 """Uninstall WebCord via the Discord service."""
                 self._discord_service.uninstall_webcord()
                 return True
 
-            def on_complete(result):
+            def on_complete(result: object) -> None:
                 """Refresh status and notify user after WebCord removal."""
                 self._refresh_status()
                 if result:
@@ -483,7 +485,7 @@ class RepairPage(BasePage):
 
             self.run_async(do_remove, on_complete)
 
-    def _on_help(self, button):
+    def _on_help(self, button: object) -> None:
         """Handle help button."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,

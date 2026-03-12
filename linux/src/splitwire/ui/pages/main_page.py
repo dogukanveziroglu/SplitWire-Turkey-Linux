@@ -55,7 +55,7 @@ class MainPage(BasePage):
         self._enabled_apps: dict[str, bool] = dict.fromkeys(KNOWN_APPS.keys(), True)
         super().__init__(window)
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the main page UI."""
         self._build_status_section()
         self._build_action_buttons()
@@ -64,7 +64,7 @@ class MainPage(BasePage):
         self._load_settings()
         self._update_status_indicator()
 
-    def _build_status_section(self):
+    def _build_status_section(self) -> None:
         """Build the connection status indicator."""
         self._status_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -74,7 +74,7 @@ class MainPage(BasePage):
         )
         self.append(self._status_box)
 
-    def _build_action_buttons(self):
+    def _build_action_buttons(self) -> None:
         """Build the main setup/disconnect buttons group."""
         group = self.create_preferences_group(title=get_text("main", "setup"))
         self.append(group)
@@ -94,7 +94,7 @@ class MainPage(BasePage):
         self._btn_disconnect.set_visible(False)
         group.add(self._btn_disconnect)
 
-    def _build_options_section(self):
+    def _build_options_section(self) -> None:
         """Build the options group with switches and expander."""
         group = self.create_preferences_group(title=get_text("main", "options"))
         self.append(group)
@@ -127,7 +127,7 @@ class MainPage(BasePage):
         self._build_app_list()
         self._build_expander_buttons()
 
-    def _build_expander_buttons(self):
+    def _build_expander_buttons(self) -> None:
         """Build folder/config buttons inside advanced expander."""
         custom_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -170,7 +170,7 @@ class MainPage(BasePage):
         self._btn_generate.connect("clicked", self._on_generate_config)
         adv_box.append(self._btn_generate)
 
-    def _build_footer(self):
+    def _build_footer(self) -> None:
         """Build remove-service and help buttons."""
         remove_box = Gtk.Box(halign=Gtk.Align.CENTER, margin_top=16)
         self.append(remove_box)
@@ -184,7 +184,7 @@ class MainPage(BasePage):
         self.append(help_box)
         help_box.append(self.create_help_button(self._on_help))
 
-    def _build_app_list(self):
+    def _build_app_list(self) -> None:
         """Build app selection list inside the expander."""
         for app_id, paths in KNOWN_APPS.items():
             subtitle = ""
@@ -202,7 +202,7 @@ class MainPage(BasePage):
             row.add_prefix(check)
             self._advanced_expander.add_row(row)
 
-    def _update_status_indicator(self):
+    def _update_status_indicator(self) -> None:
         """Update the status indicator and button visibility."""
         while child := self._status_box.get_first_child():
             self._status_box.remove(child)
@@ -217,18 +217,18 @@ class MainPage(BasePage):
         self._btn_standard.set_sensitive(not running)
         self._btn_disconnect.set_visible(running)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh page data."""
         self._update_status_indicator()
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh UI translations."""
         self._btn_standard.set_label(get_text("main", "standard_setup"))
         self._switch_browser.set_title(get_text("main", "browser_tunneling"))
         self._switch_refresh.set_title(get_text("main", "refresh_timer"))
         self._btn_remove.set_label(get_text("main", "remove_service"))
 
-    def _finish_operation(self, result, success_msg: str):
+    def _finish_operation(self, result: object, success_msg: str) -> None:
         """Handle common on_complete pattern for async ops."""
         self._update_status_indicator()
         success, error = result if isinstance(result, tuple) else (result, None)
@@ -243,13 +243,13 @@ class MainPage(BasePage):
             self.show_toast(msg)
         self.set_status("")
 
-    def _on_standard_setup(self, button):
+    def _on_standard_setup(self, button: object) -> None:
         """Handle standard setup button click."""
         self._logger.info("[UI:Main] Starting standard setup...")
         self.set_status(get_text("status", "installing"))
         tunnel_mode = TunnelMode.FULL if self._switch_full_tunnel.get_active() else TunnelMode.SPLIT
 
-        def task():
+        def task() -> tuple[bool, str | None]:
             """Run WireGuard setup and persist settings on success."""
             result = do_wireguard_setup(self._wg_service, self._dns_service, tunnel_mode)
             if result[0]:
@@ -261,7 +261,7 @@ class MainPage(BasePage):
             lambda r: self._finish_operation(r, get_text("messages", "setup_complete")),
         )
 
-    def _on_disconnect(self, button):
+    def _on_disconnect(self, button: object) -> None:
         """Handle disconnect button click."""
         self._logger.info("[UI:Main] Disconnecting VPN...")
         self.set_status(get_text("status", "disconnecting"))
@@ -273,15 +273,15 @@ class MainPage(BasePage):
             ),
         )
 
-    def _on_browser_tunneling_changed(self, row, param):
+    def _on_browser_tunneling_changed(self, row: object, param: object) -> None:
         """Handle browser tunneling switch change."""
         self._logger.info("[UI:Main] Browser tunneling: %s", row.get_active())
 
-    def _on_full_tunnel_changed(self, row, param):
+    def _on_full_tunnel_changed(self, row: object, param: object) -> None:
         """Handle full tunnel mode switch change."""
         self._logger.info("[UI:Main] Full tunnel: %s", row.get_active())
 
-    def _on_refresh_timer_changed(self, row, param):
+    def _on_refresh_timer_changed(self, row: object, param: object) -> None:
         """Handle refresh timer switch change."""
         active = row.get_active()
         self._logger.info("[UI:Main] Refresh timer: %s", active)
@@ -290,7 +290,7 @@ class MainPage(BasePage):
         else:
             self._wg_service.disable_refresh_timer()
 
-    def _on_app_toggled(self, check):
+    def _on_app_toggled(self, check: object) -> None:
         """Handle app checkbox toggle."""
         app_id = check.get_name()
         self._enabled_apps[app_id] = check.get_active()
@@ -301,12 +301,12 @@ class MainPage(BasePage):
         )
         self._save_settings()
 
-    def _on_add_folder(self, button):
+    def _on_add_folder(self, button: object) -> None:
         """Handle add folder button click."""
         dialog = Gtk.FileDialog(title=get_text("dialogs", "select_folder"))
         dialog.select_folder(self._window, None, self._on_folder_selected)
 
-    def _on_folder_selected(self, dialog, result):
+    def _on_folder_selected(self, dialog: object, result: object) -> None:
         """Handle folder selection result."""
         try:
             folder = dialog.select_folder_finish(result)
@@ -322,13 +322,13 @@ class MainPage(BasePage):
             if e.code != 2:
                 self._logger.error("Folder selection error: %s", e)
 
-    def _on_clear_list(self, button):
+    def _on_clear_list(self, button: object) -> None:
         """Handle clear list button click."""
         self._custom_apps.clear()
         self._save_settings()
         self.show_toast(get_text("messages", "list_cleared"))
 
-    def _on_custom_setup(self, button):
+    def _on_custom_setup(self, button: object) -> None:
         """Handle custom setup button click."""
         self._logger.info("[UI:Main] Starting custom setup...")
         if not self._custom_apps:
@@ -336,7 +336,7 @@ class MainPage(BasePage):
             return
         self.set_status(get_text("status", "installing"))
 
-        def task():
+        def task() -> tuple[bool, str | None]:
             """Run custom WireGuard setup and persist settings on success."""
             result = do_wireguard_setup(self._wg_service, self._dns_service)
             if result[0]:
@@ -348,7 +348,7 @@ class MainPage(BasePage):
             lambda r: self._finish_operation(r, get_text("messages", "setup_complete")),
         )
 
-    def _on_generate_config(self, button):
+    def _on_generate_config(self, button: object) -> None:
         """Handle generate config button click."""
         dialog = Gtk.FileDialog(
             title=get_text("dialogs", "save_config"),
@@ -356,7 +356,7 @@ class MainPage(BasePage):
         )
         dialog.save(self._window, None, self._on_config_save_selected)
 
-    def _on_config_save_selected(self, dialog, result):
+    def _on_config_save_selected(self, dialog: object, result: object) -> None:
         """Handle config save location selection."""
         try:
             file = dialog.save_finish(result)
@@ -372,7 +372,7 @@ class MainPage(BasePage):
             if e.code != 2:
                 self._logger.error("Config save error: %s", e)
 
-    def _on_remove_service(self, button):
+    def _on_remove_service(self, button: object) -> None:
         """Handle remove service button click."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
@@ -385,7 +385,7 @@ class MainPage(BasePage):
         dialog.connect("response", self._on_remove_confirmed)
         dialog.present()
 
-    def _on_remove_confirmed(self, dialog, response):
+    def _on_remove_confirmed(self, dialog: object, response: str) -> None:
         """Handle remove confirmation response."""
         if response != "remove":
             return
@@ -400,7 +400,7 @@ class MainPage(BasePage):
             lambda r: self._finish_operation(r, get_text("messages", "service_removed")),
         )
 
-    def _on_help(self, button):
+    def _on_help(self, button: object) -> None:
         """Handle help button click."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
@@ -426,7 +426,7 @@ class MainPage(BasePage):
         apps.extend(self._custom_apps)
         return apps
 
-    def _save_settings(self):
+    def _save_settings(self) -> None:
         """Save current settings to config file."""
         save_page_settings(
             self._enabled_apps,
@@ -436,7 +436,7 @@ class MainPage(BasePage):
             self._switch_full_tunnel,
         )
 
-    def _load_settings(self):
+    def _load_settings(self) -> None:
         """Load settings from config file and update UI."""
         self._custom_apps = load_page_settings(
             self._enabled_apps,

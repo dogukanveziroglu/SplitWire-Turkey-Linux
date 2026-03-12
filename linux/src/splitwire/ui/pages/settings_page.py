@@ -37,7 +37,7 @@ class SettingsPage(BasePage):
         """
         super().__init__(window)
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the settings page UI."""
         # Appearance group
         appearance_group = self.create_preferences_group(title=get_text("settings", "appearance"))
@@ -185,7 +185,7 @@ class SettingsPage(BasePage):
         updates_row.connect("activated", self._on_check_updates)
         about_group.add(updates_row)
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh UI translations."""
         # Update theme names
         themes = [
@@ -199,7 +199,7 @@ class SettingsPage(BasePage):
 
     # Event handlers
 
-    def _on_language_changed(self, row, param):
+    def _on_language_changed(self, row: object, param: object) -> None:
         """Handle language selection change."""
         selected = row.get_selected()
         languages = self._languages  # Use instance variable (GTK4 compatible)
@@ -212,7 +212,7 @@ class SettingsPage(BasePage):
                 app.set_language(code)
                 self.show_toast(get_text("messages", "language_changed").format(name))
 
-    def _on_theme_changed(self, row, param):
+    def _on_theme_changed(self, row: object, param: object) -> None:
         """Handle theme selection change."""
         selected = row.get_selected()
         themes = self._themes  # Use instance variable (GTK4 compatible)
@@ -225,37 +225,37 @@ class SettingsPage(BasePage):
                 app.set_theme(code)
                 self.show_toast(get_text("messages", "theme_changed").format(name))
 
-    def _on_dns_changed(self, row, param):
+    def _on_dns_changed(self, row: object, param: object) -> None:
         """Handle DNS selection change."""
         selected = row.get_selected()
         self._logger.info(f"[UI:Settings] DNS changed to index: {selected}")
         # DNS will be applied when a service is installed
 
-    def _on_doh_changed(self, row, param):
+    def _on_doh_changed(self, row: object, param: object) -> None:
         """Handle DoH switch change."""
         active = row.get_active()
         self._logger.info(f"[UI:Settings] DoH enabled: {active}")
 
-    def _on_github_clicked(self, row):
+    def _on_github_clicked(self, row: object) -> None:
         """Handle GitHub row click."""
         self._open_url("https://github.com/dogukanveziroglu/SplitWire-Turkey")
 
-    def _on_support_clicked(self, row):
+    def _on_support_clicked(self, row: object) -> None:
         """Handle support row click."""
         self._open_url("https://patreon.com/splitwire")
 
-    def _on_open_logs(self, row):
+    def _on_open_logs(self, row: object) -> None:
         """Handle open logs click."""
         logs_dir = os.path.expanduser("~/.cache/splitwire/logs")
         os.makedirs(logs_dir, exist_ok=True)
         self._open_url(f"file://{logs_dir}")
 
-    def _on_check_updates(self, row):
+    def _on_check_updates(self, row: object) -> None:
         """Handle check updates click."""
         self._logger.info("[UI:Settings] Checking for updates...")
         self.set_status(get_text("status", "checking"))
 
-        def do_check():
+        def do_check() -> str | None:
             """Fetch latest release tag from GitHub API."""
             import httpx
 
@@ -271,7 +271,7 @@ class SettingsPage(BasePage):
                 self._logger.error(f"Update check failed: {e}")
             return None
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
             """Compare versions and notify user of update availability."""
             self.set_status("")
             if result:
@@ -289,7 +289,7 @@ class SettingsPage(BasePage):
 
         self.run_async(do_check, on_complete)
 
-    def _open_url(self, url: str):
+    def _open_url(self, url: str) -> None:
         """Open a URL in the default browser."""
         try:
             Gio.AppInfo.launch_default_for_uri(url, None)
