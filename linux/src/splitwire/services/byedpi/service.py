@@ -41,7 +41,7 @@ class ByeDPIService(BaseService):
     TIMEOUT_SYSTEMCTL_ACTION = 30
     TIMEOUT_SYSTEMCTL_QUERY = 10
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize ByeDPI service."""
         super().__init__(
             name="byedpi",
@@ -126,7 +126,7 @@ class ByeDPIService(BaseService):
         include_browsers: bool = False,
         one_shot: bool = False,
         as_service: bool = True,
-        **kwargs,
+        **kwargs: object,
     ) -> bool:
         """Install and start ByeDPI."""
         self._logger.info("Installing ByeDPI")

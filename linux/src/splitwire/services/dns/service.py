@@ -39,7 +39,7 @@ class DNSService(BaseService):
     TIMEOUT_SERVICE_CHECK = 5  # systemctl is-active checks
     TIMEOUT_RESOLVECTL = 10  # resolvectl status queries
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize DNS service."""
         super().__init__(
             name="dns",
@@ -124,7 +124,7 @@ class DNSService(BaseService):
         primary: str | None = None,
         secondary: str | None = None,
         doh_mode: DoHMode = DoHMode.OPPORTUNISTIC,
-        **kwargs,
+        **kwargs: object,
     ) -> bool:
         """Install DNS configuration."""
         self._logger.info("Installing DNS configuration")

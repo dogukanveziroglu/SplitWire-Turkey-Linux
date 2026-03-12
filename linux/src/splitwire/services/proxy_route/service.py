@@ -36,7 +36,7 @@ class ProxyRouteService(BaseService):
     TIMEOUT_REDSOCKS_ACTION = 30  # systemctl start/stop redsocks
     TIMEOUT_REDSOCKS_QUERY = 10  # systemctl is-active redsocks
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize proxy route service."""
         super().__init__(
             name="proxy-route",
@@ -124,7 +124,7 @@ class ProxyRouteService(BaseService):
         proxy_host: str = DEFAULT_PROXY_HOST,
         proxy_port: int = DEFAULT_PROXY_PORT,
         method: ProxyMethod = ProxyMethod.CGPROXY,
-        **kwargs,
+        **kwargs: object,
     ) -> bool:
         """Install and configure proxy routing."""
         self._logger.info("Installing proxy routing via %s", method.value)

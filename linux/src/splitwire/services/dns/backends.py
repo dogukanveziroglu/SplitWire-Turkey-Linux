@@ -1,8 +1,17 @@
 """DNS backend helpers for systemd-resolved, NetworkManager, and manual."""
 
+from __future__ import annotations
+
+import logging
 import re
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from splitwire.core.shell.executor import ShellExecutor
+    from splitwire.core.shell.models import CommandResult
 
 from .constants import RESOLVED_CONF_DIR, SPLITWIRE_RESOLVED_CONF
 from .models import DoHMode
@@ -33,7 +42,11 @@ def build_resolved_config(primary: str, secondary: str, doh_mode: DoHMode) -> st
     return "\n".join(config_lines) + "\n"
 
 
-def write_resolved_config(content: str, run_privileged_fn, logger) -> bool:
+def write_resolved_config(
+    content: str,
+    run_privileged_fn: Callable[..., CommandResult],
+    logger: logging.Logger,
+) -> bool:
     """Write resolved config via temp file and privileged copy."""
     with tempfile.NamedTemporaryFile(mode="w", suffix=".conf", delete=False) as f:
         f.write(content)
@@ -54,8 +67,8 @@ def apply_systemd_resolved(
     primary: str,
     secondary: str,
     doh_mode: DoHMode,
-    run_privileged_fn,
-    logger,
+    run_privileged_fn: Callable[..., CommandResult],
+    logger: logging.Logger,
 ) -> bool:
     """Apply DNS using systemd-resolved."""
     logger.info("Applying DNS via systemd-resolved")
@@ -82,7 +95,10 @@ def apply_systemd_resolved(
         return False
 
 
-def remove_systemd_resolved(run_privileged_fn, logger) -> bool:
+def remove_systemd_resolved(
+    run_privileged_fn: Callable[..., CommandResult],
+    logger: logging.Logger,
+) -> bool:
     """Remove systemd-resolved configuration."""
     try:
         if SPLITWIRE_RESOLVED_CONF.exists():
@@ -94,7 +110,13 @@ def remove_systemd_resolved(run_privileged_fn, logger) -> bool:
         return False
 
 
-def apply_network_manager(primary: str, secondary: str, shell, run_privileged_fn, logger) -> bool:
+def apply_network_manager(
+    primary: str,
+    secondary: str,
+    shell: ShellExecutor,
+    run_privileged_fn: Callable[..., CommandResult],
+    logger: logging.Logger,
+) -> bool:
     """Apply DNS using NetworkManager."""
     logger.info("Applying DNS via NetworkManager")
     try:
@@ -127,7 +149,7 @@ def apply_network_manager(primary: str, secondary: str, shell, run_privileged_fn
         return False
 
 
-def get_active_nm_connections(shell) -> list[str]:
+def get_active_nm_connections(shell: ShellExecutor) -> list[str]:
     """Get list of active NetworkManager connection names."""
     result = shell.run(
         [
@@ -154,7 +176,12 @@ def get_active_nm_connections(shell) -> list[str]:
     return connections
 
 
-def apply_manual_dns(primary: str, secondary: str, run_privileged_fn, logger) -> bool:
+def apply_manual_dns(
+    primary: str,
+    secondary: str,
+    run_privileged_fn: Callable[..., CommandResult],
+    logger: logging.Logger,
+) -> bool:
     """Apply DNS by directly editing /etc/resolv.conf."""
     logger.info("Applying DNS via /etc/resolv.conf")
     try:
@@ -185,7 +212,9 @@ def apply_manual_dns(primary: str, secondary: str, run_privileged_fn, logger) ->
         return False
 
 
-def restore_network_manager(shell, run_privileged_fn) -> None:
+def restore_network_manager(
+    shell: ShellExecutor, run_privileged_fn: Callable[..., CommandResult]
+) -> None:
     """Restore NetworkManager to auto DNS."""
     result = shell.run(
         [
@@ -217,7 +246,7 @@ def restore_network_manager(shell, run_privileged_fn) -> None:
         run_privileged_fn(["systemctl", "restart", "NetworkManager"])
 
 
-def restore_manual_dns(backup_data: dict, run_privileged_fn) -> None:
+def restore_manual_dns(backup_data: dict, run_privileged_fn: Callable[..., CommandResult]) -> None:
     """Restore /etc/resolv.conf from backup data."""
     dns_servers = backup_data.get("dns_servers", [])
     if not dns_servers:

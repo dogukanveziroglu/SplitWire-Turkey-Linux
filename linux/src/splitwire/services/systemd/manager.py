@@ -63,7 +63,7 @@ class SystemdManager:
     # SplitWire service unit names
     SPLITWIRE_SERVICES: ClassVar[dict[str, str]] = SPLITWIRE_SERVICES
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize systemd manager."""
         self._logger = logging.getLogger(__name__)
         self._shell = get_shell()

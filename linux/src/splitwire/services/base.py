@@ -136,7 +136,7 @@ class BaseService(ABC):
     # =========================================================================
 
     @abstractmethod
-    def install(self, **kwargs) -> bool:
+    def install(self, **kwargs: object) -> bool:
         """
         Install the service.
 
@@ -309,7 +309,7 @@ class BaseService(ABC):
     # Helper methods for subclasses
     # =========================================================================
 
-    def _run_privileged(self, command: str | list[str], **kwargs) -> CommandResult:
+    def _run_privileged(self, command: str | list[str], **kwargs: object) -> CommandResult:
         """
         Run a command with sudo/pkexec.
 

@@ -46,7 +46,7 @@ class WireGuardService(BaseService):
     PING_COUNT = 1
     PING_WAIT_SECONDS = 5
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize WireGuard service."""
         super().__init__(
             name="wireguard",
@@ -62,14 +62,14 @@ class WireGuardService(BaseService):
         """Ensure required directories exist."""
         WGCF_DIR.mkdir(parents=True, exist_ok=True)
 
-    def install(
+    def install(  # type: ignore[override]
         self,
         allowed_apps: list[str] | None = None,
         include_browsers: bool = False,
         use_warp: bool = True,
         custom_config: Path | None = None,
         endpoint_type: str = "standard",
-        **kwargs,
+        **kwargs: object,
     ) -> bool:
         """
         Install WireGuard VPN configuration.
@@ -350,7 +350,7 @@ class WireGuardService(BaseService):
             self._logger.exception(f"Failed to enable refresh timer: {e}")
             return False
 
-    def _install_refresh_units(self, systemd) -> bool:
+    def _install_refresh_units(self, systemd: object) -> bool:
         """Install refresh service and timer systemd units."""
         if not systemd.unit_exists(REFRESH_SERVICE_UNIT) and not systemd.install_unit(
             REFRESH_SERVICE_UNIT, enable=False

@@ -5,10 +5,17 @@ Provides WARP account registration, profile generation,
 and wgcf binary download functionality.
 """
 
+from __future__ import annotations
+
 import json
+import logging
 import os
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+if TYPE_CHECKING:
+    from splitwire.core.shell.executor import ShellExecutor
 
 from .config_helpers import (
     build_config_content,
@@ -31,7 +38,7 @@ TIMEOUT_API_REQUEST = 30
 TIMEOUT_BINARY_DOWNLOAD = 120
 
 
-def ensure_wgcf(logger) -> bool:
+def ensure_wgcf(logger: logging.Logger) -> bool:
     """
     Ensure wgcf binary is available.
 
@@ -48,7 +55,7 @@ def ensure_wgcf(logger) -> bool:
     return download_wgcf(logger)
 
 
-def register_warp_account(shell, logger) -> bool:
+def register_warp_account(shell: ShellExecutor, logger: logging.Logger) -> bool:
     """
     Register a new Cloudflare WARP account using wgcf.
 
@@ -80,7 +87,7 @@ def register_warp_account(shell, logger) -> bool:
     return False
 
 
-def generate_warp_profile(shell, logger) -> bool:
+def generate_warp_profile(shell: ShellExecutor, logger: logging.Logger) -> bool:
     """
     Generate WireGuard profile from WARP account.
 
@@ -109,8 +116,8 @@ def generate_warp_profile(shell, logger) -> bool:
 
 
 def generate_warp_config(
-    shell,
-    logger,
+    shell: ShellExecutor,
+    logger: logging.Logger,
     endpoint_type: str = "standard",
     tunnel_mode: str = TunnelMode.SPLIT,
 ) -> str | None:
@@ -136,8 +143,8 @@ def generate_warp_config(
 
 
 def get_config_content(
-    shell,
-    logger,
+    shell: ShellExecutor,
+    logger: logging.Logger,
     endpoint_type: str = "standard",
     tunnel_mode: str = TunnelMode.SPLIT,
 ) -> str:
@@ -167,7 +174,7 @@ def get_config_content(
         return ""
 
 
-def download_wgcf(logger) -> bool:
+def download_wgcf(logger: logging.Logger) -> bool:
     """
     Download wgcf binary from GitHub.
 
@@ -199,7 +206,7 @@ def download_wgcf(logger) -> bool:
         return False
 
 
-def _find_download_url(release_info: dict, logger) -> str | None:
+def _find_download_url(release_info: dict, logger: logging.Logger) -> str | None:
     """Find Linux amd64 asset URL from release info."""
     for asset in release_info.get("assets", []):
         name = asset.get("name", "")
@@ -210,7 +217,7 @@ def _find_download_url(release_info: dict, logger) -> str | None:
     return None
 
 
-def _download_and_install(url: str, logger) -> bool:
+def _download_and_install(url: str, logger: logging.Logger) -> bool:
     """Download and install wgcf binary from URL."""
     logger.info(f"Downloading from {url}")
     req = Request(url)

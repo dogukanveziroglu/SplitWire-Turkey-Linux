@@ -37,7 +37,7 @@ class SplitTunnelService(BaseService):
     TIMEOUT_CGPROXY_QUERY = 10  # systemctl is-active cgproxy
     TIMEOUT_APP_RUN = 5  # cgproxy <app> launch
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize split tunnel service."""
         super().__init__(
             name="split-tunnel",
@@ -106,7 +106,7 @@ class SplitTunnelService(BaseService):
         apps: list[str] | None = None,
         include_browsers: bool = False,
         interface: str = "splitwire",
-        **kwargs,
+        **kwargs: object,
     ) -> bool:
         """Install and configure split tunneling."""
         self._logger.info("Installing split tunneling")

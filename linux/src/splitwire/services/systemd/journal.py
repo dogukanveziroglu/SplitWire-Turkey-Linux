@@ -4,12 +4,18 @@ Journal log access for systemd units.
 Provides methods for reading, parsing, and following journal logs.
 """
 
+from __future__ import annotations
+
 import json
 import logging
 import subprocess
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from .models import JournalEntry
+
+if TYPE_CHECKING:
+    from splitwire.core.shell.executor import ShellExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +24,7 @@ TIMEOUT_JOURNAL_QUERY = 30
 
 
 def get_logs(
-    shell,
+    shell: ShellExecutor,
     unit_name: str,
     lines: int = 100,
     since: str | None = None,
@@ -62,7 +68,7 @@ def get_logs(
     return []
 
 
-def get_logs_json(shell, unit_name: str, lines: int = 100) -> list[JournalEntry]:
+def get_logs_json(shell: ShellExecutor, unit_name: str, lines: int = 100) -> list[JournalEntry]:
     """
     Get journal logs as structured entries.
 
@@ -144,7 +150,7 @@ def follow_logs(unit_name: str, callback: Callable[[str], None]) -> None:
         proc.terminate()
 
 
-def clear_logs(shell, _unit_name: str) -> bool:
+def clear_logs(shell: ShellExecutor, _unit_name: str) -> bool:
     """Clear journal logs for a unit (requires root)."""
     result = shell.run(["sudo", "journalctl", "--rotate"], timeout=TIMEOUT_JOURNAL_QUERY)
     return result.success

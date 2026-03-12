@@ -75,7 +75,7 @@ class ZapretService(BaseService):
         load_config(self)
         LOCAL_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
 
-    def install(self, **kwargs) -> bool:
+    def install(self, **kwargs: object) -> bool:
         """Install Zapret from source."""
         self._logger.info("Installing Zapret...")
         self._notify_status_change(ServiceStatus.INSTALLING)

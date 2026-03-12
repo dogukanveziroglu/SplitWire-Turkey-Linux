@@ -52,7 +52,7 @@ class DiscordService(BaseService):
     # Discord-specific timeouts (seconds)
     TIMEOUT_PROCESS_KILL = 5  # pkill operations
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize Discord service."""
         super().__init__(
             name="discord",
@@ -93,7 +93,7 @@ class DiscordService(BaseService):
         }
         CONFIG_FILE.write_text(json.dumps(data, indent=2))
 
-    def install(self, version: str = "stable", **kwargs) -> bool:
+    def install(self, version: str = "stable", **kwargs: object) -> bool:
         """Install Discord version."""
         try:
             dv = DiscordVersion(version.lower())

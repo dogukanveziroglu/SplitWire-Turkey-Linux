@@ -4,12 +4,21 @@ ByeDPI binary download and extraction.
 Downloads and installs the ciadpi binary from GitHub releases.
 """
 
+from __future__ import annotations
+
 import json
+import logging
 import os
 import platform
 import tempfile
+import types
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from splitwire.core.shell.models import CommandResult
 
 from .constants import (
     BYEDPI_BINARY,
@@ -29,7 +38,7 @@ def is_binary_installed() -> bool:
     return exists and executable
 
 
-def fetch_release_info(logger) -> dict | None:
+def fetch_release_info(logger: logging.Logger) -> dict | None:
     """
     Fetch latest release info from GitHub API.
 
@@ -48,7 +57,7 @@ def fetch_release_info(logger) -> dict | None:
         return json.loads(response.read().decode())
 
 
-def find_asset_url(release_data: dict, logger) -> str | None:
+def find_asset_url(release_data: dict, logger: logging.Logger) -> str | None:
     """
     Find the download URL for current architecture.
 
@@ -81,7 +90,9 @@ def find_asset_url(release_data: dict, logger) -> str | None:
     return None
 
 
-def download_and_extract(url: str, run_privileged_fn, logger) -> bool:
+def download_and_extract(
+    url: str, run_privileged_fn: Callable[..., CommandResult], logger: logging.Logger
+) -> bool:
     """
     Download and extract ciadpi binary from tar.gz archive.
 
@@ -125,7 +136,12 @@ def download_and_extract(url: str, run_privileged_fn, logger) -> bool:
         Path(tmp_path).unlink(missing_ok=True)
 
 
-def _extract_binary(tarfile, tmp_path: str, run_privileged_fn, logger) -> bool:
+def _extract_binary(
+    tarfile: types.ModuleType,
+    tmp_path: str,
+    run_privileged_fn: Callable[..., CommandResult],
+    logger: logging.Logger,
+) -> bool:
     """
     Extract ciadpi binary from tar.gz archive.
 
@@ -156,7 +172,9 @@ def _extract_binary(tarfile, tmp_path: str, run_privileged_fn, logger) -> bool:
     return False
 
 
-def download_binary(run_privileged_fn, logger) -> bool:
+def download_binary(
+    run_privileged_fn: Callable[..., CommandResult], logger: logging.Logger
+) -> bool:
     """
     Download ciadpi binary from GitHub releases.
 

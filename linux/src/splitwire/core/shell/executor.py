@@ -187,13 +187,13 @@ class ShellExecutor:
 
     @staticmethod
     def _exec_subprocess(
-        cmd,
-        run_env,
-        run_cwd,
-        run_timeout,
-        shell,
-        input_data,
-        capture_output,
+        cmd: list[str] | str,
+        run_env: dict[str, str] | None,
+        run_cwd: str | None,
+        run_timeout: float | None,
+        shell: bool,
+        input_data: str | None,
+        capture_output: bool,
     ) -> subprocess.CompletedProcess:
         """Execute subprocess.run with the given parameters."""
         if capture_output:
@@ -300,14 +300,14 @@ class ShellExecutor:
 
     async def _try_exec_async(
         self,
-        cmd,
-        run_cwd,
-        run_env,
-        capture_output,
-        cmd_str,
-        run_timeout,
-        start_time,
-        preview,
+        cmd: list[str] | str,
+        run_cwd: str | None,
+        run_env: dict[str, str] | None,
+        capture_output: bool,
+        cmd_str: str,
+        run_timeout: float | None,
+        start_time: float,
+        preview: bool,
     ) -> CommandResult:
         """Attempt async subprocess, handling errors."""
         try:
@@ -343,7 +343,12 @@ class ShellExecutor:
             )
 
     @staticmethod
-    async def _create_async_process(cmd, run_cwd, run_env, capture_output):
+    async def _create_async_process(
+        cmd: list[str] | str,
+        run_cwd: str | None,
+        run_env: dict[str, str] | None,
+        capture_output: bool,
+    ) -> asyncio.subprocess.Process:
         """Create an asyncio subprocess."""
         if capture_output:
             return await asyncio.create_subprocess_exec(
@@ -361,12 +366,12 @@ class ShellExecutor:
 
     @staticmethod
     async def _await_process(
-        process,
-        cmd_str,
-        run_timeout,
-        capture_output,
-        start_time,
-        preview,
+        process: asyncio.subprocess.Process,
+        cmd_str: str,
+        run_timeout: float | None,
+        capture_output: bool,
+        start_time: float,
+        preview: bool,
     ) -> CommandResult:
         """Wait for async process and build result."""
         try:
@@ -447,7 +452,11 @@ class ShellExecutor:
         return result.stdout if result.success else None
 
 
-async def _communicate(process, run_timeout, capture_output) -> tuple[str, str]:
+async def _communicate(
+    process: asyncio.subprocess.Process,
+    run_timeout: float | None,
+    capture_output: bool,
+) -> tuple[str, str]:
     """Communicate with async process, handling timeout."""
     if capture_output:
         stdout_b, stderr_b = await asyncio.wait_for(

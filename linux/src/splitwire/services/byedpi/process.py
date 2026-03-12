@@ -5,12 +5,20 @@ Process lifecycle management for the ciadpi SOCKS5 proxy,
 including PID file handling and signal-based termination.
 """
 
+from __future__ import annotations
+
+import logging
 import os
 import signal
 import subprocess
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from splitwire.core.shell.models import CommandResult
 
 from .constants import BYEDPI_PID_FILE, PID_DIR
 
@@ -20,7 +28,7 @@ KILL_POLL_INTERVAL = 0.1  # seconds
 TERMINATE_TIMEOUT = 5  # seconds
 
 
-def create_pid_dir(run_privileged_fn) -> None:
+def create_pid_dir(run_privileged_fn: Callable[..., CommandResult]) -> None:
     """
     Ensure the PID directory exists.
 
@@ -30,7 +38,9 @@ def create_pid_dir(run_privileged_fn) -> None:
     run_privileged_fn(["mkdir", "-p", str(PID_DIR)])
 
 
-def save_pid(pid: int, run_privileged_fn, logger) -> None:
+def save_pid(
+    pid: int, run_privileged_fn: Callable[..., CommandResult], logger: logging.Logger
+) -> None:
     """
     Save process PID to file.
 
@@ -49,7 +59,7 @@ def save_pid(pid: int, run_privileged_fn, logger) -> None:
         logger.warning(f"Failed to save PID: {e}")
 
 
-def get_pid(logger) -> int | None:
+def get_pid(logger: logging.Logger) -> int | None:
     """
     Read PID from file.
 
@@ -69,7 +79,7 @@ def get_pid(logger) -> int | None:
     return None
 
 
-def remove_pid(run_privileged_fn, logger) -> None:
+def remove_pid(run_privileged_fn: Callable[..., CommandResult], logger: logging.Logger) -> None:
     """
     Remove PID file.
 
@@ -84,7 +94,7 @@ def remove_pid(run_privileged_fn, logger) -> None:
         logger.warning(f"[BYEDPI] Failed to remove PID file: {e}")
 
 
-def kill_by_pid(run_privileged_fn, logger) -> None:
+def kill_by_pid(run_privileged_fn: Callable[..., CommandResult], logger: logging.Logger) -> None:
     """
     Kill the process identified by PID file.
 
@@ -129,7 +139,9 @@ def terminate_process(
             process.kill()
 
 
-def is_process_running(run_privileged_fn, logger) -> bool:
+def is_process_running(
+    run_privileged_fn: Callable[..., CommandResult], logger: logging.Logger
+) -> bool:
     """
     Check if ciadpi process is running.
 
