@@ -54,50 +54,50 @@ class SnapshotManager:
 
         Returns:
             The created SystemSnapshot with backed-up state.
-
-        Example:
-            >>> mgr = SnapshotManager()
-            >>> snap = mgr.create_snapshot("dns-change", [])
-            >>> isinstance(snap.id, str)
-            True
         """
         snapshot_id = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         snapshot_path = self._snapshot_dir / snapshot_id
-
         logger.info("[SNAPSHOT] Creating snapshot for operation: %s", operation)
-
-        # Create snapshot directory
         snapshot_path.mkdir(parents=True, exist_ok=True)
 
-        # Backup files
-        backed_up = self._backup_files(files, snapshot_path)
-
-        # Capture service states
-        services_state = self._capture_services_state()
-
-        # Capture DNS state
-        dns_state = self._capture_dns_state()
-
-        snapshot = SystemSnapshot(
-            id=snapshot_id,
-            timestamp=datetime.now().isoformat(),
-            operation=operation,
-            files_backed_up=backed_up,
-            services_state=services_state,
-            dns_state=dns_state,
+        snapshot = self._gather_snapshot_data(
+            snapshot_id,
+            operation,
+            files,
+            snapshot_path,
         )
-
-        # Save snapshot metadata
-        meta_path = str(snapshot_path / "snapshot.json")
-        snapshot.save_to_file(meta_path)
+        self._write_snapshot_file(snapshot, snapshot_path)
 
         self._current_snapshot = snapshot
         logger.info(
             "[SNAPSHOT] Snapshot created: %s (%d files)",
             snapshot_id,
-            len(backed_up),
+            len(snapshot.files_backed_up),
         )
         return snapshot
+
+    def _gather_snapshot_data(
+        self,
+        snapshot_id: str,
+        operation: str,
+        files: list[str],
+        snapshot_path: Path,
+    ) -> SystemSnapshot:
+        """Gather all snapshot data (files, services, DNS)."""
+        return SystemSnapshot(
+            id=snapshot_id,
+            timestamp=datetime.now().isoformat(),
+            operation=operation,
+            files_backed_up=self._backup_files(files, snapshot_path),
+            services_state=self._capture_services_state(),
+            dns_state=self._capture_dns_state(),
+        )
+
+    @staticmethod
+    def _write_snapshot_file(snapshot: SystemSnapshot, snapshot_path: Path) -> None:
+        """Write snapshot metadata to disk."""
+        meta_path = str(snapshot_path / "snapshot.json")
+        snapshot.save_to_file(meta_path)
 
     @staticmethod
     def _backup_files(files: list[str], snapshot_path: Path) -> list[str]:

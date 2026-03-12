@@ -100,62 +100,59 @@ class BackupManager:
 
         Raises:
             BackupError: If no files found or archive fails.
-
-        Example:
-            >>> mgr = BackupManager()
-            >>> meta = mgr.create_backup(BackupType.CONFIG)
-            >>> meta.type == BackupType.CONFIG
-            True
         """
         backup_id = self._generate_backup_id()
         backup_path = self._get_backup_path(backup_id)
-        timestamp = datetime.now().isoformat()
 
-        logger.info(
-            "[BACKUP] Creating %s backup: %s",
-            backup_type.value,
-            backup_id,
-        )
+        logger.info("[BACKUP] Creating %s backup: %s", backup_type.value, backup_id)
 
-        # Determine files to backup
-        files_to_backup = self._get_files_for_backup(backup_type)
-
-        if not files_to_backup:
-            logger.error(
-                "[BACKUP] No files found for backup type: %s",
-                backup_type.value,
-            )
-            raise BackupError(f"No files found for backup type: {backup_type.value}")
-
-        logger.debug("[BACKUP] Files to backup: %d", len(files_to_backup))
-
-        # Create tarball
+        files_to_backup = self._collect_backup_files(backup_type)
         self._create_archive(backup_path, files_to_backup)
 
-        # Get backup size
-        backup_size = backup_path.stat().st_size
-
-        # Create and save metadata
-        metadata = BackupMetadata(
-            id=backup_id,
-            type=backup_type,
-            timestamp=timestamp,
-            description=description or f"{backup_type.value} backup",
-            version=self.APP_VERSION,
-            files=[str(f) for f in files_to_backup],
-            size=backup_size,
+        metadata = self._build_backup_metadata(
+            backup_id,
+            backup_type,
+            backup_path,
+            files_to_backup,
+            description,
         )
         self._save_metadata(backup_id, metadata)
-
-        # Cleanup old backups
         self._cleanup_old_backups()
 
         logger.info(
             "[BACKUP] Backup created successfully: %s (%d bytes)",
             backup_id,
-            backup_size,
+            metadata.size,
         )
         return metadata
+
+    def _collect_backup_files(self, backup_type: BackupType) -> list[Path]:
+        """Collect files for backup, raising if none found."""
+        files_to_backup = self._get_files_for_backup(backup_type)
+        if not files_to_backup:
+            logger.error("[BACKUP] No files found for backup type: %s", backup_type.value)
+            raise BackupError(f"No files found for backup type: {backup_type.value}")
+        logger.debug("[BACKUP] Files to backup: %d", len(files_to_backup))
+        return files_to_backup
+
+    def _build_backup_metadata(
+        self,
+        backup_id: str,
+        backup_type: BackupType,
+        backup_path: Path,
+        files: list[Path],
+        description: str,
+    ) -> BackupMetadata:
+        """Build backup metadata after archive creation."""
+        return BackupMetadata(
+            id=backup_id,
+            type=backup_type,
+            timestamp=datetime.now().isoformat(),
+            description=description or f"{backup_type.value} backup",
+            version=self.APP_VERSION,
+            files=[str(f) for f in files],
+            size=backup_path.stat().st_size,
+        )
 
     def _create_archive(self, backup_path: Path, files: list[Path]) -> None:
         """Create a compressed tar archive of the given files."""

@@ -91,56 +91,38 @@ def run_pkexec(
     timeout: int,
     capture_output: bool,
 ) -> ElevationResult:
-    """Run command with pkexec.
-
-    Args:
-        helper: PolkitHelper for environment access.
-        command: Command and arguments to run.
-        _action_id: Polkit action ID (unused, determined by policy).
-        timeout: Timeout in seconds.
-        capture_output: Whether to capture stdout/stderr.
-
-    Returns:
-        ElevationResult from the pkexec command.
-    """
+    """Run command with pkexec and return an ElevationResult."""
     pkexec_cmd = ["pkexec", *command]
+    env = helper._get_pkexec_env()
     try:
-        if capture_output:
-            result = subprocess.run(
-                pkexec_cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-                env=helper._get_pkexec_env(),
-                check=False,
-            )
-        else:
-            result = subprocess.run(
-                pkexec_cmd,
-                timeout=timeout,
-                env=helper._get_pkexec_env(),
-                check=False,
-            )
-            return ElevationResult(
-                success=result.returncode == 0,
-                returncode=result.returncode,
-                stdout="",
-                stderr="",
-                method=ElevationMethod.PKEXEC,
-            )
-
-        return ElevationResult(
-            success=result.returncode == 0,
-            returncode=result.returncode,
-            stdout=result.stdout if capture_output else "",
-            stderr=result.stderr if capture_output else "",
-            cancelled=result.returncode == 126,
-            method=ElevationMethod.PKEXEC,
+        result = subprocess.run(
+            pkexec_cmd,
+            capture_output=capture_output,
+            text=True,
+            timeout=timeout,
+            env=env,
+            check=False,
         )
+        return _pkexec_result(result, capture_output)
     except subprocess.TimeoutExpired:
         return _make_pkexec_error("Command timed out")
     except Exception as e:
         return _make_pkexec_error(str(e))
+
+
+def _pkexec_result(
+    result: subprocess.CompletedProcess,
+    capture_output: bool,
+) -> ElevationResult:
+    """Convert subprocess result to ElevationResult for pkexec."""
+    return ElevationResult(
+        success=result.returncode == 0,
+        returncode=result.returncode,
+        stdout=(result.stdout or "") if capture_output else "",
+        stderr=(result.stderr or "") if capture_output else "",
+        cancelled=result.returncode == 126,
+        method=ElevationMethod.PKEXEC,
+    )
 
 
 def _make_pkexec_error(stderr: str) -> ElevationResult:

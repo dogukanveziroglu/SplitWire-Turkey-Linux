@@ -42,7 +42,7 @@ def parse_args() -> argparse.Namespace:
     """
     parser = argparse.ArgumentParser(
         prog="splitwire",
-        description=("SplitWire - A privacy-focused network routing tool for Linux"),
+        description="SplitWire - A privacy-focused network routing tool for Linux",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -55,38 +55,45 @@ For more information, visit: https://github.com/cagritaskn/SplitWire-Turkey
         """,
     )
 
-    parser.add_argument(
-        "--version",
-        "-v",
-        action="store_true",
-        help="Show version information and exit",
-    )
+    _add_service_arguments(parser)
+    _add_debug_arguments(parser)
 
-    parser.add_argument(
-        "--debug",
-        "-d",
-        action="store_true",
-        help="Enable debug logging",
-    )
+    return parser.parse_args()
 
+
+def _add_service_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add service-related arguments (deps, system, install)."""
     parser.add_argument(
         "--check-deps",
         action="store_true",
         help="Check system dependencies and exit",
     )
-
     parser.add_argument(
         "--check-system",
         action="store_true",
         help="Show system information and exit",
     )
-
     parser.add_argument(
         "--install-deps",
         action="store_true",
         help="Install missing dependencies",
     )
 
+
+def _add_debug_arguments(parser: argparse.ArgumentParser) -> None:
+    """Add debug and configuration arguments."""
+    parser.add_argument(
+        "--version",
+        "-v",
+        action="store_true",
+        help="Show version information and exit",
+    )
+    parser.add_argument(
+        "--debug",
+        "-d",
+        action="store_true",
+        help="Enable debug logging",
+    )
     parser.add_argument(
         "--language",
         "-l",
@@ -94,15 +101,12 @@ For more information, visit: https://github.com/cagritaskn/SplitWire-Turkey
         default=None,
         help="Set application language",
     )
-
     parser.add_argument(
         "--config-dir",
         type=Path,
         default=None,
         help="Override config directory",
     )
-
-    return parser.parse_args()
 
 
 def show_version() -> None:

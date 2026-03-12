@@ -50,11 +50,6 @@ def run_with_output(
 
     Returns:
         CommandResult with execution details.
-
-    Example:
-        >>> lines: list[str] = []
-        >>> run_with_output(["echo", "hi"], "echo hi",
-        ...     lines.append, 10, None, {})
     """
     start_time = time.time()
     stdout_lines: list[str] = []
@@ -62,15 +57,7 @@ def run_with_output(
     logger.debug("[SHELL] Streaming execution: %s", preview)
 
     try:
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            cwd=run_cwd,
-            env=run_env,
-            bufsize=1,
-        )
+        process = _create_streaming_process(cmd, run_cwd, run_env)
         return _collect_output(
             process,
             callback,
@@ -81,25 +68,61 @@ def run_with_output(
             preview,
         )
     except FileNotFoundError:
-        logger.error("[SHELL] Command not found: %s", cmd[0])
-        return CommandResult(
-            status=CommandStatus.NOT_FOUND,
-            returncode=-1,
-            stdout="",
-            stderr=f"Command not found: {cmd[0]}",
-            command=cmd_str,
-            duration=time.time() - start_time,
-        )
+        return _streaming_not_found(cmd, cmd_str, start_time)
     except (subprocess.SubprocessError, OSError) as e:
-        logger.error("[SHELL] Streaming exception: %s", e)
-        return CommandResult(
-            status=CommandStatus.FAILED,
-            returncode=-1,
-            stdout="\n".join(stdout_lines),
-            stderr=str(e),
-            command=cmd_str,
-            duration=time.time() - start_time,
-        )
+        return _streaming_error(e, stdout_lines, cmd_str, start_time)
+
+
+def _create_streaming_process(
+    cmd: list[str],
+    run_cwd: Path | None,
+    run_env: dict[str, str],
+) -> subprocess.Popen[str]:
+    """Create a subprocess for streaming output."""
+    return subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        cwd=run_cwd,
+        env=run_env,
+        bufsize=1,
+    )
+
+
+def _streaming_not_found(
+    cmd: list[str],
+    cmd_str: str,
+    start_time: float,
+) -> CommandResult:
+    """Build result for command-not-found during streaming."""
+    logger.error("[SHELL] Command not found: %s", cmd[0])
+    return CommandResult(
+        status=CommandStatus.NOT_FOUND,
+        returncode=-1,
+        stdout="",
+        stderr=f"Command not found: {cmd[0]}",
+        command=cmd_str,
+        duration=time.time() - start_time,
+    )
+
+
+def _streaming_error(
+    exc: Exception,
+    stdout_lines: list[str],
+    cmd_str: str,
+    start_time: float,
+) -> CommandResult:
+    """Build result for an exception during streaming."""
+    logger.error("[SHELL] Streaming exception: %s", exc)
+    return CommandResult(
+        status=CommandStatus.FAILED,
+        returncode=-1,
+        stdout="\n".join(stdout_lines),
+        stderr=str(exc),
+        command=cmd_str,
+        duration=time.time() - start_time,
+    )
 
 
 def _collect_output(

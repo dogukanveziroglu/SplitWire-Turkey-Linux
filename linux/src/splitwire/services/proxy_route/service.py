@@ -127,48 +127,70 @@ class ProxyRouteService(BaseService):
         **kwargs,
     ) -> bool:
         """Install and configure proxy routing."""
-        self._logger.info(f"Installing proxy routing via {method.value}")
+        self._logger.info("Installing proxy routing via %s", method.value)
         self._notify_status_change(ServiceStatus.INSTALLING)
 
         try:
-            if not self._check_dependencies(method):
-                return False
-
-            self._config.proxy_host = proxy_host
-            self._config.proxy_port = proxy_port
-            self._config.method = method
-            self._config.include_browsers = include_browsers
-
-            proxy_apps = self._build_app_list(apps, include_browsers)
-            if not proxy_apps:
-                self._logger.warning("No apps to route")
-                return False
-
-            self._config.apps = proxy_apps
-            app_paths = [a.path for a in proxy_apps if a.enabled]
-
-            if method == ProxyMethod.CGPROXY:
-                if not backends.setup_cgproxy(
-                    self._run_privileged,
-                    proxy_host,
-                    proxy_port,
-                    app_paths,
-                ):
-                    return False
-            elif method == ProxyMethod.REDSOCKS and not backends.setup_redsocks(
-                self._run_privileged, proxy_host, proxy_port
-            ):
-                return False
-
-            self._config.enabled = True
-            self._save_config()
-            self._logger.info("Proxy routing installed successfully")
-            return True
-
+            return self._do_install(apps, include_browsers, proxy_host, proxy_port, method)
         except Exception as e:
-            self._logger.exception(f"Installation failed: {e}")
+            self._logger.exception("Installation failed: %s", e)
             self._notify_status_change(ServiceStatus.FAILED)
             return False
+
+    def _do_install(
+        self,
+        apps: list[str] | None,
+        include_browsers: bool,
+        proxy_host: str,
+        proxy_port: int,
+        method: ProxyMethod,
+    ) -> bool:
+        """Execute proxy routing installation steps."""
+        if not self._check_dependencies(method):
+            return False
+
+        self._config.proxy_host = proxy_host
+        self._config.proxy_port = proxy_port
+        self._config.method = method
+        self._config.include_browsers = include_browsers
+
+        proxy_apps = self._build_app_list(apps, include_browsers)
+        if not proxy_apps:
+            self._logger.warning("No apps to route")
+            return False
+
+        self._config.apps = proxy_apps
+        if not self._setup_backend(method, proxy_host, proxy_port, proxy_apps):
+            return False
+
+        self._config.enabled = True
+        self._save_config()
+        self._logger.info("Proxy routing installed successfully")
+        return True
+
+    def _setup_backend(
+        self,
+        method: ProxyMethod,
+        proxy_host: str,
+        proxy_port: int,
+        proxy_apps: list[ProxiedApp],
+    ) -> bool:
+        """Set up the chosen proxy backend."""
+        app_paths = [a.path for a in proxy_apps if a.enabled]
+        if method == ProxyMethod.CGPROXY:
+            return backends.setup_cgproxy(
+                self._run_privileged,
+                proxy_host,
+                proxy_port,
+                app_paths,
+            )
+        if method == ProxyMethod.REDSOCKS:
+            return backends.setup_redsocks(
+                self._run_privileged,
+                proxy_host,
+                proxy_port,
+            )
+        return True
 
     def remove(self) -> bool:
         """Remove proxy routing configuration."""

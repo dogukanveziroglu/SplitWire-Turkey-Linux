@@ -27,53 +27,46 @@ def do_wireguard_setup(
     dns_service: DNSManager,
     tunnel_mode: TunnelMode | None = None,
 ) -> tuple[bool, str | None]:
-    """
-    Run the WireGuard setup sequence.
-
-    Args:
-        wg_service: WireGuard service instance
-        dns_service: DNS service instance
-        tunnel_mode: Optional TunnelMode for config generation
+    """Run the WireGuard setup sequence (register, config, start, DNS).
 
     Returns:
-        Tuple of (success, error_message_or_None)
+        Tuple of (success, error_message_or_None).
     """
     try:
-        if not wg_service.register_wgcf():
-            return (
-                False,
-                get_text("errors", "wgcf_register_failed"),
-            )
-
-        kwargs = {}
-        if tunnel_mode is not None:
-            kwargs["tunnel_mode"] = tunnel_mode
-
-        if not wg_service.generate_config(**kwargs):
-            return (
-                False,
-                get_text("errors", "config_generate_failed"),
-            )
-
-        # CRITICAL: Start WireGuard BEFORE changing DNS
-        # DNS change before VPN can cause endpoint resolution failure
-        if not wg_service.start():
-            return (
-                False,
-                get_text("errors", "service_start_failed"),
-            )
-
-        time.sleep(1)
-        if not wg_service.test_connection():
-            logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
-
-        # NOW safe to change DNS (VPN is active)
-        dns_service.install(preset="cloudflare")
-        return (True, None)
-
+        return _run_wireguard_steps(wg_service, dns_service, tunnel_mode)
     except Exception as e:
         logger.exception("WireGuard setup failed: %s", e)
         return (False, str(e))
+
+
+def _run_wireguard_steps(
+    wg_service: WireGuardService,
+    dns_service: DNSManager,
+    tunnel_mode: TunnelMode | None,
+) -> tuple[bool, str | None]:
+    """Execute individual WireGuard setup steps."""
+    if not wg_service.register_wgcf():
+        return (False, get_text("errors", "wgcf_register_failed"))
+
+    kwargs = {}
+    if tunnel_mode is not None:
+        kwargs["tunnel_mode"] = tunnel_mode
+
+    if not wg_service.generate_config(**kwargs):
+        return (False, get_text("errors", "config_generate_failed"))
+
+    # CRITICAL: Start WireGuard BEFORE changing DNS
+    # DNS change before VPN can cause endpoint resolution failure
+    if not wg_service.start():
+        return (False, get_text("errors", "service_start_failed"))
+
+    time.sleep(1)
+    if not wg_service.test_connection():
+        logger.warning("[UI:Main] VPN connection test failed, continuing anyway...")
+
+    # NOW safe to change DNS (VPN is active)
+    dns_service.install(preset="cloudflare")
+    return (True, None)
 
 
 def do_disconnect(
