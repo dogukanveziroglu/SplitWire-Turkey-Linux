@@ -147,9 +147,27 @@ class TestByeDPIService:
         config_dir = tmp_path / "config" / "splitwire" / "byedpi"
         config_dir.mkdir(parents=True, exist_ok=True)
 
-        monkeypatch.setattr("splitwire.services.byedpi.LOCAL_CONFIG_DIR", config_dir)
-        monkeypatch.setattr("splitwire.services.byedpi.CONFIG_FILE", config_dir / "config.json")
-        monkeypatch.setattr("splitwire.services.byedpi.PRESETS_FILE", config_dir / "presets.json")
+        # Patch where the names are actually used (service.py imports from .constants)
+        monkeypatch.setattr(
+            "splitwire.services.byedpi.service.LOCAL_CONFIG_DIR", config_dir
+        )
+        monkeypatch.setattr(
+            "splitwire.services.byedpi.service.CONFIG_FILE",
+            config_dir / "config.json",
+        )
+        monkeypatch.setattr(
+            "splitwire.services.byedpi.service.PRESETS_FILE",
+            config_dir / "presets.json",
+        )
+
+        # Patch binary check so is_installed() reflects test state
+        binary_path = tmp_path / "byedpi" / "ciadpi"
+        monkeypatch.setattr(
+            "splitwire.services.byedpi.download.BYEDPI_BINARY", binary_path
+        )
+        monkeypatch.setattr(
+            "splitwire.services.byedpi.service.BYEDPI_BINARY", binary_path
+        )
 
         return ByeDPIService()
 

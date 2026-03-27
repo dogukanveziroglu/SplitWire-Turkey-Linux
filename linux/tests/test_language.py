@@ -164,7 +164,7 @@ class TestFallbackChain:
     def test_fallback_warning_logged_on_english_fallback(self, temp_lang_dir):
         """Test that logger.warning fires when falling back to English."""
         manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
-        with patch("splitwire.core.language._logger") as mock_logger:
+        with patch("splitwire.core.language.logger") as mock_logger:
             manager.get_text("en_only", "special")
             mock_logger.warning.assert_any_call(
                 "[LANG] Fallback to English for key: en_only.special"
@@ -173,7 +173,7 @@ class TestFallbackChain:
     def test_missing_key_warning_logged(self, temp_lang_dir):
         """Test that logger.warning fires for completely missing key."""
         manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
-        with patch("splitwire.core.language._logger") as mock_logger:
+        with patch("splitwire.core.language.logger") as mock_logger:
             manager.get_text("totally", "missing")
             mock_logger.warning.assert_any_call(
                 "[LANG] Missing translation: totally.missing"
@@ -184,7 +184,7 @@ class TestFallbackChain:
     ):
         """Test no fallback warning when key exists in current language."""
         manager = LanguageManager(language="tr", resources_dir=temp_lang_dir)
-        with patch("splitwire.core.language._logger") as mock_logger:
+        with patch("splitwire.core.language.logger") as mock_logger:
             result = manager.get_text("buttons", "install")
             assert result == "Kur"
             # Should NOT have fallback warning for this key
