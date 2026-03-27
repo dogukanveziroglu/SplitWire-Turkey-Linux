@@ -1,6 +1,6 @@
 """DNS management service for SplitWire Linux."""
 
-from .constants import LOCAL_CONFIG_DIR
+from .constants import BACKUP_FILE, CONFIG_FILE, LOCAL_CONFIG_DIR
 from .models import (
     DNS_PRESETS,
     DNSBackup,
@@ -19,6 +19,8 @@ __all__ = [
     "DNSServer",
     "DNSService",
     "DoHMode",
+    "BACKUP_FILE",
+    "CONFIG_FILE",
     "LOCAL_CONFIG_DIR",
     "get_dns_service",
 ]

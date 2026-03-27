@@ -9,7 +9,13 @@ continue to work.
 from splitwire.core import get_shell
 from splitwire.core.logger import get_logger
 
-from .constants import FULL_TARGETS, QUICK_TARGETS, STANDARD_TARGETS
+from .constants import (
+    BLOCKCHECK_RESULTS,
+    BLOCKCHECK_SCRIPT,
+    FULL_TARGETS,
+    QUICK_TARGETS,
+    STANDARD_TARGETS,
+)
 from .models import (
     BlockcheckResult,
     ScanMode,
@@ -31,6 +37,8 @@ def get_blockcheck_service() -> BlockcheckService:
 
 
 __all__ = [
+    "BLOCKCHECK_RESULTS",
+    "BLOCKCHECK_SCRIPT",
     "BlockcheckResult",
     "BlockcheckService",
     "FULL_TARGETS",
