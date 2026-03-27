@@ -6,6 +6,9 @@ Re-exports all public names so that existing imports like
 continue to work.
 """
 
+from splitwire.core import get_shell
+from splitwire.core.logger import get_logger
+
 from .constants import BROWSER_APPS, CGPROXY_CONFIG_FILE, KNOWN_APPS
 from .models import SplitTunnelConfig, TunneledApp
 from .service import SplitTunnelService

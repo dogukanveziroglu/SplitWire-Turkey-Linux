@@ -5,6 +5,9 @@ Re-exports all public names so that existing imports like
 ``from splitwire.services.systemd import SystemdManager`` continue to work.
 """
 
+from splitwire.core import get_shell
+from splitwire.core.logger import get_logger
+
 from .manager import SystemdManager
 from .models import (
     JournalEntry,

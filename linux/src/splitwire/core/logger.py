@@ -118,6 +118,71 @@ def setup_logging(
     root_logger.addHandler(console_handler)
 
 
+def get_logger() -> logging.Logger:
+    """Get the root splitwire logger.
+
+    Returns:
+        The root 'splitwire' logger instance.
+    """
+    return logging.getLogger(APP_NAME)
+
+
+def init_logger(debug: bool = False) -> logging.Logger:
+    """Initialize logging and return the root logger.
+
+    Convenience wrapper that calls ``setup_logging`` and returns
+    the configured logger.
+
+    Args:
+        debug: Enable DEBUG level logging.
+
+    Returns:
+        The configured root 'splitwire' logger.
+    """
+    setup_logging(debug=debug)
+    return logging.getLogger(APP_NAME)
+
+
+def get_component_logger(component: str) -> logging.Logger:
+    """Get a component-specific logger.
+
+    Args:
+        component: Component name (e.g., 'wireguard', 'dns').
+
+    Returns:
+        Logger namespaced under 'splitwire.<component>'.
+    """
+    return logging.getLogger(f"{APP_NAME}.{component}")
+
+
+_logger = logging.getLogger(APP_NAME)
+
+
+def debug(msg: str, *args: object, **kwargs: object) -> None:
+    """Log a debug message on the root splitwire logger."""
+    _logger.debug(msg, *args, **kwargs)
+
+
+def info(msg: str, *args: object, **kwargs: object) -> None:
+    """Log an info message on the root splitwire logger."""
+    _logger.info(msg, *args, **kwargs)
+
+
+def warning(msg: str, *args: object, **kwargs: object) -> None:
+    """Log a warning message on the root splitwire logger."""
+    _logger.warning(msg, *args, **kwargs)
+
+
+def error(msg: str, *args: object, **kwargs: object) -> None:
+    """Log an error message on the root splitwire logger."""
+    _logger.error(msg, *args, **kwargs)
+
+
+def critical(msg: str, *args: object, **kwargs: object) -> None:
+    """Log a critical message on the root splitwire logger."""
+    _logger.critical(msg, *args, **kwargs)
+
+
 class SplitWireLogger:
     """Utility class for log file management operations.
 

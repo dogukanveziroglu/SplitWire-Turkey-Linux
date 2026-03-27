@@ -42,6 +42,9 @@ from .language import (
 from .logger import (
     ColoredFormatter,
     SplitWireLogger,
+    get_component_logger,
+    get_logger,
+    init_logger,
     setup_logging,
 )
 
@@ -75,6 +78,9 @@ __all__ = [
     "ByeDPIConfig",
     "ColoredFormatter",
     "CommandResult",
+    "get_component_logger",
+    "get_logger",
+    "init_logger",
     "CommandStatus",
     "ConfigManager",
     "DNSConfig",

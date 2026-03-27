@@ -1,5 +1,8 @@
 """Zapret packet processing service package for SplitWire Linux."""
 
+from splitwire.core import get_shell
+from splitwire.core.logger import get_logger
+
 from .constants import NFQWS_BINARY, NFQUEUE_NUM, TPWS_PORT
 from .models import (
     DEFAULT_PRESETS,

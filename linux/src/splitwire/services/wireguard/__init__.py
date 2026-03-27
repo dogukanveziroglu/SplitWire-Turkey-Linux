@@ -5,6 +5,9 @@ Re-exports all public API from the original wireguard module
 to maintain backward compatibility.
 """
 
+from splitwire.core import get_shell
+from splitwire.core.logger import get_logger
+
 from .constants import (
     DEFAULT_EXCLUDED_NETWORKS,
     DISCORD_CLOUDFLARE_IPS,
