@@ -167,9 +167,11 @@ class TestBlockcheckService:
 
     def test_get_targets_for_mode(self, service):
         """Test getting targets for each mode."""
-        quick = service._get_targets_for_mode(ScanMode.QUICK)
-        standard = service._get_targets_for_mode(ScanMode.STANDARD)
-        full = service._get_targets_for_mode(ScanMode.FULL)
+        from splitwire.services.blockcheck.service import _get_targets_for_mode
+
+        quick = _get_targets_for_mode(ScanMode.QUICK)
+        standard = _get_targets_for_mode(ScanMode.STANDARD)
+        full = _get_targets_for_mode(ScanMode.FULL)
 
         assert quick == QUICK_TARGETS
         assert standard == STANDARD_TARGETS
@@ -196,19 +198,11 @@ class TestBlockcheckService:
 class TestBlockcheckStrategies:
     """Tests for strategy generation."""
 
-    @pytest.fixture
-    def service(self):
-        """Create a Blockcheck service instance."""
-        with patch('splitwire.services.blockcheck.get_logger') as mock_logger:
-            mock_logger.return_value = MagicMock()
-            with patch('splitwire.services.blockcheck.get_shell') as mock_shell:
-                mock_shell.return_value = MagicMock()
-                service = BlockcheckService()
-                return service
-
-    def test_generate_strategies_quick(self, service):
+    def test_generate_strategies_quick(self):
         """Test strategy generation for quick mode."""
-        strategies = service._generate_strategies(ScanMode.QUICK)
+        from splitwire.services.blockcheck.strategies import generate_strategies
+
+        strategies = generate_strategies(ScanMode.QUICK)
         assert isinstance(strategies, list)
         assert len(strategies) >= 3  # At least basic strategies
 
@@ -218,25 +212,31 @@ class TestBlockcheckStrategies:
             assert "mode" in strategy
             assert "args" in strategy
 
-    def test_generate_strategies_standard(self, service):
+    def test_generate_strategies_standard(self):
         """Test strategy generation for standard mode."""
-        quick_strategies = service._generate_strategies(ScanMode.QUICK)
-        standard_strategies = service._generate_strategies(ScanMode.STANDARD)
+        from splitwire.services.blockcheck.strategies import generate_strategies
+
+        quick_strategies = generate_strategies(ScanMode.QUICK)
+        standard_strategies = generate_strategies(ScanMode.STANDARD)
 
         # Standard should have more strategies than quick
         assert len(standard_strategies) > len(quick_strategies)
 
-    def test_generate_strategies_full(self, service):
+    def test_generate_strategies_full(self):
         """Test strategy generation for full mode."""
-        standard_strategies = service._generate_strategies(ScanMode.STANDARD)
-        full_strategies = service._generate_strategies(ScanMode.FULL)
+        from splitwire.services.blockcheck.strategies import generate_strategies
+
+        standard_strategies = generate_strategies(ScanMode.STANDARD)
+        full_strategies = generate_strategies(ScanMode.FULL)
 
         # Full should have most strategies
         assert len(full_strategies) > len(standard_strategies)
 
-    def test_strategies_have_nfqws_and_tpws(self, service):
+    def test_strategies_have_nfqws_and_tpws(self):
         """Test that both nfqws and tpws strategies exist."""
-        strategies = service._generate_strategies(ScanMode.FULL)
+        from splitwire.services.blockcheck.strategies import generate_strategies
+
+        strategies = generate_strategies(ScanMode.FULL)
 
         nfqws_count = sum(1 for s in strategies if s["mode"] == "nfqws")
         tpws_count = sum(1 for s in strategies if s["mode"] == "tpws")
@@ -253,32 +253,30 @@ class TestBlockcheckResultPersistence:
         with tempfile.TemporaryDirectory() as tmpdir:
             results_file = Path(tmpdir) / "results.json"
 
-            with patch('splitwire.services.blockcheck.get_logger') as mock_logger:
-                mock_logger.return_value = MagicMock()
-                with patch('splitwire.services.blockcheck.get_shell') as mock_shell:
-                    mock_shell.return_value = MagicMock()
-                    with patch('splitwire.services.blockcheck.BLOCKCHECK_RESULTS', results_file):
-                        service = BlockcheckService()
+            with patch('splitwire.services.blockcheck.service.get_shell') as mock_shell:
+                mock_shell.return_value = MagicMock()
+                with patch('splitwire.services.blockcheck.service.BLOCKCHECK_RESULTS', results_file):
+                    service = BlockcheckService()
 
-                        # Create and save result
-                        result = BlockcheckResult(
-                            success=True,
-                            scan_mode=ScanMode.STANDARD,
-                            duration_seconds=60.0,
-                            recommended_args="--dpi-desync=fake",
-                            recommended_mode="nfqws",
-                        )
-                        service._save_result(result)
+                    # Create and save result
+                    result = BlockcheckResult(
+                        success=True,
+                        scan_mode=ScanMode.STANDARD,
+                        duration_seconds=60.0,
+                        recommended_args="--dpi-desync=fake",
+                        recommended_mode="nfqws",
+                    )
+                    service._save_result(result)
 
-                        # Verify file exists
-                        assert results_file.exists()
+                    # Verify file exists
+                    assert results_file.exists()
 
-                        # Load and verify
-                        loaded = service._load_saved_result()
-                        assert loaded is not None
-                        assert loaded.success is True
-                        assert loaded.scan_mode == ScanMode.STANDARD
-                        assert loaded.recommended_args == "--dpi-desync=fake"
+                    # Load and verify
+                    loaded = service._load_saved_result()
+                    assert loaded is not None
+                    assert loaded.success is True
+                    assert loaded.scan_mode == ScanMode.STANDARD
+                    assert loaded.recommended_args == "--dpi-desync=fake"
 
 
 class TestBlockcheckCancellation:
@@ -327,14 +325,13 @@ class TestBlockcheckQuickTest:
 
     @pytest.fixture
     def service(self):
-        """Create a Blockcheck service instance."""
-        with patch('splitwire.services.blockcheck.get_logger') as mock_logger:
-            mock_logger.return_value = MagicMock()
-            with patch('splitwire.services.blockcheck.get_shell') as mock_shell:
-                mock_instance = MagicMock()
-                mock_shell.return_value = mock_instance
-                service = BlockcheckService()
-                return service
+        """Create a Blockcheck service instance with mocked shell."""
+        with patch('splitwire.services.blockcheck.service.get_shell') as mock_shell:
+            mock_instance = MagicMock()
+            mock_shell.return_value = mock_instance
+            service = BlockcheckService()
+            service._shell = mock_instance
+            yield service
 
     def test_run_quick_test_success(self, service):
         """Test quick test with successful result."""
