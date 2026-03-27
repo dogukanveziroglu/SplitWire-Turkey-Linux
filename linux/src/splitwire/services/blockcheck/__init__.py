@@ -6,6 +6,7 @@ Re-exports all public names so that existing imports like
 continue to work.
 """
 
+from .constants import FULL_TARGETS, QUICK_TARGETS, STANDARD_TARGETS
 from .models import (
     BlockcheckResult,
     ScanMode,
@@ -29,6 +30,9 @@ def get_blockcheck_service() -> BlockcheckService:
 __all__ = [
     "BlockcheckResult",
     "BlockcheckService",
+    "FULL_TARGETS",
+    "QUICK_TARGETS",
+    "STANDARD_TARGETS",
     "ScanMode",
     "ScanProgress",
     "ScanStatus",

@@ -6,7 +6,7 @@ Re-exports all public names so that existing imports like
 continue to work.
 """
 
-from .constants import BROWSER_APPS, KNOWN_APPS
+from .constants import BROWSER_APPS, CGPROXY_CONFIG_FILE, KNOWN_APPS
 from .models import SplitTunnelConfig, TunneledApp
 from .service import SplitTunnelService
 
@@ -24,6 +24,7 @@ def get_split_tunnel_service() -> SplitTunnelService:
 
 __all__ = [
     "BROWSER_APPS",
+    "CGPROXY_CONFIG_FILE",
     "KNOWN_APPS",
     "SplitTunnelConfig",
     "SplitTunnelService",
