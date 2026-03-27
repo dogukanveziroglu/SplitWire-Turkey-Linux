@@ -129,13 +129,23 @@ class TestZapretService:
     @pytest.fixture
     def service(self):
         """Create a Zapret service instance."""
+        tmpdir = Path(tempfile.mkdtemp())
         with patch("splitwire.services.zapret.get_logger") as mock_logger:
             mock_logger.return_value = MagicMock()
             with patch("splitwire.services.zapret.get_shell") as mock_shell:
                 mock_shell.return_value = MagicMock()
-                with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tempfile.mkdtemp())):
-                    service = ZapretService()
-                    return service
+                with patch("splitwire.services.zapret.service.LOCAL_CONFIG_DIR", tmpdir):
+                    with patch("splitwire.services.zapret.config_mgr.LOCAL_CONFIG_DIR", tmpdir):
+                        with patch(
+                            "splitwire.services.zapret.config_mgr.CUSTOM_CONFIG_FILE",
+                            tmpdir / "custom.json",
+                        ):
+                            with patch(
+                                "splitwire.services.zapret.config_mgr.PRESETS_FILE",
+                                tmpdir / "presets.json",
+                            ):
+                                service = ZapretService()
+                                return service
 
     def test_service_properties(self, service):
         """Test service properties."""
@@ -220,17 +230,28 @@ class TestZapretBlacklist:
     def service(self):
         """Create a Zapret service with temp config dir."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            blacklist = tmppath / "blacklist.txt"
             with patch("splitwire.services.zapret.get_logger") as mock_logger:
                 mock_logger.return_value = MagicMock()
                 with patch("splitwire.services.zapret.get_shell") as mock_shell:
                     mock_shell.return_value = MagicMock()
-                    with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tmpdir)):
-                        with patch(
-                            "splitwire.services.zapret.BLACKLIST_FILE",
-                            Path(tmpdir) / "blacklist.txt",
-                        ):
-                            service = ZapretService()
-                            yield service
+                    with patch("splitwire.services.zapret.service.LOCAL_CONFIG_DIR", tmppath):
+                        with patch("splitwire.services.zapret.config_mgr.LOCAL_CONFIG_DIR", tmppath):
+                            with patch(
+                                "splitwire.services.zapret.config_mgr.BLACKLIST_FILE",
+                                blacklist,
+                            ):
+                                with patch(
+                                    "splitwire.services.zapret.config_mgr.CUSTOM_CONFIG_FILE",
+                                    tmppath / "custom.json",
+                                ):
+                                    with patch(
+                                        "splitwire.services.zapret.config_mgr.PRESETS_FILE",
+                                        tmppath / "presets.json",
+                                    ):
+                                        service = ZapretService()
+                                        yield service
 
     def test_empty_blacklist(self, service):
         """Test getting empty blacklist."""
@@ -275,13 +296,23 @@ class TestZapretNfqwsArgs:
     @pytest.fixture
     def service(self):
         """Create a Zapret service instance."""
+        tmpdir = Path(tempfile.mkdtemp())
         with patch("splitwire.services.zapret.get_logger") as mock_logger:
             mock_logger.return_value = MagicMock()
             with patch("splitwire.services.zapret.get_shell") as mock_shell:
                 mock_shell.return_value = MagicMock()
-                with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tempfile.mkdtemp())):
-                    service = ZapretService()
-                    return service
+                with patch("splitwire.services.zapret.service.LOCAL_CONFIG_DIR", tmpdir):
+                    with patch("splitwire.services.zapret.config_mgr.LOCAL_CONFIG_DIR", tmpdir):
+                        with patch(
+                            "splitwire.services.zapret.config_mgr.CUSTOM_CONFIG_FILE",
+                            tmpdir / "custom.json",
+                        ):
+                            with patch(
+                                "splitwire.services.zapret.config_mgr.PRESETS_FILE",
+                                tmpdir / "presets.json",
+                            ):
+                                service = ZapretService()
+                                return service
 
     def test_build_nfqws_args_with_preset(self, service):
         """Test building nfqws args from preset."""
@@ -307,13 +338,23 @@ class TestZapretTpwsArgs:
     @pytest.fixture
     def service(self):
         """Create a Zapret service instance."""
+        tmpdir = Path(tempfile.mkdtemp())
         with patch("splitwire.services.zapret.get_logger") as mock_logger:
             mock_logger.return_value = MagicMock()
             with patch("splitwire.services.zapret.get_shell") as mock_shell:
                 mock_shell.return_value = MagicMock()
-                with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tempfile.mkdtemp())):
-                    service = ZapretService()
-                    return service
+                with patch("splitwire.services.zapret.service.LOCAL_CONFIG_DIR", tmpdir):
+                    with patch("splitwire.services.zapret.config_mgr.LOCAL_CONFIG_DIR", tmpdir):
+                        with patch(
+                            "splitwire.services.zapret.config_mgr.CUSTOM_CONFIG_FILE",
+                            tmpdir / "custom.json",
+                        ):
+                            with patch(
+                                "splitwire.services.zapret.config_mgr.PRESETS_FILE",
+                                tmpdir / "presets.json",
+                            ):
+                                service = ZapretService()
+                                return service
 
     def test_build_tpws_args_with_preset(self, service):
         """Test building tpws args from preset."""
@@ -338,6 +379,8 @@ class TestZapretConfig:
 
     def test_config_save_load(self):
         """Test configuration persistence."""
+        from splitwire.services.zapret.config_mgr import save_config
+
         with tempfile.TemporaryDirectory() as tmpdir:
             config_file = Path(tmpdir) / "custom.json"
 
@@ -345,18 +388,19 @@ class TestZapretConfig:
                 mock_logger.return_value = MagicMock()
                 with patch("splitwire.services.zapret.get_shell") as mock_shell:
                     mock_shell.return_value = MagicMock()
-                    with patch("splitwire.services.zapret.LOCAL_CONFIG_DIR", Path(tmpdir)):
-                        with patch("splitwire.services.zapret.CUSTOM_CONFIG_FILE", config_file):
-                            # Create service and modify config
-                            service = ZapretService()
-                            service._config.preset_name = "general"
-                            service._config.use_blacklist = True
-                            service._save_config()
+                    with patch("splitwire.services.zapret.config_mgr.LOCAL_CONFIG_DIR", Path(tmpdir)):
+                        with patch("splitwire.services.zapret.config_mgr.CUSTOM_CONFIG_FILE", config_file):
+                            with patch("splitwire.services.zapret.service.LOCAL_CONFIG_DIR", Path(tmpdir)):
+                                # Create service and modify config
+                                service = ZapretService()
+                                service._config.preset_name = "general"
+                                service._config.use_blacklist = True
+                                save_config(service)
 
-                            # Create new service and verify loaded
-                            service2 = ZapretService()
-                            assert service2._config.preset_name == "general"
-                            assert service2._config.use_blacklist is True
+                                # Create new service and verify loaded
+                                service2 = ZapretService()
+                                assert service2._config.preset_name == "general"
+                                assert service2._config.use_blacklist is True
 
 
 class TestZapretServiceIntegration:
