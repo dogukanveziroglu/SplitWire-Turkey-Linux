@@ -1,18 +1,35 @@
 # SplitWire-Turkey Linux
 
-An open-source network privacy and traffic management toolkit for Linux. Provides VPN split tunneling, DNS-over-HTTPS configuration, traffic analysis tools, and application-specific routing capabilities.
+> **WIP (Work In Progress)** — This project is under active development. Features may be incomplete, APIs may change, and documentation may not reflect the current state.
+
+An open-source network privacy and traffic management toolkit for Linux. Provides VPN split tunneling, DNS-over-HTTPS configuration, DPI bypass tools, and application-specific routing capabilities.
+
+## Project Status
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Core (config, logger, shell) | Stable | Fully tested |
+| WireGuard VPN + split tunnel | Implemented | Needs real-world testing |
+| Zapret (nfqws/tpws) | Implemented | DPI bypass, host-only (no Docker NFQUEUE) |
+| ByeDPI (ciadpi proxy) | Implemented | `split` preset works for Turkish ISPs |
+| DNS management (DoH) | Implemented | Cloudflare/Google/Quad9 |
+| Discord repair | Implemented | Detection + alternative clients |
+| GTK4/Libadwaita UI | Implemented | 5 pages |
+| Unit tests | 371 passing | Full coverage on mocked tests |
+| Integration tests | WIP | Docker environment ready |
+| E2E bypass tests | WIP | discord.com ~240ms, roblox.com ~370ms |
 
 ## Intended Use Cases
 
 This software is a **general-purpose, dual-use network toolkit** designed for the following legitimate purposes:
 
-- **Privacy protection** - Encrypt and route network traffic to protect user privacy
-- **Network security research** - Analyze DPI (Deep Packet Inspection) behavior and test network resilience
-- **DNS security** - Configure encrypted DNS (DoH) to prevent DNS spoofing and surveillance
-- **Split tunneling** - Route only specific application traffic through VPN for bandwidth optimization
-- **Application-specific routing** - Direct individual application traffic through SOCKS5 proxies
-- **Network diagnostics** - Troubleshoot connectivity issues with Discord and other applications
-- **Educational use** - Learn about networking protocols, VPN tunneling, packet analysis, and Linux system administration
+- **Privacy protection** — Encrypt and route network traffic to protect user privacy
+- **Network security research** — Analyze DPI (Deep Packet Inspection) behavior and test network resilience
+- **DNS security** — Configure encrypted DNS (DoH) to prevent DNS spoofing and surveillance
+- **Split tunneling** — Route only specific application traffic through VPN for bandwidth optimization
+- **Application-specific routing** — Direct individual application traffic through SOCKS5 proxies
+- **Network diagnostics** — Troubleshoot connectivity issues with Discord and other applications
+- **Educational use** — Learn about networking protocols, VPN tunneling, packet analysis, and Linux system administration
 
 ## Features
 
@@ -151,6 +168,38 @@ journalctl -u splitwire-zapret -f
 sudo systemctl stop splitwire-wg splitwire-zapret splitwire-byedpi
 ```
 
+## Testing
+
+### Unit Tests (safe, no network changes)
+
+```bash
+# On host
+source .venv/bin/activate
+pytest tests/ -m "not integration" -q
+
+# In Docker (isolated)
+./scripts/run_tests_docker.sh unit
+```
+
+### Integration Tests (requires Docker for safety)
+
+```bash
+# DNS tests (Phase 4)
+./scripts/run_tests_docker.sh phase4
+
+# All integration tests
+./scripts/run_tests_docker.sh integration
+```
+
+### E2E Bypass Tests
+
+```bash
+# Full bypass test in Docker
+docker run --rm --privileged --runtime=runc \
+    --entrypoint /app/.venv/bin/python \
+    splitwire-test tests/e2e_bypass_test_v2.py
+```
+
 ## Uninstallation
 
 ### Using Uninstaller
@@ -231,7 +280,6 @@ Configuration files are stored in:
     "version": "1.0.0",
     "language": "tr",
     "theme": "system",
-    "auto_dns": true,
     "dns_server": "cloudflare",
     "doh_enabled": true
 }
@@ -310,11 +358,11 @@ and personal environments worldwide.
 
 This software is developed and distributed for the following purposes:
 
-1. **Network privacy and security research** - Understanding and analyzing DPI systems, encrypted
+1. **Network privacy and security research** — Understanding and analyzing DPI systems, encrypted
    DNS configuration, and VPN split tunneling
-2. **Educational use** - Learning about networking protocols, Linux system administration,
+2. **Educational use** — Learning about networking protocols, Linux system administration,
    packet analysis, and open-source software development
-3. **Personal privacy protection** - Encrypting DNS queries, routing traffic through VPN tunnels,
+3. **Personal privacy protection** — Encrypting DNS queries, routing traffic through VPN tunnels,
    and managing application-specific network configurations
 
 ### User Responsibility
