@@ -60,11 +60,9 @@ class TestSplitWireLogger:
 
     def test_logger_creation(self, temp_log_dir):
         """Test creating a logger."""
-        with patch('splitwire.core.logger.SplitWireLogger._get_log_dir', return_value=temp_log_dir):
-            logger = SplitWireLogger.__new__(SplitWireLogger)
-            logger._log_dir = temp_log_dir
-            logger._log_dir.mkdir(parents=True, exist_ok=True)
-            assert logger._log_dir.exists()
+        logger = SplitWireLogger(log_dir=temp_log_dir)
+        assert logger.log_dir == temp_log_dir
+        assert logger.log_dir.exists()
 
     def test_logger_writes_to_file(self, temp_log_dir):
         """Test that logger writes to file."""
@@ -195,10 +193,8 @@ class TestLoggerConvenienceFunctions:
     def test_init_logger_creates_logger(self):
         """Test init_logger creates and returns a logger."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            with patch('splitwire.core.logger.SplitWireLogger._get_log_dir',
-                       return_value=Path(tmpdir)):
-                logger = init_logger(debug=True)
-                assert logger is not None
+            logger = init_logger(debug=True)
+            assert logger is not None
 
 
 class TestLogRotation:

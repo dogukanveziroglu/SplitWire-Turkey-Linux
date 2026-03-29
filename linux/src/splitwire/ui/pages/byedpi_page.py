@@ -5,19 +5,22 @@ Provides ByeDPI proxy setup with split tunneling support.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Adw, GLib
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+
 from typing import TYPE_CHECKING
+
+from gi.repository import Adw, Gtk
 
 from splitwire.core import get_text
 from splitwire.services import (
+    BYEDPI_PRESETS,
+    ServiceStatus,
     get_byedpi_service,
     get_proxy_route_service,
-    ServiceStatus,
-    BYEDPI_PRESETS,
 )
+
 from .base_page import BasePage
 
 if TYPE_CHECKING:
@@ -27,12 +30,17 @@ if TYPE_CHECKING:
 class ByeDPIPage(BasePage):
     """ByeDPI proxy setup page."""
 
-    def __init__(self, window: 'SplitWireWindow'):
+    def __init__(self, window: "SplitWireWindow") -> None:
+        """Initialize ByeDPI page with service references.
+
+        Args:
+            window: Parent application window.
+        """
         self._byedpi_service = get_byedpi_service()
         self._proxy_service = get_proxy_route_service()
         super().__init__(window)
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the ByeDPI page UI."""
         # Status indicator
         self._status_box = Gtk.Box(
@@ -45,30 +53,26 @@ class ByeDPIPage(BasePage):
         self._update_status_indicator()
 
         # Setup group
-        setup_group = self.create_preferences_group(
-            title=get_text("byedpi", "setup") or "Kurulum"
-        )
+        setup_group = self.create_preferences_group(title=get_text("byedpi", "setup"))
         self.append(setup_group)
 
         # Split tunneling setup button
         self._btn_split_setup = self.create_action_button(
-            label=get_text("byedpi", "split_setup") or "ByeDPI Split Tunneling Kurulum",
+            label=get_text("byedpi", "split_setup"),
             callback=self._on_split_setup,
-            tooltip=get_text("tooltips", "byedpi_split") or "ByeDPI ile uygulama bazlı DPI bypass",
+            tooltip=get_text("tooltips", "byedpi_split"),
             suggested=True,
         )
         setup_group.add(self._btn_split_setup)
 
         # Options group
-        options_group = self.create_preferences_group(
-            title=get_text("byedpi", "options") or "Seçenekler"
-        )
+        options_group = self.create_preferences_group(title=get_text("byedpi", "options"))
         self.append(options_group)
 
         # Browser tunneling switch
         self._switch_browser = self.create_switch_row(
-            title=get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap",
-            subtitle=get_text("tooltips", "byedpi_browser_tunneling") or "Chrome, Firefox vb. tarayıcıları dahil et",
+            title=get_text("main", "browser_tunneling"),
+            subtitle=get_text("tooltips", "byedpi_browser_tunneling"),
             active=False,
             callback=self._on_browser_tunneling_changed,
         )
@@ -77,7 +81,7 @@ class ByeDPIPage(BasePage):
         # Preset selection
         preset_names = list(BYEDPI_PRESETS.keys())
         self._combo_preset = self.create_combo_row(
-            title=get_text("byedpi", "preset") or "Hazır Ayar",
+            title=get_text("byedpi", "preset"),
             items=preset_names,
             selected=0,
             callback=self._on_preset_changed,
@@ -86,14 +90,14 @@ class ByeDPIPage(BasePage):
 
         # Advanced settings expander
         self._advanced_expander = Adw.ExpanderRow(
-            title=get_text("byedpi", "advanced") or "Gelişmiş Ayarlar",
-            subtitle=get_text("byedpi", "custom_params") or "Özel ByeDPI parametreleri",
+            title=get_text("byedpi", "advanced"),
+            subtitle=get_text("byedpi", "custom_params"),
         )
         options_group.add(self._advanced_expander)
 
         # Custom parameters entry
         params_row = Adw.ActionRow(
-            title=get_text("byedpi", "params") or "Parametreler",
+            title=get_text("byedpi", "params"),
         )
         self._advanced_expander.add_row(params_row)
 
@@ -128,7 +132,7 @@ class ByeDPIPage(BasePage):
         self.append(remove_box)
 
         self._btn_remove = self.create_action_button(
-            label=get_text("byedpi", "remove") or "ByeDPI'ı Kaldır",
+            label=get_text("byedpi", "remove"),
             callback=self._on_remove,
             destructive=True,
         )
@@ -153,7 +157,7 @@ class ByeDPIPage(BasePage):
         help_btn = self.create_help_button(self._on_help)
         help_box.append(help_btn)
 
-    def _update_status_indicator(self):
+    def _update_status_indicator(self) -> None:
         """Update the status indicator."""
         # Clear existing children
         while child := self._status_box.get_first_child():
@@ -176,29 +180,28 @@ class ByeDPIPage(BasePage):
 
         # Status text
         status_text = get_text("status", "running") if running else get_text("status", "stopped")
-        if not status_text:
-            status_text = "Çalışıyor" if running else "Durduruldu"
         label = Gtk.Label(label=status_text)
         self._status_box.append(label)
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh page data."""
         self._update_status_indicator()
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh UI translations."""
-        self._btn_split_setup.set_label(get_text("byedpi", "split_setup") or "ByeDPI Split Tunneling Kurulum")
-        self._switch_browser.set_title(get_text("main", "browser_tunneling") or "Tarayıcılar için de tünelleme yap")
-        self._btn_remove.set_label(get_text("byedpi", "remove") or "ByeDPI'ı Kaldır")
+        self._btn_split_setup.set_label(get_text("byedpi", "split_setup"))
+        self._switch_browser.set_title(get_text("main", "browser_tunneling"))
+        self._btn_remove.set_label(get_text("byedpi", "remove"))
 
     # Event handlers
 
-    def _on_split_setup(self, button):
+    def _on_split_setup(self, button: object) -> None:
         """Handle split tunneling setup."""
         self._logger.info("[UI:ByeDPI] Starting split tunneling setup...")
-        self.set_status(get_text("status", "installing") or "Kuruluyor...")
+        self.set_status(get_text("status", "installing"))
 
-        def do_setup():
+        def do_setup() -> bool:
+            """Install, configure, and start ByeDPI with proxy routing."""
             # Get selected preset
             selected = self._combo_preset.get_selected()
             preset_names = list(BYEDPI_PRESETS.keys())
@@ -212,8 +215,7 @@ class ByeDPIPage(BasePage):
             # Install and configure ByeDPI
             self._byedpi_service.install()
             self._byedpi_service.configure(
-                preset=preset_name,
-                custom_params=params if params else None
+                preset=preset_name, custom_params=params if params else None
             )
 
             # Configure proxy routing
@@ -226,27 +228,28 @@ class ByeDPIPage(BasePage):
 
             return True
 
-        def on_complete(result):
+        def on_complete(result: object) -> None:
+            """Update status indicator and notify user after setup."""
             self._update_status_indicator()
             if result:
                 self._logger.info("[UI:ByeDPI] Split tunneling setup completed successfully")
-                self.show_toast(get_text("messages", "setup_complete") or "Kurulum tamamlandı")
+                self.show_toast(get_text("messages", "setup_complete"))
             else:
                 self._logger.error("[UI:ByeDPI] Split tunneling setup failed")
             self.set_status("")
 
         self.run_async(do_setup, on_complete)
 
-    def _on_browser_tunneling_changed(self, row, param):
+    def _on_browser_tunneling_changed(self, row: object, param: object) -> None:
         """Handle browser tunneling switch change."""
         active = row.get_active()
         self._logger.info(f"[UI:ByeDPI] Browser tunneling changed: {active}")
         if active:
-            self._lbl_status.set_label(get_text("byedpi", "browser_enabled") or "Tarayıcılar dahil edilecek")
+            self._lbl_status.set_label(get_text("byedpi", "browser_enabled"))
         else:
             self._lbl_status.set_label("")
 
-    def _on_preset_changed(self, row, param):
+    def _on_preset_changed(self, row: object, param: object) -> None:
         """Handle preset selection change."""
         selected = row.get_selected()
         preset_names = list(BYEDPI_PRESETS.keys())
@@ -260,56 +263,48 @@ class ByeDPIPage(BasePage):
             buffer = self._entry_params.get_buffer()
             buffer.set_text(params)
 
-    def _on_remove(self, button):
+    def _on_remove(self, button: object) -> None:
         """Handle remove button click."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading=get_text("dialogs", "confirm_remove") or "Kaldır",
-            body=get_text("dialogs", "remove_byedpi_body") or "ByeDPI kaldırılacak. Devam etmek istiyor musunuz?",
+            heading=get_text("dialogs", "confirm_remove"),
+            body=get_text("dialogs", "remove_byedpi_body"),
         )
-        dialog.add_response("cancel", get_text("buttons", "cancel") or "İptal")
-        dialog.add_response("remove", get_text("buttons", "remove") or "Kaldır")
+        dialog.add_response("cancel", get_text("buttons", "cancel"))
+        dialog.add_response("remove", get_text("buttons", "remove"))
         dialog.set_response_appearance("remove", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_remove_confirmed)
         dialog.present()
 
-    def _on_remove_confirmed(self, dialog, response):
+    def _on_remove_confirmed(self, dialog: object, response: str) -> None:
         """Handle remove confirmation."""
         if response == "remove":
             self._logger.info("[UI:ByeDPI] Removing ByeDPI service...")
-            self.set_status(get_text("status", "removing") or "Kaldırılıyor...")
+            self.set_status(get_text("status", "removing"))
 
-            def do_remove():
+            def do_remove() -> bool:
+                """Stop and remove proxy routing and ByeDPI services."""
                 self._proxy_service.stop()
                 self._proxy_service.remove()
                 self._byedpi_service.stop()
                 self._byedpi_service.remove()
                 return True
 
-            def on_complete(result):
+            def on_complete(result: object) -> None:
+                """Update status and notify user after removal."""
                 self._update_status_indicator()
                 if result:
-                    self.show_toast(get_text("messages", "service_removed") or "Hizmet kaldırıldı")
+                    self.show_toast(get_text("messages", "service_removed"))
                 self.set_status("")
 
             self.run_async(do_remove, on_complete)
 
-    def _on_help(self, button):
+    def _on_help(self, button: object) -> None:
         """Handle help button click."""
         dialog = Adw.MessageDialog(
             transient_for=self._window,
-            heading=get_text("help", "byedpi_title") or "ByeDPI Yardım",
-            body=get_text("help", "byedpi_body") or """ByeDPI, DPI (Deep Packet Inspection) engellerini aşmak için SOCKS5 proxy kullanır.
-
-Split Tunneling: Sadece Discord ve seçilen uygulamalar proxy üzerinden geçer.
-
-Hazır Ayarlar: Farklı DPI bypass stratejileri sunar:
-- Disorder: Paket sırasını boz
-- Split: Paketleri böl
-- Fake: Sahte paketler gönder
-- OOB: Out-of-band veri kullan
-
-Tarayıcılar için tünelleme aktifse tarayıcılar da proxy üzerinden geçer.""",
+            heading=get_text("help", "byedpi_title"),
+            body=get_text("help", "byedpi_body"),
         )
-        dialog.add_response("ok", "Tamam")
+        dialog.add_response("ok", get_text("buttons", "ok"))
         dialog.present()

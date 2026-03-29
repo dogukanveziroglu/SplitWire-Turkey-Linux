@@ -6,9 +6,9 @@ import json
 import pytest
 import tempfile
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from splitwire.core.config import (
@@ -30,21 +30,18 @@ class TestAppConfig:
         """Test default configuration values."""
         config = AppConfig()
         assert config.version == "1.0.0"
-        assert config.theme == Theme.SYSTEM
-        assert config.language == Language.TR
-        assert config.auto_dns is True
+        assert config.theme == "system"
+        assert config.language == "en"
         assert config.start_minimized is False
 
     def test_custom_values(self):
         """Test custom configuration values."""
         config = AppConfig(
-            theme=Theme.DARK,
-            language=Language.EN,
-            auto_dns=False,
+            theme=Theme.DARK.value,
+            language=Language.ENGLISH.value,
         )
-        assert config.theme == Theme.DARK
-        assert config.language == Language.EN
-        assert config.auto_dns is False
+        assert config.theme == "dark"
+        assert config.language == "en"
 
 
 class TestDNSConfig:
@@ -54,8 +51,8 @@ class TestDNSConfig:
         """Test default DNS configuration."""
         config = DNSConfig()
         assert config.enabled is False
-        assert config.primary == "8.8.8.8"
-        assert config.secondary == "8.8.4.4"
+        assert config.primary == "1.1.1.1"
+        assert config.secondary == "1.0.0.1"
         assert config.doh_enabled is False
 
     def test_custom_dns(self):
@@ -78,16 +75,14 @@ class TestWireGuardConfig:
     def test_default_values(self):
         """Test default WireGuard configuration."""
         config = WireGuardConfig()
-        assert config.enabled is False
-        assert config.config_path is None
-        assert config.split_tunnel is True
+        assert config.config_path == ""
+        assert config.split_tunnel_enabled is True
         assert config.allowed_apps == []
 
     def test_with_apps(self):
         """Test WireGuard config with allowed apps."""
         config = WireGuardConfig(
-            enabled=True,
-            split_tunnel=True,
+            split_tunnel_enabled=True,
             allowed_apps=["/usr/bin/discord", "/usr/bin/firefox"],
         )
         assert len(config.allowed_apps) == 2
@@ -102,7 +97,7 @@ class TestZapretConfig:
         config = ZapretConfig()
         assert config.enabled is False
         assert config.mode == "nfqws"
-        assert config.preset == "turkey_discord"
+        assert config.strategy == "default"
 
     def test_custom_args(self):
         """Test Zapret with custom arguments."""
@@ -122,7 +117,7 @@ class TestByeDPIConfig:
         """Test default ByeDPI configuration."""
         config = ByeDPIConfig()
         assert config.enabled is False
-        assert config.port == 1080
+        assert config.port == 10080
         assert config.strategy == "disorder"
 
     def test_custom_port(self):
@@ -144,35 +139,28 @@ class TestConfigManager:
     @pytest.fixture
     def config_manager(self, temp_config_dir):
         """Create a ConfigManager with temporary directory."""
-        with patch.object(ConfigManager, '_get_config_dir', return_value=temp_config_dir):
-            manager = ConfigManager.__new__(ConfigManager)
-            manager._config_dir = temp_config_dir
-            manager._config_file = temp_config_dir / "config.json"
-            manager._config = AppConfig()
-            return manager
+        manager = ConfigManager(config_dir=temp_config_dir)
+        manager._config = AppConfig()
+        return manager
 
     def test_config_dir_creation(self, temp_config_dir):
         """Test that config directory is created."""
         config_dir = temp_config_dir / "splitwire"
-        with patch.object(ConfigManager, '_get_config_dir', return_value=config_dir):
-            manager = ConfigManager.__new__(ConfigManager)
-            manager._config_dir = config_dir
-            manager._config_dir.mkdir(parents=True, exist_ok=True)
-            assert config_dir.exists()
+        manager = ConfigManager(config_dir=config_dir)
+        assert config_dir.exists()
 
     def test_save_and_load_config(self, config_manager, temp_config_dir):
         """Test saving and loading configuration."""
         # Modify config
-        config_manager._config.theme = Theme.DARK
-        config_manager._config.language = Language.EN
+        config_manager._config.theme = Theme.DARK.value
+        config_manager._config.language = Language.ENGLISH.value
 
         # Save to file
         config_file = temp_config_dir / "config.json"
         config_dict = {
             "version": config_manager._config.version,
-            "theme": config_manager._config.theme.value,
-            "language": config_manager._config.language.value,
-            "auto_dns": config_manager._config.auto_dns,
+            "theme": config_manager._config.theme,
+            "language": config_manager._config.language,
             "start_minimized": config_manager._config.start_minimized,
         }
         with open(config_file, "w") as f:
@@ -196,8 +184,8 @@ class TestConfigManager:
         default_config = AppConfig()
         config_dict = {
             "version": default_config.version,
-            "theme": default_config.theme.value,
-            "language": default_config.language.value,
+            "theme": default_config.theme,
+            "language": default_config.language,
         }
         with open(config_file, "w") as f:
             json.dump(config_dict, f)
@@ -225,12 +213,12 @@ class TestLanguageEnum:
 
     def test_language_values(self):
         """Test all language values exist."""
-        assert Language.TR.value == "tr"
-        assert Language.EN.value == "en"
-        assert Language.RU.value == "ru"
-        assert Language.ES.value == "es"
+        assert Language.TURKISH.value == "tr"
+        assert Language.ENGLISH.value == "en"
+        assert Language.RUSSIAN.value == "ru"
+        assert Language.SPANISH.value == "es"
 
     def test_language_from_string(self):
         """Test creating language from string."""
-        assert Language("tr") == Language.TR
-        assert Language("en") == Language.EN
+        assert Language("tr") == Language.TURKISH
+        assert Language("en") == Language.ENGLISH

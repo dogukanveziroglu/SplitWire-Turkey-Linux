@@ -6,11 +6,12 @@
   },
   "tabs": {
     "wireguard": "WireGuard",
-    "zapret": "Zapret",
     "byedpi": "ByeDPI",
     "settings": "Nastroyki",
     "advanced": "Dopolnitel'no",
-    "about": "O programme"
+    "about": "O programme",
+    "main": "Home",
+    "repair": "Repair"
   },
   "buttons": {
     "install": "Ustanovit'",
@@ -30,7 +31,9 @@
     "clear_all": "Ochistit' vse",
     "reset": "Sbrosit' nastroyki",
     "check_deps": "Proverit' zavisimosti",
-    "install_deps": "Ustanovit' zavisimosti"
+    "install_deps": "Ustanovit' zavisimosti",
+    "launch": "Launch",
+    "ok": "OK"
   },
   "wireguard": {
     "title": "WireGuard VPN",
@@ -53,28 +56,9 @@
     "wgcf_generate": "Sozdat' konfigurasiyu WARP",
     "wgcf_generating": "Sozdaniye konfiguratsii WARP..."
   },
-  "zapret": {
-    "title": "Zapret DPI Bypass",
-    "description": "Obkhod DPI s pomoshch'yu nfqws/tpws",
-    "mode": "Rezhim",
-    "mode_nfqws": "nfqws (ochered' netfilter)",
-    "mode_tpws": "tpws (prozrachnyy proksi)",
-    "strategy": "Strategiya",
-    "custom_args": "Pol'zovatel'skiye argumenty",
-    "auto_install": "Avtomaticheskaya ustanovka",
-    "auto_install_desc": "Nayti optimal'nyye parametry s pomoshch'yu blockcheck",
-    "preset": "Preset",
-    "edit_preset": "Redaktirovat' preset",
-    "install_service": "Ustanovit' sluzhbu",
-    "run_once": "Zapustit' odin raz",
-    "service_status": "Status sluzhby",
-    "running": "Rabotayet",
-    "stopped": "Ostanovleno",
-    "not_installed": "Ne ustanovleno"
-  },
   "byedpi": {
     "title": "ByeDPI/ciadpi Proksi",
-    "description": "Obkhod DPI cherez SOCKS proksi",
+    "description": "Obrabotka trafika cherez SOCKS proksi",
     "port": "Port proksi",
     "strategy": "Strategiya",
     "strategy_disorder": "Besporyadok",
@@ -82,7 +66,16 @@
     "strategy_fake": "Poddelka",
     "proxy_apps": "Prilozheniya proksi",
     "proxy_apps_desc": "Prilozheniya dlya marshrutizatsii cherez proksi",
-    "service_status": "Status sluzhby"
+    "service_status": "Status sluzhby",
+    "advanced": "Advanced Settings",
+    "browser_enabled": "Browsers will be included",
+    "custom_params": "Custom ByeDPI Parameters",
+    "options": "Options",
+    "params": "Parameters",
+    "preset": "Preset",
+    "remove": "Remove ByeDPI",
+    "setup": "Setup",
+    "split_setup": "ByeDPI Split Tunneling Setup"
   },
   "dns": {
     "title": "Nastroyki DNS",
@@ -106,7 +99,20 @@
     "minimize_tray": "Svorachivat' v trey",
     "start_minimized": "Zapuskat' svernuto",
     "autostart": "Zapuskat' s sistemoy",
-    "check_updates": "Proverit' obnovleniya"
+    "check_updates": "Proverit' obnovleniya",
+    "about": "About",
+    "dns": "DNS Settings",
+    "dns_server": "DNS Server",
+    "doh_enabled": "DNS over HTTPS (DoH)",
+    "doh_subtitle": "Use encrypted DNS queries",
+    "language_subtitle": "Select application language",
+    "logs": "Logs",
+    "logs_subtitle": "View application logs",
+    "open_logs": "Open Logs Folder",
+    "support": "Support",
+    "theme_subtitle": "Select application theme",
+    "updates_subtitle": "Check for new version",
+    "version": "Version"
   },
   "advanced": {
     "title": "Dopolnitel'no",
@@ -119,16 +125,20 @@
     "backup": "Rezervnoye kopirovaniye",
     "restore": "Vosstanovit' nastroyki",
     "logs": "Prosmotr logov",
-    "system_info": "Informatsiya o sisteme"
+    "system_info": "Informatsiya o sisteme",
+    "actions": "Actions",
+    "auto_dns": "Apply DNS and DoH settings on every install",
+    "open_logs": "Open Logs Folder",
+    "options": "Options",
+    "uninstall": "Uninstall SplitWire-Turkey"
   },
   "about": {
     "title": "O programme",
-    "description": "Instrument obkhoda setevykh ogranicheniy dlya Linux",
+    "description": "Instrument setevoy marshrutizatsii dlya Linux",
     "version": "Versiya {0}",
     "github": "Repozitoriy GitHub",
     "license": "Litsenziya: MIT",
     "credits": "Blagodarnosti",
-    "credits_zapret": "Zapret - bol-van",
     "credits_byedpi": "ByeDPI/ciadpi - hufrea"
   },
   "status": {
@@ -138,7 +148,13 @@
     "removing": "Udaleniye...",
     "error": "Oshibka",
     "success": "Uspeshno",
-    "checking": "Proverka..."
+    "checking": "Proverka...",
+    "connecting": "Connecting...",
+    "disconnecting": "Disconnecting...",
+    "installed": "Installed",
+    "not_installed": "Not Installed",
+    "running": "Running",
+    "stopped": "Stopped"
   },
   "messages": {
     "confirm": "Podtverdit'",
@@ -166,7 +182,18 @@
     "auth_cancelled": "Autentifikatsiya otmenena",
     "root_required": "Eta operatsiya trebuyet prav root",
     "error_generic": "Proizoshla oshibka: {0}",
-    "restart_required": "Perezapustite prilozheniye dlya primeneniya izmeneniy"
+    "restart_required": "Perezapustite prilozheniye dlya primeneniya izmeneniy",
+    "list_cleared": "List cleared",
+    "no_custom_apps": "Custom application list is empty",
+    "service_removed": "Service removed",
+    "setup_complete": "Setup completed",
+    "item_added": "Added: {0}",
+    "item_exists": "Already in list: {0}",
+    "all_services_removed": "All services removed",
+    "uninstall_complete": "SplitWire removed. Please close the application.",
+    "language_changed": "Language changed: {0}",
+    "theme_changed": "Theme changed: {0}",
+    "update_check_failed": "Update check failed"
   },
   "errors": {
     "wireguard_not_installed": "Instrumenty WireGuard ne ustanovleny",
@@ -175,22 +202,81 @@
     "permission_denied": "Dostup zapreshchen",
     "network_error": "Setevaya oshibka: {0}",
     "file_not_found": "Fayl ne nayden: {0}",
-    "invalid_config": "Nevernaya konfiguratsiya: {0}"
+    "invalid_config": "Nevernaya konfiguratsiya: {0}",
+    "config_generate_failed": "Config generation failed",
+    "service_start_failed": "Service start failed",
+    "wgcf_register_failed": "WGCF registration failed"
   },
   "tooltips": {
     "wireguard_connect": "Podklyuchit'sya k VPN",
     "wireguard_disconnect": "Otklyuchit'sya ot VPN",
     "split_tunnel": "Vklyuchit' razdel'noye tunnelirovaniye dlya napravleniya tol'ko vybrannykh prilozheniy cherez VPN",
-    "zapret_auto": "Avtomaticheski nayti luchshiye parametry obkhoda DPI dlya vashey seti",
-    "byedpi_proxy": "Napravlyat' trafik prilozheniya cherez lokal'nyy SOCKS proksi dlya obkhoda DPI",
-    "dns_doh": "Shifrovat' DNS-zaprosy s pomoshch'yu DNS cherez HTTPS"
+    "byedpi_proxy": "Napravlyat' trafik prilozheniya cherez lokal'nyy SOCKS proksi dlya obrabotki trafika",
+    "dns_doh": "Shifrovat' DNS-zaprosy s pomoshch'yu DNS cherez HTTPS",
+    "add_folder": "Add custom application folder",
+    "alternative_install": "Alternative WireGuard setup",
+    "auto_dns": "Auto-configure DNS on WireGuard and service setups",
+    "browser_tunneling": "Include Chrome, Firefox, Edge etc. browsers",
+    "byedpi_browser_tunneling": "Include Chrome, Firefox etc. browsers",
+    "byedpi_split": "Application-based traffic processing with ByeDPI",
+    "clean_install_ptb": "Remove existing Discord and install PTB",
+    "clear_list": "Clear custom list",
+    "custom_install": "Setup with custom list",
+    "discord_ptb_install": "Install Discord Public Test Build",
+    "discord_repair": "Clear Discord cache and repair",
+    "folder_customization": "Customize apps for tunneling",
+    "full_tunnel": "Route all network traffic through VPN tunnel",
+    "generate_config": "Generate custom WireGuard config file",
+    "standard_install": "Standard setup with WireGuard/WGCF",
+    "webcord_install": "Install alternative Discord client",
+    "webcord_shortcut": "Create desktop shortcut",
+    "wiresock_repeater": "Refresh connection periodically (30 minutes)"
   },
   "help": {
     "wireguard_title": "Pomoshch' WireGuard",
     "wireguard_content": "WireGuard - eto sovremennyy protokol VPN. Vyberite fayl konfiguratsii i nazhmite Podklyuchit' dlya ustanovleniya VPN-soyedineniya. Vklyuchite razdel'noye tunnelirovaniye dlya napravleniya tol'ko vybrannykh prilozheniy cherez VPN.",
-    "zapret_title": "Pomoshch' Zapret",
-    "zapret_content": "Zapret vypolnyayet obkhod DPI (glubokaya inspektsiya paketov) s pomoshch'yu manipulyatsii paketami. Ispol'zuyte Avtomaticheskuyu ustanovku dlya poiska optimal'nykh parametrov ili vyberite preset dlya ruchnoy nastroyki.",
     "byedpi_title": "Pomoshch' ByeDPI",
-    "byedpi_content": "ByeDPI sozdayet lokal'nyy SOCKS proksi, kotoryy vypolnyayet obkhod DPI. Trafik vybrannykh prilozheniy budet napravlyat'sya cherez etot proksi."
+    "byedpi_content": "ByeDPI sozdayet lokal'nyy SOCKS proksi, kotoryy vypolnyayet obrabotku trafika. Trafik vybrannykh prilozheniy budet napravlyat'sya cherez etot proksi.",
+    "byedpi_body": "ByeDPI creates a local SOCKS proxy that performs traffic processing. Selected applications will have their traffic routed through this proxy.",
+    "wireguard_body": "WireGuard is a modern VPN protocol. Select a configuration file and click Connect to establish a VPN connection. Enable split tunneling to route only selected applications through the VPN.",
+    "repair_title": "Discord Repair Help",
+    "repair_body": "Discord repair tools help resolve Discord connection issues.\n\nRepair Discord:\n- Clears cache\n- Resets settings\n- Fixes corrupted files\n\nDiscord PTB:\n- Public Test Build\n- Try new features early\n- Clean install option removes existing Discord\n\nWebCord:\n- Alternative Discord client\n- Lighter and privacy-focused\n- Open source Electron-based"
+  },
+  "dialogs": {
+    "confirm_remove": "Remove",
+    "remove_byedpi_body": "ByeDPI will be removed. Do you want to continue?",
+    "remove_wireguard_body": "WireGuard service will be removed. Do you want to continue?",
+    "save_config": "Save Config",
+    "select_folder": "Select Folder",
+    "clean_install_body": "Existing Discord will be removed and PTB will be installed. Do you want to continue?",
+    "remove_all_body": "All SplitWire services will be removed. This cannot be undone. Do you want to continue?",
+    "reset_dns_body": "DNS settings will be reset to defaults. Do you want to continue?",
+    "uninstall_body": "SplitWire and all components will be removed. This cannot be undone. Do you want to continue?"
+  },
+  "main": {
+    "about": "About",
+    "add_folder": "Add Folder",
+    "alternative_setup": "Alternative Setup",
+    "browser_tunneling": "Include Browsers in Tunneling",
+    "clear_list": "Clear List",
+    "custom_setup": "Custom Setup",
+    "folder_customization": "Customize Folder List",
+    "full_tunnel": "Route All Traffic Through VPN",
+    "generate_config": "Generate Custom Config",
+    "options": "Options",
+    "refresh_timer": "Install WireSock Refresher",
+    "remove_service": "Remove Service",
+    "setup": "Setup",
+    "standard_setup": "Standard Setup"
+  },
+  "repair": {
+    "actions": "Actions",
+    "clean_install_ptb": "Clean Install for Discord PTB",
+    "install_ptb": "Install Discord PTB",
+    "install_webcord": "Install WebCord",
+    "options": "Options",
+    "repair_discord": "Repair Discord",
+    "status": "Status",
+    "webcord_shortcut": "Create WebCord Shortcut"
   }
 }

@@ -23,6 +23,13 @@ from splitwire.services.discord import (
     SNAP_DISCORD_NAMES,
     get_discord_service,
 )
+from splitwire.services.discord.detection import (
+    _is_deb_installed,
+    _is_flatpak_installed,
+    _is_snap_installed,
+    find_binary,
+    get_dir_size_mb,
+)
 from splitwire.services.base import ServiceStatus, ServiceType
 
 
@@ -226,11 +233,11 @@ class TestDiscordService:
         config_dir.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(
-            "splitwire.services.discord.LOCAL_CONFIG_DIR",
+            "splitwire.services.discord.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.discord.CONFIG_FILE",
+            "splitwire.services.discord.service.CONFIG_FILE",
             config_dir / "config.json"
         )
 
@@ -316,11 +323,11 @@ class TestDiscordServiceDetection:
         config_dir.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(
-            "splitwire.services.discord.LOCAL_CONFIG_DIR",
+            "splitwire.services.discord.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.discord.CONFIG_FILE",
+            "splitwire.services.discord.service.CONFIG_FILE",
             config_dir / "config.json"
         )
 
@@ -331,7 +338,7 @@ class TestDiscordServiceDetection:
         with patch.object(service._shell, 'run') as mock_run:
             mock_run.return_value = Mock(success=False, stdout="", stderr="")
 
-            result = service._is_deb_installed("discord")
+            result = _is_deb_installed(service, "discord")
             assert result is False
 
     def test_is_snap_installed_false(self, service):
@@ -339,7 +346,7 @@ class TestDiscordServiceDetection:
         with patch.object(service._shell, 'run') as mock_run:
             mock_run.return_value = Mock(success=False, stdout="", stderr="")
 
-            result = service._is_snap_installed(DiscordVersion.STABLE)
+            result = _is_snap_installed(service, DiscordVersion.STABLE)
             assert result is False
 
     def test_is_flatpak_installed_false(self, service):
@@ -347,7 +354,7 @@ class TestDiscordServiceDetection:
         with patch.object(service._shell, 'run') as mock_run:
             mock_run.return_value = Mock(success=False, stdout="", stderr="")
 
-            result = service._is_flatpak_installed(DiscordVersion.STABLE)
+            result = _is_flatpak_installed(service, DiscordVersion.STABLE)
             assert result is False
 
     def test_find_binary_not_found(self, service):
@@ -355,7 +362,7 @@ class TestDiscordServiceDetection:
         with patch.object(service._shell, 'get_command_path') as mock_path:
             mock_path.return_value = None
 
-            result = service._find_binary(DiscordVersion.STABLE)
+            result = find_binary(service, DiscordVersion.STABLE)
             assert result is None
 
 
@@ -380,25 +387,25 @@ class TestDiscordServiceCache:
         (discord_config / "Cache" / "data.cache").write_bytes(b"y" * 2000)
 
         monkeypatch.setattr(
-            "splitwire.services.discord.LOCAL_CONFIG_DIR",
+            "splitwire.services.discord.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.discord.CONFIG_FILE",
+            "splitwire.services.discord.service.CONFIG_FILE",
             config_dir / "config.json"
         )
         monkeypatch.setattr(
-            "splitwire.services.discord.DISCORD_CONFIG_DIRS",
+            "splitwire.services.discord.service.DISCORD_CONFIG_DIRS",
             {"stable": discord_config, "ptb": tmp_path / ".config" / "discordptb", "canary": tmp_path / ".config" / "discordcanary"}
         )
         monkeypatch.setattr(
-            "splitwire.services.discord.DISCORD_CACHE_DIRS",
+            "splitwire.services.discord.service.DISCORD_CACHE_DIRS",
             {"stable": discord_cache, "ptb": tmp_path / ".cache" / "discordptb", "canary": tmp_path / ".cache" / "discordcanary"}
         )
 
         return DiscordService()
 
-    def test_get_dir_size_mb(self, service, tmp_path):
+    def test_get_dir_size_mb(self, tmp_path):
         """Test directory size calculation."""
         test_dir = tmp_path / "test_size"
         test_dir.mkdir()
@@ -406,7 +413,7 @@ class TestDiscordServiceCache:
         # Create 1MB file
         (test_dir / "file.dat").write_bytes(b"x" * 1024 * 1024)
 
-        size = service._get_dir_size_mb(test_dir)
+        size = get_dir_size_mb(test_dir)
         assert 0.9 < size < 1.1  # Approximately 1MB
 
     def test_clear_cache_success(self, service):
@@ -433,25 +440,36 @@ class TestDiscordServiceConfig:
         config_file = config_dir / "config.json"
 
         monkeypatch.setattr(
-            "splitwire.services.discord.LOCAL_CONFIG_DIR",
+            "splitwire.services.discord.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.discord.CONFIG_FILE",
+            "splitwire.services.discord.service.CONFIG_FILE",
             config_file
         )
 
         return DiscordService()
 
-    def test_save_and_load_config(self, service, config_dir):
+    def test_save_and_load_config(self, service, config_dir, monkeypatch):
         """Test saving and loading configuration."""
+        config_file = config_dir / "config.json"
+
+        # Ensure monkeypatch is still active for new service
+        monkeypatch.setattr(
+            "splitwire.services.discord.service.LOCAL_CONFIG_DIR",
+            config_dir
+        )
+        monkeypatch.setattr(
+            "splitwire.services.discord.service.CONFIG_FILE",
+            config_file
+        )
+
         # Modify config
         service._config.auto_clear_cache = True
         service._config.preferred_version = "canary"
         service._save_config()
 
         # Verify file exists
-        config_file = config_dir / "config.json"
         assert config_file.exists()
 
         # Create new service to load config
@@ -472,11 +490,11 @@ class TestDiscordServiceRepair:
         config_dir.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(
-            "splitwire.services.discord.LOCAL_CONFIG_DIR",
+            "splitwire.services.discord.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.discord.CONFIG_FILE",
+            "splitwire.services.discord.service.CONFIG_FILE",
             config_dir / "config.json"
         )
 

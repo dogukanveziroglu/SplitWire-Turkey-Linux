@@ -1,39 +1,44 @@
 """
-SplitWire-Turkey GTK4/Libadwaita Application.
+SplitWire GTK4/Libadwaita Application.
 
 Main application class that initializes the GUI and manages
 the application lifecycle.
 """
 
-import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
-
-from gi.repository import Gtk, Adw, Gio, GLib, Gdk
-from typing import Optional
+import logging
 import sys
-import os
+
+import gi
+
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
+
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from splitwire.core import (
     get_config_manager,
     init_language_manager,
-    init_logger,
-    get_logger,
 )
 from splitwire.ui.window import SplitWireWindow
 
+logger = logging.getLogger(__name__)
+
 
 class SplitWireApp(Adw.Application):
-    """Main application class for SplitWire-Turkey."""
+    """Main GTK4/Libadwaita application for SplitWire-Turkey.
 
-    def __init__(self):
+    Attributes:
+        window: The main application window instance.
+    """
+
+    def __init__(self) -> None:
+        """Initialize the application, actions, and signals."""
         super().__init__(
-            application_id='com.splitwire.turkey',
-            flags=Gio.ApplicationFlags.DEFAULT_FLAGS
+            application_id="com.splitwire.turkey",
+            flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
         )
 
-        self.window: Optional[SplitWireWindow] = None
-        self._logger = None
+        self.window: SplitWireWindow | None = None
         self._config = None
         self._debug = False
 
@@ -42,13 +47,13 @@ class SplitWireApp(Adw.Application):
         GLib.set_prgname("splitwire")
 
         # Connect signals
-        self.connect('activate', self.on_activate)
-        self.connect('shutdown', self.on_shutdown)
+        self.connect("activate", self.on_activate)
+        self.connect("shutdown", self.on_shutdown)
 
         # Setup actions
         self._setup_actions()
 
-    def _setup_actions(self):
+    def _setup_actions(self) -> None:
         """Setup application actions."""
         # Quit action
         quit_action = Gio.SimpleAction.new("quit", None)
@@ -67,7 +72,7 @@ class SplitWireApp(Adw.Application):
         self.add_action(preferences_action)
         self.set_accels_for_action("app.preferences", ["<Control>comma"])
 
-    def do_startup(self):
+    def do_startup(self) -> None:
         """Called when the application starts."""
         Adw.Application.do_startup(self)
 
@@ -77,29 +82,31 @@ class SplitWireApp(Adw.Application):
         # Load CSS if available
         self._load_css()
 
-    def _init_core_systems(self):
+    def _init_core_systems(self) -> None:
         """Initialize core systems (config, language, logging)."""
         try:
-            # Initialize logger first
-            self._logger = init_logger(debug=self._debug)
-            self._logger.info("SplitWire-Turkey starting...")
+            logger.info("SplitWire-Turkey starting...")
 
             # Initialize config
             self._config = get_config_manager()
             config = self._config.load()
-            self._logger.info(f"Config loaded: theme={config.theme}, language={config.language}")
+            logger.info(
+                "Config loaded: theme=%s, language=%s",
+                config.theme,
+                config.language,
+            )
 
             # Initialize language (config stores strings, not enums)
             init_language_manager(language=config.language)
-            self._logger.info(f"Language initialized: {config.language}")
+            logger.info("Language initialized: %s", config.language)
 
             # Apply theme
             self._apply_theme(config.theme)
 
-        except Exception as e:
-            print(f"Error initializing core systems: {e}", file=sys.stderr)
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            sys.stderr.write(f"Error initializing core systems: {e}\n")
 
-    def _apply_theme(self, theme: str):
+    def _apply_theme(self, theme: str) -> None:
         """Apply the specified theme."""
         style_manager = Adw.StyleManager.get_default()
 
@@ -110,7 +117,7 @@ class SplitWireApp(Adw.Application):
         else:  # system
             style_manager.set_color_scheme(Adw.ColorScheme.DEFAULT)
 
-    def _load_css(self):
+    def _load_css(self) -> None:
         """Load custom CSS styles."""
         css_provider = Gtk.CssProvider()
 
@@ -190,37 +197,33 @@ class SplitWireApp(Adw.Application):
             Gtk.StyleContext.add_provider_for_display(
                 display,
                 css_provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
 
-    def on_activate(self, app):
+    def on_activate(self, _app: object) -> None:
         """Called when the application is activated."""
         if not self.window:
             self.window = SplitWireWindow(application=self)
 
         self.window.present()
+        logger.info("Main window presented")
 
-        if self._logger:
-            self._logger.info("Main window presented")
-
-    def on_shutdown(self, app):
+    def on_shutdown(self, _app: object) -> None:
         """Called when the application is shutting down."""
-        if self._logger:
-            self._logger.info("SplitWire-Turkey shutting down...")
+        logger.info("SplitWire-Turkey shutting down...")
 
         # Save config
         if self._config:
             try:
                 self._config.save()
-            except Exception as e:
-                if self._logger:
-                    self._logger.error(f"Error saving config: {e}")
+            except (OSError, ValueError, TypeError) as e:
+                logger.error("Error saving config: %s", e)
 
-    def on_quit(self, action, param):
+    def on_quit(self, _action: object, _param: object) -> None:
         """Handle quit action."""
         self.quit()
 
-    def on_about(self, action, param):
+    def on_about(self, _action: object, _param: object) -> None:
         """Show about dialog."""
         about = Adw.AboutWindow(
             transient_for=self.window,
@@ -230,24 +233,32 @@ class SplitWireApp(Adw.Application):
             version="1.0.0",
             website="https://github.com/dogukanveziroglu/SplitWire-Turkey",
             issue_url="https://github.com/dogukanveziroglu/SplitWire-Turkey/issues",
-            copyright="© 2024 SplitWire Team",
+            copyright="2024 SplitWire Team",
             license_type=Gtk.License.MIT_X11,
             developers=[
                 "Dogukan Veziroglu",
             ],
-            comments="Network restriction bypass tool for Linux.\n\n"
-                     "Provides WireGuard VPN, Zapret DPI bypass, ByeDPI proxy, "
-                     "and Discord repair tools."
+            comments=(
+                "Manages network traffic routing with "
+                "privacy-preserving configurations.\n\n"
+                "Provides WireGuard VPN, Zapret packet "
+                "processing, ByeDPI proxy, "
+                "and Discord repair tools."
+            ),
         )
         about.present()
 
-    def on_preferences(self, action, param):
+    def on_preferences(self, _action: object, _param: object) -> None:
         """Show preferences (navigate to settings page)."""
         if self.window:
             self.window.navigate_to_settings()
 
-    def set_theme(self, theme: str):
-        """Set the application theme."""
+    def set_theme(self, theme: str) -> None:
+        """Set the application theme and save to config.
+
+        Args:
+            theme: Theme name ("light", "dark", or "system").
+        """
         self._apply_theme(theme)
 
         # Save to config
@@ -256,8 +267,12 @@ class SplitWireApp(Adw.Application):
             config.theme = theme  # Store as string, not enum
             self._config.save()
 
-    def set_language(self, language: str):
-        """Set the application language."""
+    def set_language(self, language: str) -> None:
+        """Set the application language and refresh the UI.
+
+        Args:
+            language: Language code (tr, en, ru, es).
+        """
         from splitwire.core import set_language
 
         set_language(language)
@@ -272,24 +287,36 @@ class SplitWireApp(Adw.Application):
         if self.window:
             self.window.refresh_translations()
 
-    def show_notification(self, title: str, body: str, priority: Gio.NotificationPriority = Gio.NotificationPriority.NORMAL):
-        """Show a desktop notification."""
+    def show_notification(
+        self,
+        title: str,
+        body: str,
+        priority: Gio.NotificationPriority = (Gio.NotificationPriority.NORMAL),
+    ) -> None:
+        """Show a desktop notification.
+
+        Args:
+            title: Notification title text.
+            body: Notification body text.
+            priority: Notification urgency level.
+        """
         notification = Gio.Notification.new(title)
         notification.set_body(body)
         notification.set_priority(priority)
         self.send_notification(None, notification)
 
-    def show_toast(self, message: str, timeout: int = 3):
-        """Show a toast message in the main window."""
+    def show_toast(self, message: str, timeout: int = 3) -> None:
+        """Show a toast message in the main window.
+
+        Args:
+            message: Toast text to display.
+            timeout: Auto-dismiss time in seconds.
+        """
         if self.window:
             self.window.show_toast(message, timeout)
 
 
-def main():
+def main() -> int:
     """Main entry point for the application."""
     app = SplitWireApp()
     return app.run(sys.argv)
-
-
-if __name__ == "__main__":
-    sys.exit(main())

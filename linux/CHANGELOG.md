@@ -25,18 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Zapret Service (Phase 3)
 - Zapret installation and management
-- nfqws (netfilter queue) for DPI bypass
+- nfqws (netfilter queue) for packet processing
 - tpws (transparent proxy) as alternative method
 - Blockcheck-style strategy scanning
 - 8 preset configurations for Turkey
 - Custom parameter support
 - Domain blacklist filtering
-- One-shot mode for temporary bypass
+- One-shot mode for temporary processing
 
 #### ByeDPI Service (Phase 4)
 - ciadpi (ByeDPI for Linux) integration
 - SOCKS5 proxy on localhost
-- Multiple DPI bypass strategies
+- Multiple traffic processing strategies
 - Custom arguments support
 
 #### Split Tunneling (Phase 5)
@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Service unit files for all components:
   - splitwire-wg.service (WireGuard VPN)
   - splitwire-wg-refresh.timer (Connection refresh)
-  - splitwire-zapret.service (DPI bypass)
+  - splitwire-zapret.service (packet processing)
   - splitwire-byedpi.service (Proxy)
   - splitwire-cgproxy.service (App routing)
 - Journal log access
@@ -102,7 +102,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### External Tools
 - wgcf - WireGuard Cloudflare WARP
-- zapret - DPI bypass toolkit
+- zapret - packet processing toolkit
 - ciadpi - ByeDPI for Linux
 
 ---

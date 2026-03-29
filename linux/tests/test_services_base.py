@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from splitwire.services.base import (
@@ -42,7 +43,7 @@ class TestServiceType:
     def test_type_values(self):
         """Test all type values exist."""
         assert ServiceType.VPN.value == "vpn"
-        assert ServiceType.DPI_BYPASS.value == "dpi_bypass"
+        assert ServiceType.PACKET_PROCESSING.value == "packet_processing"
         assert ServiceType.PROXY.value == "proxy"
         assert ServiceType.DNS.value == "dns"
         assert ServiceType.SYSTEM.value == "system"

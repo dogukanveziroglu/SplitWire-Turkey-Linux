@@ -3,13 +3,15 @@ Base page class for SplitWire-Turkey pages.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Adw, GLib
-from typing import Optional, Callable, TYPE_CHECKING
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
-from splitwire.core import get_text, get_logger
+import logging
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
+from gi.repository import Adw, GLib, Gtk
 
 if TYPE_CHECKING:
     from splitwire.ui.window import SplitWireWindow
@@ -18,7 +20,13 @@ if TYPE_CHECKING:
 class BasePage(Gtk.Box):
     """Base class for all application pages."""
 
-    def __init__(self, window: 'SplitWireWindow', **kwargs):
+    def __init__(self, window: "SplitWireWindow", **kwargs: object) -> None:
+        """Initialize base page with window reference and build UI.
+
+        Args:
+            window: Parent application window.
+            **kwargs: Additional GTK Box keyword arguments.
+        """
         super().__init__(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=16,
@@ -26,48 +34,47 @@ class BasePage(Gtk.Box):
             margin_end=16,
             margin_top=16,
             margin_bottom=16,
-            **kwargs
+            **kwargs,
         )
 
         self._window = window
-        self._logger = get_logger()
+        self._logger = logging.getLogger(__name__)
         self._is_busy = False
 
         # Build the page content
         self._build_ui()
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the page UI. Must be implemented by subclasses."""
         raise NotImplementedError("Subclasses must implement _build_ui()")
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refresh page data. Override in subclasses if needed."""
-        pass
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh translations. Override in subclasses if needed."""
-        pass
 
-    def show_toast(self, message: str, timeout: int = 3):
+    def show_toast(self, message: str, timeout: int = 3) -> None:
         """Show a toast notification."""
         if self._window:
             self._window.show_toast(message, timeout)
 
-    def set_status(self, message: str):
+    def set_status(self, message: str) -> None:
         """Set status bar message."""
         if self._window:
             self._window.set_status(message)
 
-    def set_busy(self, busy: bool):
+    def set_busy(self, busy: bool) -> None:
         """Set busy state (for long operations)."""
         self._is_busy = busy
         self.set_sensitive(not busy)
 
-    def run_async(self, func: Callable, callback: Optional[Callable] = None, *args):
+    def run_async(self, func: Callable, callback: Callable | None = None, *args: object) -> None:
         """Run a function asynchronously in a thread."""
         import threading
 
-        def thread_func():
+        def thread_func() -> None:
+            """Run func in background and dispatch callback on the main thread."""
             try:
                 result = func(*args)
                 if callback:
@@ -88,10 +95,10 @@ class BasePage(Gtk.Box):
         self,
         label: str,
         callback: Callable,
-        tooltip: Optional[str] = None,
+        tooltip: str | None = None,
         destructive: bool = False,
         suggested: bool = False,
-        icon_name: Optional[str] = None,
+        icon_name: str | None = None,
     ) -> Gtk.Button:
         """Create a styled action button."""
         if icon_name:
@@ -119,9 +126,9 @@ class BasePage(Gtk.Box):
     def create_switch_row(
         self,
         title: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         active: bool = False,
-        callback: Optional[Callable] = None,
+        callback: Callable | None = None,
     ) -> Adw.SwitchRow:
         """Create a switch row."""
         row = Adw.SwitchRow(
@@ -139,7 +146,7 @@ class BasePage(Gtk.Box):
         title: str,
         items: list,
         selected: int = 0,
-        callback: Optional[Callable] = None,
+        callback: Callable | None = None,
     ) -> Adw.ComboRow:
         """Create a combo box row."""
         model = Gtk.StringList.new(items)
@@ -156,7 +163,7 @@ class BasePage(Gtk.Box):
         self,
         title: str,
         text: str = "",
-        placeholder: Optional[str] = None,
+        placeholder: str | None = None,
     ) -> Adw.EntryRow:
         """Create an entry row."""
         row = Adw.EntryRow(
@@ -169,8 +176,8 @@ class BasePage(Gtk.Box):
 
     def create_preferences_group(
         self,
-        title: Optional[str] = None,
-        description: Optional[str] = None,
+        title: str | None = None,
+        description: str | None = None,
     ) -> Adw.PreferencesGroup:
         """Create a preferences group."""
         group = Adw.PreferencesGroup()
@@ -183,7 +190,7 @@ class BasePage(Gtk.Box):
     def create_status_indicator(
         self,
         running: bool = False,
-        label: Optional[str] = None,
+        label: str | None = None,
     ) -> Gtk.Box:
         """Create a status indicator widget."""
         box = Gtk.Box(

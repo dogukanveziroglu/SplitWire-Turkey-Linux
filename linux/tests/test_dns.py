@@ -193,15 +193,15 @@ class TestDNSService:
         config_dir.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(
-            "splitwire.services.dns.LOCAL_CONFIG_DIR",
+            "splitwire.services.dns.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.dns.CONFIG_FILE",
+            "splitwire.services.dns.service.CONFIG_FILE",
             config_dir / "config.json"
         )
         monkeypatch.setattr(
-            "splitwire.services.dns.BACKUP_FILE",
+            "splitwire.services.dns.service.BACKUP_FILE",
             config_dir / "backup.json"
         )
 
@@ -300,15 +300,15 @@ class TestDNSServiceConfig:
         backup_file = config_dir / "backup.json"
 
         monkeypatch.setattr(
-            "splitwire.services.dns.LOCAL_CONFIG_DIR",
+            "splitwire.services.dns.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.dns.CONFIG_FILE",
+            "splitwire.services.dns.service.CONFIG_FILE",
             config_file
         )
         monkeypatch.setattr(
-            "splitwire.services.dns.BACKUP_FILE",
+            "splitwire.services.dns.service.BACKUP_FILE",
             backup_file
         )
 
@@ -347,15 +347,15 @@ class TestDNSManagerDetection:
         config_dir.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(
-            "splitwire.services.dns.LOCAL_CONFIG_DIR",
+            "splitwire.services.dns.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.dns.CONFIG_FILE",
+            "splitwire.services.dns.service.CONFIG_FILE",
             config_dir / "config.json"
         )
         monkeypatch.setattr(
-            "splitwire.services.dns.BACKUP_FILE",
+            "splitwire.services.dns.service.BACKUP_FILE",
             config_dir / "backup.json"
         )
 

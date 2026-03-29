@@ -40,39 +40,34 @@ from datetime import datetime
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [KILLSWITCH] %(levelname)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="%(asctime)s [KILLSWITCH] %(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
 
 # Connectivity check hosts
 CHECK_HOSTS = [
-    ("8.8.8.8", 53),      # Google DNS
-    ("1.1.1.1", 53),      # Cloudflare DNS
-    ("9.9.9.9", 53),      # Quad9 DNS
+    ("8.8.8.8", 53),  # Google DNS
+    ("1.1.1.1", 53),  # Cloudflare DNS
+    ("9.9.9.9", 53),  # Quad9 DNS
 ]
 
 # Cleanup order - CRITICAL: Order matters!
 CLEANUP_COMMANDS = [
-    # 1. Kill bypass processes first
+    # 1. Stop service processes first
     (["pkill", "-9", "nfqws"], "Kill nfqws"),
     (["pkill", "-9", "tpws"], "Kill tpws"),
     (["pkill", "-9", "ciadpi"], "Kill ciadpi"),
-
     # 2. Remove iptables rules (order matters)
     (["iptables", "-t", "mangle", "-F", "POSTROUTING"], "Flush mangle POSTROUTING"),
     (["iptables", "-t", "nat", "-F", "OUTPUT"], "Flush nat OUTPUT"),
-
     # 3. Stop WireGuard
     (["wg-quick", "down", "splitwire"], "Stop WireGuard"),
-
     # 4. Clean up WireGuard interface if still exists
     (["ip", "link", "delete", "splitwire"], "Delete WireGuard interface"),
-
     # 5. Remove DNS config
     (["rm", "-f", "/etc/systemd/resolved.conf.d/splitwire.conf"], "Remove DNS config"),
-
     # 6. Restart DNS service
     (["systemctl", "restart", "systemd-resolved"], "Restart systemd-resolved"),
 ]
@@ -91,6 +86,7 @@ NUCLEAR_CLEANUP = [
 @dataclass
 class KillSwitchConfig:
     """Configuration for kill switch behavior."""
+
     # Maximum time (seconds) before kill switch triggers
     timeout: int = 60
     # Connectivity loss threshold (seconds) before triggering
@@ -110,6 +106,7 @@ class KillSwitchConfig:
 @dataclass
 class ConnectivityStatus:
     """Result of connectivity check."""
+
     is_connected: bool
     successful_hosts: List[str]
     failed_hosts: List[str]
@@ -139,9 +136,9 @@ class KillSwitch:
         # Set up file logging if configured
         if self.config.log_file:
             file_handler = logging.FileHandler(self.config.log_file)
-            file_handler.setFormatter(logging.Formatter(
-                '%(asctime)s [KILLSWITCH] %(levelname)s: %(message)s'
-            ))
+            file_handler.setFormatter(
+                logging.Formatter("%(asctime)s [KILLSWITCH] %(levelname)s: %(message)s")
+            )
             logger.addHandler(file_handler)
 
     def start(self) -> bool:
@@ -167,9 +164,7 @@ class KillSwitch:
 
             # Start monitor thread
             self._monitor_thread = threading.Thread(
-                target=self._monitor_loop,
-                name="KillSwitch-Monitor",
-                daemon=True
+                target=self._monitor_loop, name="KillSwitch-Monitor", daemon=True
             )
             self._monitor_thread.start()
 
@@ -253,7 +248,7 @@ class KillSwitch:
             is_connected=is_connected,
             successful_hosts=successful,
             failed_hosts=failed,
-            latency_ms=avg_latency
+            latency_ms=avg_latency,
         )
 
     @property
@@ -401,12 +396,7 @@ class KillSwitch:
                 cmd = ["sudo"] + cmd
 
             logger.info(f"Executing: {description}")
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 logger.info(f"  -> Success")
@@ -485,7 +475,7 @@ def force_cleanup_zapret() -> bool:
             # Reap zombie processes by getting PIDs and waiting on them
             pids = os.popen(f"pgrep -x {proc_name} 2>/dev/null").read().strip()
             if pids:
-                for pid in pids.split('\n'):
+                for pid in pids.split("\n"):
                     try:
                         pid = int(pid.strip())
                         # Try to reap zombie - this may fail if we're not the parent
@@ -588,21 +578,26 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description="Kill Switch Watchdog Daemon")
-    parser.add_argument("--timeout", type=int, default=60,
-                        help="Maximum time before kill switch triggers (seconds)")
-    parser.add_argument("--threshold", type=int, default=10,
-                        help="Connectivity loss threshold before trigger (seconds)")
-    parser.add_argument("--log-file", type=str,
-                        help="Log file path")
-    parser.add_argument("--nuclear", action="store_true",
-                        help="Enable nuclear cleanup as last resort")
+    parser.add_argument(
+        "--timeout", type=int, default=60, help="Maximum time before kill switch triggers (seconds)"
+    )
+    parser.add_argument(
+        "--threshold",
+        type=int,
+        default=10,
+        help="Connectivity loss threshold before trigger (seconds)",
+    )
+    parser.add_argument("--log-file", type=str, help="Log file path")
+    parser.add_argument(
+        "--nuclear", action="store_true", help="Enable nuclear cleanup as last resort"
+    )
     args = parser.parse_args()
 
     config = KillSwitchConfig(
         timeout=args.timeout,
         threshold=args.threshold,
         nuclear_enabled=args.nuclear,
-        log_file=Path(args.log_file) if args.log_file else None
+        log_file=Path(args.log_file) if args.log_file else None,
     )
 
     ks = KillSwitch(config)

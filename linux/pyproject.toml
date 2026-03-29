@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "splitwire-linux"
 version = "1.0.0"
-description = "Network restriction bypass tool for Linux (Ubuntu)"
+description = "Privacy-focused network routing tool for Linux"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
     {name = "SplitWire-Turkey Contributors"}
 ]
-keywords = ["vpn", "wireguard", "dpi-bypass", "network", "privacy"]
+keywords = ["vpn", "wireguard", "dpi", "network", "privacy", "routing"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: X11 Applications :: GTK",
@@ -36,14 +36,13 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
+    "ruff>=0.8.0",
     "mypy>=1.0.0",
+    "interrogate>=1.5.0",
 ]
 
 [project.scripts]
 splitwire = "splitwire.__main__:main"
-splitwire-cli = "splitwire.cli:main"
 
 [project.gui-scripts]
 splitwire-gtk = "splitwire.__main__:main"
@@ -63,14 +62,54 @@ splitwire = [
     "resources/icons/*",
 ]
 
-[tool.black]
-line-length = 100
-target-version = ["py310"]
-
 [tool.ruff]
 line-length = 100
 target-version = "py310"
-select = ["E", "F", "W", "I", "N", "UP", "B", "C4"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W", "I", "N", "UP", "B", "C4",
+    "S", "SIM", "C90", "T20", "ERA", "FIX", "TD",
+    "ARG", "RET", "PIE", "PL", "PERF", "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# GTK: gi.require_version() must precede gi.repository imports; unused signal args
+"src/splitwire/application.py" = ["E402", "ARG002", "PLC0415"]
+"src/splitwire/ui/*.py" = ["E402", "ARG002", "PLC0415", "S603", "S607", "S110"]
+"src/splitwire/ui/**/*.py" = ["E402", "ARG002", "PLC0415", "PLR2004", "S603", "S607", "PERF203"]
+# Entry point: lazy imports for fast CLI response; availability-check imports
+"src/splitwire/__main__.py" = ["PLC0415", "E402", "PLR2004", "F401"]
+# Subprocess execution; singleton pattern (PLW0603)
+"src/splitwire/core/shell/*.py" = ["S603", "S607", "PLC0415", "N806", "PLW0603"]
+"src/splitwire/utils/polkit.py" = ["S603", "S607", "PLR2004", "PLW1510", "ARG002", "PLW0603", "PLC0415"]
+# Services: subprocess, lazy imports, signal args, singleton, trusted GitHub URLs
+"src/splitwire/services/*.py" = ["S603", "S607", "PLC0415", "ARG002", "PLW0603", "S310"]
+"src/splitwire/services/**/*.py" = ["S603", "S607", "PLC0415", "ARG002", "PLW0603", "S310"]
+# Backup: subprocess, try-except in loops for per-file recovery, singleton
+"src/splitwire/core/backup/*.py" = ["PLC0415", "S603", "S607", "PLW1510", "PERF203", "PLW0603"]
+# Config/language singletons
+"src/splitwire/core/config.py" = ["PLW0603"]
+"src/splitwire/core/language.py" = ["PLW0603"]
+# Dependency checker uses subprocess for package management
+"src/splitwire/utils/deps.py" = ["S603", "S607", "PLW1510", "PLR2004", "PLC0415"]
+"src/splitwire/utils/deps_install.py" = ["S603", "S607", "PLW1510"]
+# Polkit helpers use subprocess for privilege escalation
+"src/splitwire/utils/polkit_helpers.py" = ["S603", "S607", "PLR2004"]
+# System detector uses subprocess for system inspection
+"src/splitwire/utils/system.py" = ["S603", "S607", "PLW1510", "PLR2004", "PLC0415"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.ruff.lint.pylint]
+max-args = 8
+max-branches = 15
+max-returns = 8
+max-statements = 60
+
+[tool.ruff.format]
+quote-style = "double"
 
 [tool.mypy]
 python_version = "3.10"

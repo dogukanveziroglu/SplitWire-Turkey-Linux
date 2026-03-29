@@ -5,21 +5,26 @@ Detects Ubuntu version, systemd, firewall backend, WireGuard support,
 and other system capabilities needed for SplitWire-Turkey.
 """
 
+import logging
 import os
-import re
 import subprocess
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
-from splitwire.core.logger import get_logger
-
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class FirewallBackend(Enum):
-    """Detected firewall backend."""
+    """Detected firewall backend on the system.
+
+    Attributes:
+        IPTABLES: Legacy iptables.
+        NFTABLES: nftables (modern replacement).
+        FIREWALLD: firewalld service.
+        UNKNOWN: Could not be determined.
+    """
+
     IPTABLES = "iptables"
     NFTABLES = "nftables"
     FIREWALLD = "firewalld"
@@ -27,15 +32,32 @@ class FirewallBackend(Enum):
 
 
 class InitSystem(Enum):
-    """Detected init system."""
+    """Detected init system.
+
+    Attributes:
+        SYSTEMD: systemd init.
+        OPENRC: OpenRC init.
+        SYSVINIT: Traditional SysV init.
+        UNKNOWN: Could not be determined.
+    """
+
     SYSTEMD = "systemd"
     OPENRC = "openrc"
     SYSVINIT = "sysvinit"
     UNKNOWN = "unknown"
 
 
-class DNSManager(Enum):
-    """Detected DNS manager."""
+class DetectedDNSBackend(Enum):
+    """Detected DNS resolution backend on the system.
+
+    Attributes:
+        SYSTEMD_RESOLVED: systemd-resolved service.
+        NETWORK_MANAGER: NetworkManager DNS plugin.
+        RESOLVCONF: resolvconf utility.
+        MANUAL: Direct /etc/resolv.conf editing.
+        UNKNOWN: Could not be determined.
+    """
+
     SYSTEMD_RESOLVED = "systemd-resolved"
     NETWORK_MANAGER = "NetworkManager"
     RESOLVCONF = "resolvconf"
@@ -45,7 +67,17 @@ class DNSManager(Enum):
 
 @dataclass
 class UbuntuVersion:
-    """Ubuntu version information."""
+    """Ubuntu version information parsed from /etc/os-release.
+
+    Attributes:
+        version: Full version string (e.g. "22.04").
+        codename: Release codename (e.g. "jammy").
+        major: Major version number.
+        minor: Minor version number.
+        is_ubuntu: True if distro is Ubuntu.
+        is_supported: True if version is 22.04+.
+    """
+
     version: str = ""
     codename: str = ""
     major: int = 0
@@ -54,6 +86,11 @@ class UbuntuVersion:
     is_supported: bool = False
 
     def __str__(self) -> str:
+        """Return human-readable version string.
+
+        Returns:
+            "Ubuntu X.Y (codename)" or "Not Ubuntu".
+        """
         if self.is_ubuntu:
             return f"Ubuntu {self.version} ({self.codename})"
         return "Not Ubuntu"
@@ -61,7 +98,32 @@ class UbuntuVersion:
 
 @dataclass
 class SystemInfo:
-    """Complete system information."""
+    """Complete system information for compatibility checking.
+
+    Attributes:
+        ubuntu: Ubuntu version details.
+        kernel_version: Running kernel version string.
+        architecture: CPU architecture (e.g. "x86_64").
+        init_system: Detected init system type.
+        firewall_backend: Detected firewall backend.
+        iptables_available: Whether iptables binary exists.
+        nftables_available: Whether nft binary exists.
+        wireguard_module_loaded: Whether wireguard kernel module is loaded.
+        wireguard_tools_installed: Whether wg binary exists.
+        wg_quick_available: Whether wg-quick binary exists.
+        nfqueue_available: Whether NFQUEUE target works.
+        libnetfilter_queue_installed: Whether the library file exists.
+        dns_manager: Detected DNS management backend.
+        resolvectl_available: Whether resolvectl binary exists.
+        cgroups_v2: Whether cgroups v2 is active.
+        cgproxy_available: Whether cgproxy binary exists.
+        python_version: Running Python version string.
+        python_major: Python major version number.
+        python_minor: Python minor version number.
+        is_root: Whether running as root.
+        can_sudo: Whether passwordless sudo is available.
+    """
+
     # OS info
     ubuntu: UbuntuVersion = field(default_factory=UbuntuVersion)
     kernel_version: str = ""
@@ -85,7 +147,7 @@ class SystemInfo:
     libnetfilter_queue_installed: bool = False
 
     # DNS
-    dns_manager: DNSManager = DNSManager.UNKNOWN
+    dns_manager: DetectedDNSBackend = DetectedDNSBackend.UNKNOWN
     resolvectl_available: bool = False
 
     # cgroups (for app-based routing)
@@ -102,16 +164,24 @@ class SystemInfo:
     can_sudo: bool = False
 
     def is_compatible(self) -> bool:
-        """Check if system is compatible with SplitWire-Turkey."""
+        """Check if system meets SplitWire minimum requirements.
+
+        Returns:
+            True if Ubuntu 22.04+, systemd, and Python 3.10+.
+        """
         return (
-            self.ubuntu.is_supported and
-            self.init_system == InitSystem.SYSTEMD and
-            self.python_major >= 3 and
-            self.python_minor >= 10
+            self.ubuntu.is_supported
+            and self.init_system == InitSystem.SYSTEMD
+            and self.python_major >= 3
+            and self.python_minor >= 10
         )
 
     def get_compatibility_issues(self) -> list[str]:
-        """Get list of compatibility issues."""
+        """Get list of detected compatibility issues.
+
+        Returns:
+            Human-readable issue description strings.
+        """
         issues = []
 
         if not self.ubuntu.is_ubuntu:
@@ -135,14 +205,33 @@ class SystemInfo:
 
 
 class SystemDetector:
-    """Detects system capabilities and compatibility."""
+    """Detects system capabilities and compatibility.
 
-    def __init__(self):
-        self._info: Optional[SystemInfo] = None
+    Probes the OS, kernel, firewall, WireGuard, DNS, cgroups,
+    and Python environment to build a SystemInfo report.
+    """
+
+    # Timeout constants (seconds)
+    TIMEOUT_COMMAND_CHECK = 5  # general command execution
+    TIMEOUT_NFQUEUE_CHECK = 3  # iptables -m nfqueue --help
+
+    def __init__(self) -> None:
+        """Initialize system detector."""
+        self._info: SystemInfo | None = None
 
     def detect(self) -> SystemInfo:
-        """Run full system detection."""
-        _logger.info("[SYSTEM] Detecting system capabilities...")
+        """Run full system detection and return results.
+
+        Returns:
+            Populated SystemInfo with all detected capabilities.
+
+        Example:
+            >>> detector = SystemDetector()
+            >>> info = detector.detect()
+            >>> isinstance(info, SystemInfo)
+            True
+        """
+        logger.info("[SYSTEM] Detecting system capabilities...")
         self._info = SystemInfo()
 
         self._detect_ubuntu_version()
@@ -158,33 +247,36 @@ class SystemDetector:
         self._detect_user_privileges()
 
         # Log detected information
-        _logger.debug(f"[SYSTEM] OS: {self._info.ubuntu}")
-        _logger.debug(f"[SYSTEM] Kernel: {self._info.kernel_version}")
-        _logger.debug(f"[SYSTEM] Init: {self._info.init_system.value}")
-        _logger.debug(f"[SYSTEM] Firewall: {self._info.firewall_backend.value}")
-        _logger.debug(f"[SYSTEM] WireGuard: tools={self._info.wireguard_tools_installed}, module={self._info.wireguard_module_loaded}")
-        _logger.debug(f"[SYSTEM] NFQUEUE: {self._info.nfqueue_available}")
-        _logger.debug(f"[SYSTEM] Cgroups v2: {self._info.cgroups_v2}")
-        _logger.debug(f"[SYSTEM] DNS Manager: {self._info.dns_manager.value}")
-        _logger.info("[SYSTEM] System detection completed")
+        logger.debug(f"[SYSTEM] OS: {self._info.ubuntu}")
+        logger.debug(f"[SYSTEM] Kernel: {self._info.kernel_version}")
+        logger.debug(f"[SYSTEM] Init: {self._info.init_system.value}")
+        logger.debug(f"[SYSTEM] Firewall: {self._info.firewall_backend.value}")
+        logger.debug(
+            "[SYSTEM] WireGuard: tools=%s, module=%s",
+            self._info.wireguard_tools_installed,
+            self._info.wireguard_module_loaded,
+        )
+        logger.debug(f"[SYSTEM] NFQUEUE: {self._info.nfqueue_available}")
+        logger.debug(f"[SYSTEM] Cgroups v2: {self._info.cgroups_v2}")
+        logger.debug(f"[SYSTEM] DNS Manager: {self._info.dns_manager.value}")
+        logger.info("[SYSTEM] System detection completed")
 
         return self._info
 
-    def _run_command(self, cmd: list[str], timeout: int = 5) -> tuple[int, str, str]:
+    def _run_command(
+        self,
+        cmd: list[str],
+        timeout: int = TIMEOUT_COMMAND_CHECK,
+    ) -> tuple[int, str, str]:
         """Run a command and return (returncode, stdout, stderr)."""
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             return result.returncode, result.stdout.strip(), result.stderr.strip()
         except subprocess.TimeoutExpired:
             return -1, "", "Command timed out"
         except FileNotFoundError:
             return -1, "", "Command not found"
-        except Exception as e:
+        except OSError as e:
             return -1, "", str(e)
 
     def _command_exists(self, cmd: str) -> bool:
@@ -223,11 +315,13 @@ class SystemDetector:
                         self._info.ubuntu.minor = int(parts[1])
 
                 # Check if supported (22.04+)
-                if self._info.ubuntu.major > 22:
+                _min_major = 22
+                _min_minor = 4
+                major = self._info.ubuntu.major
+                minor = self._info.ubuntu.minor
+                if major > _min_major or (major == _min_major and minor >= _min_minor):
                     self._info.ubuntu.is_supported = True
-                elif self._info.ubuntu.major == 22 and self._info.ubuntu.minor >= 4:
-                    self._info.ubuntu.is_supported = True
-        except Exception:
+        except (OSError, ValueError, KeyError):
             pass
 
     def _detect_kernel(self) -> None:
@@ -261,7 +355,7 @@ class SystemDetector:
                 self._info.init_system = InitSystem.SYSTEMD
             elif pid1 == "init":
                 self._info.init_system = InitSystem.SYSVINIT
-        except Exception:
+        except OSError:
             pass
 
     def _detect_firewall(self) -> None:
@@ -312,7 +406,7 @@ class SystemDetector:
         # Try to list iptables extensions
         code, stdout, _ = self._run_command(
             ["iptables", "-m", "nfqueue", "--help"],
-            timeout=3
+            timeout=self.TIMEOUT_NFQUEUE_CHECK,
         )
         # If help text is shown, NFQUEUE is available
         self._info.nfqueue_available = code == 0 or "NFQUEUE" in stdout
@@ -325,8 +419,7 @@ class SystemDetector:
             "/lib/x86_64-linux-gnu/libnetfilter_queue.so",
         ]
         self._info.libnetfilter_queue_installed = any(
-            Path(p).exists() or Path(p + ".1").exists()
-            for p in lib_paths
+            Path(p).exists() or Path(p + ".1").exists() for p in lib_paths
         )
 
     def _detect_dns_manager(self) -> None:
@@ -334,24 +427,24 @@ class SystemDetector:
         # Check for systemd-resolved
         code, _, _ = self._run_command(["systemctl", "is-active", "systemd-resolved"])
         if code == 0:
-            self._info.dns_manager = DNSManager.SYSTEMD_RESOLVED
+            self._info.dns_manager = DetectedDNSBackend.SYSTEMD_RESOLVED
             self._info.resolvectl_available = self._command_exists("resolvectl")
             return
 
         # Check for NetworkManager
         code, _, _ = self._run_command(["systemctl", "is-active", "NetworkManager"])
         if code == 0:
-            self._info.dns_manager = DNSManager.NETWORK_MANAGER
+            self._info.dns_manager = DetectedDNSBackend.NETWORK_MANAGER
             return
 
         # Check for resolvconf
         if self._command_exists("resolvconf"):
-            self._info.dns_manager = DNSManager.RESOLVCONF
+            self._info.dns_manager = DetectedDNSBackend.RESOLVCONF
             return
 
         # Manual (direct /etc/resolv.conf editing)
         if Path("/etc/resolv.conf").exists():
-            self._info.dns_manager = DNSManager.MANUAL
+            self._info.dns_manager = DetectedDNSBackend.MANUAL
 
     def _detect_cgroups(self) -> None:
         """Detect cgroups version and cgproxy availability."""
@@ -365,7 +458,10 @@ class SystemDetector:
     def _detect_python(self) -> None:
         """Detect Python version."""
         import sys
-        self._info.python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+        self._info.python_version = (
+            f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        )
         self._info.python_major = sys.version_info.major
         self._info.python_minor = sys.version_info.minor
 
@@ -380,57 +476,23 @@ class SystemDetector:
 
 
 def get_system_info() -> SystemInfo:
-    """Get system information (convenience function)."""
+    """Detect and return system information.
+
+    Returns:
+        Populated SystemInfo for the current machine.
+    """
     detector = SystemDetector()
     return detector.detect()
 
 
 def print_system_info(info: SystemInfo) -> None:
-    """Print system information in a formatted way."""
-    print("=" * 50)
-    print("SplitWire-Turkey System Information")
-    print("=" * 50)
+    """Log system information in a formatted table.
 
-    print(f"\nOS: {info.ubuntu}")
-    print(f"Kernel: {info.kernel_version}")
-    print(f"Architecture: {info.architecture}")
+    Delegates to system_info module.
 
-    print(f"\nInit System: {info.init_system.value}")
-    print(f"Firewall: {info.firewall_backend.value}")
-    print(f"  - iptables: {'Yes' if info.iptables_available else 'No'}")
-    print(f"  - nftables: {'Yes' if info.nftables_available else 'No'}")
+    Args:
+        info: SystemInfo to display.
+    """
+    from .system_info import print_system_info as _print_info
 
-    print(f"\nWireGuard:")
-    print(f"  - Module loaded: {'Yes' if info.wireguard_module_loaded else 'No'}")
-    print(f"  - Tools installed: {'Yes' if info.wireguard_tools_installed else 'No'}")
-    print(f"  - wg-quick: {'Yes' if info.wg_quick_available else 'No'}")
-
-    print(f"\nNFQUEUE (Zapret):")
-    print(f"  - Available: {'Yes' if info.nfqueue_available else 'No'}")
-    print(f"  - libnetfilter-queue: {'Yes' if info.libnetfilter_queue_installed else 'No'}")
-
-    print(f"\nDNS Manager: {info.dns_manager.value}")
-    print(f"  - resolvectl: {'Yes' if info.resolvectl_available else 'No'}")
-
-    print(f"\ncgroups:")
-    print(f"  - v2: {'Yes' if info.cgroups_v2 else 'No'}")
-    print(f"  - cgproxy: {'Yes' if info.cgproxy_available else 'No'}")
-
-    print(f"\nPython: {info.python_version}")
-    print(f"Running as root: {'Yes' if info.is_root else 'No'}")
-    print(f"Can sudo: {'Yes' if info.can_sudo else 'N/A' if info.is_root else 'No'}")
-
-    print("\n" + "=" * 50)
-    if info.is_compatible():
-        print("System is COMPATIBLE with SplitWire-Turkey")
-    else:
-        print("System has COMPATIBILITY ISSUES:")
-        for issue in info.get_compatibility_issues():
-            print(f"  - {issue}")
-    print("=" * 50)
-
-
-if __name__ == "__main__":
-    # Test the system detector
-    info = get_system_info()
-    print_system_info(info)
+    _print_info(info)

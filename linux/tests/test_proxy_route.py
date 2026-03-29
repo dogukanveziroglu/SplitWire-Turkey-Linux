@@ -97,11 +97,11 @@ class TestProxyRouteService:
         config_dir.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(
-            "splitwire.services.proxy_route.LOCAL_CONFIG_DIR",
+            "splitwire.services.proxy_route.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.proxy_route.PROXY_ROUTE_CONFIG_FILE",
+            "splitwire.services.proxy_route.service.PROXY_ROUTE_CONFIG_FILE",
             config_dir / "proxy_route.json"
         )
 
@@ -188,11 +188,11 @@ class TestProxyRouteServiceMethods:
         config_dir.mkdir(parents=True, exist_ok=True)
 
         monkeypatch.setattr(
-            "splitwire.services.proxy_route.LOCAL_CONFIG_DIR",
+            "splitwire.services.proxy_route.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.proxy_route.PROXY_ROUTE_CONFIG_FILE",
+            "splitwire.services.proxy_route.service.PROXY_ROUTE_CONFIG_FILE",
             config_dir / "proxy_route.json"
         )
 
@@ -232,11 +232,11 @@ class TestConfigPersistence:
         config_file = config_dir / "proxy_route.json"
 
         monkeypatch.setattr(
-            "splitwire.services.proxy_route.LOCAL_CONFIG_DIR",
+            "splitwire.services.proxy_route.service.LOCAL_CONFIG_DIR",
             config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.proxy_route.PROXY_ROUTE_CONFIG_FILE",
+            "splitwire.services.proxy_route.service.PROXY_ROUTE_CONFIG_FILE",
             config_file
         )
 

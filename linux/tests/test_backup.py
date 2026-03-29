@@ -42,38 +42,33 @@ class TestBackupMetadata:
     def test_metadata_creation(self):
         """Test creating backup metadata."""
         metadata = BackupMetadata(
-            backup_id="test-123",
-            backup_type=BackupType.CONFIG,
-            timestamp=datetime.now(),
+            id="test-123",
+            type=BackupType.CONFIG,
+            timestamp=datetime.now().isoformat(),
             description="Test backup",
+            version="1.0.0",
             files=["config.json"],
         )
-        assert metadata.backup_id == "test-123"
-        assert metadata.backup_type == BackupType.CONFIG
+        assert metadata.id == "test-123"
+        assert metadata.type == BackupType.CONFIG
         assert len(metadata.files) == 1
 
     def test_metadata_to_dict(self):
         """Test converting metadata to dictionary."""
-        now = datetime.now()
+        now = datetime.now().isoformat()
         metadata = BackupMetadata(
-            backup_id="test-456",
-            backup_type=BackupType.DNS,
+            id="test-456",
+            type=BackupType.DNS,
             timestamp=now,
             description="DNS backup",
+            version="1.0.0",
             files=["resolv.conf"],
         )
 
-        # Manual conversion since we might not have to_dict method
-        data = {
-            "backup_id": metadata.backup_id,
-            "backup_type": metadata.backup_type.value,
-            "timestamp": metadata.timestamp.isoformat(),
-            "description": metadata.description,
-            "files": metadata.files,
-        }
+        data = metadata.to_dict()
 
-        assert data["backup_id"] == "test-456"
-        assert data["backup_type"] == "dns"
+        assert data["id"] == "test-456"
+        assert data["type"] == "dns"
 
 
 class TestBackupError:
@@ -230,15 +225,16 @@ class TestSnapshotManager:
     def test_snapshot_metadata(self, temp_snapshot_dir):
         """Test snapshot metadata creation."""
         snapshot = SystemSnapshot(
-            snapshot_id="snap-001",
-            timestamp=datetime.now(),
-            description="Pre-install snapshot",
-            components=["dns", "wireguard"],
+            id="snap-001",
+            timestamp=datetime.now().isoformat(),
+            operation="Pre-install snapshot",
+            files_backed_up=["dns.conf", "wireguard.conf"],
+            services_state={"dns": "active", "wireguard": "active"},
         )
 
-        assert snapshot.snapshot_id == "snap-001"
-        assert "dns" in snapshot.components
-        assert "wireguard" in snapshot.components
+        assert snapshot.id == "snap-001"
+        assert "dns.conf" in snapshot.files_backed_up
+        assert "wireguard.conf" in snapshot.files_backed_up
 
 
 class TestSystemSnapshot:
@@ -246,28 +242,30 @@ class TestSystemSnapshot:
 
     def test_snapshot_creation(self):
         """Test creating a SystemSnapshot."""
-        now = datetime.now()
+        now = datetime.now().isoformat()
         snapshot = SystemSnapshot(
-            snapshot_id="test-snap",
+            id="test-snap",
             timestamp=now,
-            description="Test snapshot",
-            components=["config", "dns"],
+            operation="Test snapshot",
+            files_backed_up=["config.conf", "dns.conf"],
+            services_state={"config": "active", "dns": "active"},
         )
 
-        assert snapshot.snapshot_id == "test-snap"
+        assert snapshot.id == "test-snap"
         assert snapshot.timestamp == now
-        assert len(snapshot.components) == 2
+        assert len(snapshot.files_backed_up) == 2
 
     def test_snapshot_with_empty_components(self):
-        """Test snapshot with no components."""
+        """Test snapshot with no files backed up."""
         snapshot = SystemSnapshot(
-            snapshot_id="empty-snap",
-            timestamp=datetime.now(),
-            description="Empty snapshot",
-            components=[],
+            id="empty-snap",
+            timestamp=datetime.now().isoformat(),
+            operation="Empty snapshot",
+            files_backed_up=[],
+            services_state={},
         )
 
-        assert snapshot.components == []
+        assert snapshot.files_backed_up == []
 
 
 class TestBackupCleanup:

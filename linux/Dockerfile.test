@@ -1,0 +1,90 @@
+# Docker test environment for SplitWire integration tests.
+#
+# Provides an isolated environment with systemd, iptables, WireGuard tools,
+# and DNS utilities so that network-modifying tests cannot break the host.
+#
+# Build:
+#   docker build -f Dockerfile.test -t splitwire-test .
+#
+# Run unit tests (safe, no privileges needed):
+#   docker run --rm splitwire-test pytest tests/ -m "not integration" -q
+#
+# Run integration tests (privileged, isolated network):
+#   docker run --rm --privileged --cap-add=NET_ADMIN \
+#       --tmpfs /run --tmpfs /run/lock \
+#       -v /sys/fs/cgroup:/sys/fs/cgroup:rw \
+#       splitwire-test pytest tests/ -m "integration" -v
+
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV container=docker
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+
+# Install system dependencies needed by SplitWire services
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Python (including dev headers for PyGObject build)
+    python3.12 \
+    python3.12-venv \
+    python3.12-dev \
+    python3-pip \
+    # Network tools (tested by integration tests)
+    iptables \
+    iproute2 \
+    wireguard-tools \
+    dnsutils \
+    net-tools \
+    curl \
+    iputils-ping \
+    # systemd (required for DNS service and systemd manager tests)
+    systemd \
+    systemd-resolved \
+    # Build tools (for zapret nfqws compilation)
+    git \
+    make \
+    gcc \
+    libnetfilter-queue-dev \
+    libcap-dev \
+    libnfnetlink-dev \
+    libmnl-dev \
+    zlib1g-dev \
+    # GTK introspection (required for PyGObject build)
+    gir1.2-gtk-4.0 \
+    libgirepository-2.0-dev \
+    libadwaita-1-dev \
+    gobject-introspection \
+    pkg-config \
+    libcairo2-dev \
+    python3-gi \
+    && rm -rf /var/lib/apt/lists/*
+
+# Mask services that are problematic in containers
+RUN systemctl mask \
+    getty@tty1.service \
+    systemd-firstboot.service \
+    systemd-udevd.service \
+    2>/dev/null || true
+
+# Set up working directory
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml requirements.txt ./
+COPY src/ ./src/
+COPY tests/ ./tests/
+COPY systemd/ ./systemd/
+
+# Create venv and install dependencies
+RUN python3.12 -m venv .venv \
+    && . .venv/bin/activate \
+    && pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -e ".[dev]" \
+    && pip install --no-cache-dir pytest-asyncio
+
+# Make emergency restore script executable
+RUN chmod +x tests/emergency_restore.sh 2>/dev/null || true
+
+# Default: run unit tests (safe, no privileges)
+ENTRYPOINT ["/app/.venv/bin/python", "-m"]
+CMD ["pytest", "tests/", "-m", "not integration", "-q"]

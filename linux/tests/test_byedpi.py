@@ -57,7 +57,7 @@ class TestByeDPIConfig:
         config = ByeDPIConfig()
 
         assert config.enabled is False
-        assert config.preset_name == "turkey_default"
+        assert config.preset_name == "default"
         assert config.custom_args == ""
         assert config.proxy_host == DEFAULT_PROXY_HOST
         assert config.proxy_port == DEFAULT_PROXY_PORT
@@ -68,14 +68,14 @@ class TestByeDPIConfig:
         """Test configuration with custom values."""
         config = ByeDPIConfig(
             enabled=True,
-            preset_name="turkey_discord",
+            preset_name="discord",
             proxy_port=8080,
             include_browsers=True,
             tunneled_apps=["discord", "firefox"],
         )
 
         assert config.enabled is True
-        assert config.preset_name == "turkey_discord"
+        assert config.preset_name == "discord"
         assert config.proxy_port == 8080
         assert config.include_browsers is True
         assert config.tunneled_apps == ["discord", "firefox"]
@@ -87,22 +87,22 @@ class TestDefaultPresets:
     def test_default_presets_exist(self):
         """Test that default presets are defined."""
         assert len(DEFAULT_PRESETS) > 0
-        assert "turkey_default" in DEFAULT_PRESETS
-        assert "turkey_discord" in DEFAULT_PRESETS
+        assert "default" in DEFAULT_PRESETS
+        assert "discord" in DEFAULT_PRESETS
 
-    def test_turkey_default_preset(self):
-        """Test turkey_default preset configuration."""
-        preset = DEFAULT_PRESETS["turkey_default"]
+    def test_default_preset(self):
+        """Test default preset configuration."""
+        preset = DEFAULT_PRESETS["default"]
 
-        assert preset.name == "Türkiye Varsayılan"
+        assert preset.name == "Default"
         assert "--disorder" in preset.args
         assert preset.mode == ByeDPIMode.DISORDER
 
-    def test_turkey_discord_preset(self):
-        """Test turkey_discord preset configuration."""
-        preset = DEFAULT_PRESETS["turkey_discord"]
+    def test_discord_preset(self):
+        """Test discord preset configuration."""
+        preset = DEFAULT_PRESETS["discord"]
 
-        assert preset.name == "Türkiye Discord"
+        assert preset.name == "Discord"
         assert "--disorder" in preset.args
         assert preset.mode == ByeDPIMode.COMBINED
 
@@ -147,17 +147,26 @@ class TestByeDPIService:
         config_dir = tmp_path / "config" / "splitwire" / "byedpi"
         config_dir.mkdir(parents=True, exist_ok=True)
 
+        # Patch where the names are actually used (service.py imports from .constants)
         monkeypatch.setattr(
-            "splitwire.services.byedpi.LOCAL_CONFIG_DIR",
-            config_dir
+            "splitwire.services.byedpi.service.LOCAL_CONFIG_DIR", config_dir
         )
         monkeypatch.setattr(
-            "splitwire.services.byedpi.CONFIG_FILE",
-            config_dir / "config.json"
+            "splitwire.services.byedpi.service.CONFIG_FILE",
+            config_dir / "config.json",
         )
         monkeypatch.setattr(
-            "splitwire.services.byedpi.PRESETS_FILE",
-            config_dir / "presets.json"
+            "splitwire.services.byedpi.service.PRESETS_FILE",
+            config_dir / "presets.json",
+        )
+
+        # Patch binary check so is_installed() reflects test state
+        binary_path = tmp_path / "byedpi" / "ciadpi"
+        monkeypatch.setattr(
+            "splitwire.services.byedpi.download.BYEDPI_BINARY", binary_path
+        )
+        monkeypatch.setattr(
+            "splitwire.services.byedpi.service.BYEDPI_BINARY", binary_path
         )
 
         return ByeDPIService()
@@ -173,22 +182,22 @@ class TestByeDPIService:
         presets = service.get_all_presets()
 
         assert len(presets) >= len(DEFAULT_PRESETS)
-        assert "turkey_default" in presets
-        assert "turkey_discord" in presets
+        assert "default" in presets
+        assert "discord" in presets
 
     def test_get_preset(self, service):
         """Test getting a specific preset."""
-        preset = service.get_preset("turkey_default")
+        preset = service.get_preset("default")
         assert preset is not None
-        assert preset.name == "Türkiye Varsayılan"
+        assert preset.name == "Default"
 
         # Test non-existent preset
         assert service.get_preset("nonexistent") is None
 
     def test_set_preset(self, service):
         """Test setting active preset."""
-        assert service.set_preset("turkey_discord") is True
-        assert service.get_config().preset_name == "turkey_discord"
+        assert service.set_preset("discord") is True
+        assert service.get_config().preset_name == "discord"
 
         # Test invalid preset
         assert service.set_preset("invalid") is False
@@ -216,7 +225,7 @@ class TestByeDPIService:
             args="--fake",
         )
 
-        assert service.add_custom_preset("turkey_default", preset) is False
+        assert service.add_custom_preset("default", preset) is False
 
     def test_remove_custom_preset(self, service):
         """Test removing a custom preset."""
@@ -272,7 +281,7 @@ class TestByeDPIService:
 
     def test_build_command(self, service):
         """Test command building."""
-        service.set_preset("turkey_default")
+        service.set_preset("default")
         cmd = service._build_command()
 
         assert cmd[0].endswith("ciadpi")

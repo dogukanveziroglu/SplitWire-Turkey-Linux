@@ -24,12 +24,12 @@
     <annotate key="org.freedesktop.policykit.exec.allow_gui">true</annotate>
   </action>
 
-  <!-- Zapret/DPI bypass operations -->
+  <!-- Zapret packet processing operations -->
   <action id="com.splitwire.turkey.zapret">
-    <description>Manage DPI bypass services (Zapret)</description>
-    <description xml:lang="tr">DPI asim servislerini yonet (Zapret)</description>
-    <message>Authentication is required to manage DPI bypass services</message>
-    <message xml:lang="tr">DPI asim servislerini yonetmek icin kimlik dogrulama gerekiyor</message>
+    <description>Manage packet processing services (Zapret)</description>
+    <description xml:lang="tr">Paket isleme servislerini yonet (Zapret)</description>
+    <message>Authentication is required to manage packet processing services</message>
+    <message xml:lang="tr">Paket isleme servislerini yonetmek icin kimlik dogrulama gerekiyor</message>
     <icon_name>network-transmit-receive</icon_name>
     <defaults>
       <allow_any>auth_admin</allow_any>
@@ -72,8 +72,8 @@
 
   <!-- iptables/nftables firewall rules -->
   <action id="com.splitwire.turkey.firewall">
-    <description>Manage firewall rules for DPI bypass</description>
-    <description xml:lang="tr">DPI asimi icin guvenlik duvari kurallarini yonet</description>
+    <description>Manage firewall rules for traffic processing</description>
+    <description xml:lang="tr">Trafik isleme icin guvenlik duvari kurallarini yonet</description>
     <message>Authentication is required to modify firewall rules</message>
     <message xml:lang="tr">Guvenlik duvari kurallarini degistirmek icin kimlik dogrulama gerekiyor</message>
     <icon_name>security-high</icon_name>

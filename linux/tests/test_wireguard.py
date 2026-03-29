@@ -100,27 +100,32 @@ class TestWireGuardService:
     def test_status_running(self, service):
         """Test status when running."""
         with patch.object(service, 'is_installed', return_value=True):
-            service._shell.run.return_value = MagicMock(success=True)
-            assert service.status() == ServiceStatus.RUNNING
+            with patch.object(service._shell, 'run', return_value=MagicMock(success=True)):
+                assert service.status() == ServiceStatus.RUNNING
 
     def test_status_stopped(self, service):
         """Test status when stopped."""
         with patch.object(service, 'is_installed', return_value=True):
-            service._shell.run.return_value = MagicMock(success=False)
-            assert service.status() == ServiceStatus.STOPPED
+            with patch.object(service._shell, 'run', return_value=MagicMock(success=False)):
+                assert service.status() == ServiceStatus.STOPPED
 
     def test_check_dependencies(self, service):
         """Test dependency checking."""
         # Mock all commands exist
-        service._shell.command_exists.return_value = True
-        assert service._check_dependencies()
+        with patch.object(service._shell, 'command_exists', return_value=True):
+            assert service._check_dependencies()
 
         # Mock wg missing
-        service._shell.command_exists.side_effect = lambda cmd: cmd != "wg"
-        assert not service._check_dependencies()
+        with patch.object(
+            service._shell, 'command_exists', side_effect=lambda cmd: cmd != "wg"
+        ):
+            assert not service._check_dependencies()
 
     def test_modify_allowed_ips(self, service):
         """Test AllowedIPs modification."""
+        from splitwire.services.wireguard.config_helpers import modify_allowed_ips
+        from splitwire.services.wireguard.models import TunnelMode
+
         original = """[Interface]
 PrivateKey = abc123
 Address = 10.0.0.2/32
@@ -130,24 +135,34 @@ PublicKey = xyz789
 AllowedIPs = 0.0.0.0/0
 Endpoint = example.com:51820
 """
-        modified = service._modify_allowed_ips(original)
+        # Default is SPLIT mode -- replaces original AllowedIPs
+        modified = modify_allowed_ips(original)
         assert "AllowedIPs" in modified
-        assert "0.0.0.0/0" in modified
+
+        # FULL mode should include 0.0.0.0/0
+        modified_full = modify_allowed_ips(original, tunnel_mode=TunnelMode.FULL)
+        assert "AllowedIPs" in modified_full
+        assert "0.0.0.0/0" in modified_full
 
     def test_add_dns_config(self, service):
-        """Test adding DNS configuration."""
+        """Test cleaning DNS configuration."""
+        from splitwire.services.wireguard.config_helpers import clean_dns_config
+
         original = """[Interface]
 PrivateKey = abc123
 Address = 10.0.0.2/32
+DNS = 1.1.1.1
 
 [Peer]
 PublicKey = xyz789
 """
-        modified = service._add_dns_config(original)
-        assert "DNS = 1.1.1.1" in modified
+        modified = clean_dns_config(original)
+        assert "DNS" not in modified
 
     def test_add_dns_config_already_present(self, service):
-        """Test DNS not duplicated if already present."""
+        """Test DNS removal when already present."""
+        from splitwire.services.wireguard.config_helpers import clean_dns_config
+
         original = """[Interface]
 PrivateKey = abc123
 Address = 10.0.0.2/32
@@ -156,12 +171,14 @@ DNS = 8.8.8.8
 [Peer]
 PublicKey = xyz789
 """
-        modified = service._add_dns_config(original)
-        # Should not add another DNS line
-        assert modified.count("DNS =") == 1
+        modified = clean_dns_config(original)
+        # clean_dns_config removes DNS lines
+        assert "DNS =" not in modified
 
     def test_parse_wg_show(self, service):
         """Test parsing wg show output."""
+        from splitwire.services.wireguard.config_helpers import parse_wg_show
+
         output = """interface: splitwire
   public key: abcdef123456
   private key: (hidden)
@@ -173,7 +190,7 @@ peer: xyz789abc
   latest handshake: 1 minute, 30 seconds ago
   transfer: 1.5 MiB received, 0.8 MiB sent
 """
-        interface = service._parse_wg_show(output)
+        interface = parse_wg_show(output, "splitwire")
         assert interface.name == "splitwire"
         assert "abcdef123456" in interface.public_key
         assert interface.listen_port == 51820

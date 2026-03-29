@@ -6,11 +6,12 @@
   },
   "tabs": {
     "wireguard": "WireGuard",
-    "zapret": "Zapret",
     "byedpi": "ByeDPI",
     "settings": "Configuracion",
     "advanced": "Avanzado",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "main": "Home",
+    "repair": "Repair"
   },
   "buttons": {
     "install": "Instalar",
@@ -30,7 +31,9 @@
     "clear_all": "Limpiar todo",
     "reset": "Restablecer valores",
     "check_deps": "Verificar dependencias",
-    "install_deps": "Instalar dependencias"
+    "install_deps": "Instalar dependencias",
+    "launch": "Launch",
+    "ok": "OK"
   },
   "wireguard": {
     "title": "WireGuard VPN",
@@ -53,28 +56,9 @@
     "wgcf_generate": "Generar configuracion WARP",
     "wgcf_generating": "Generando configuracion WARP..."
   },
-  "zapret": {
-    "title": "Zapret DPI Bypass",
-    "description": "Evitar inspeccion profunda de paquetes usando nfqws/tpws",
-    "mode": "Modo",
-    "mode_nfqws": "nfqws (cola netfilter)",
-    "mode_tpws": "tpws (proxy transparente)",
-    "strategy": "Estrategia",
-    "custom_args": "Argumentos personalizados",
-    "auto_install": "Instalacion automatica",
-    "auto_install_desc": "Encontrar parametros optimos usando blockcheck",
-    "preset": "Preajuste",
-    "edit_preset": "Editar preajuste",
-    "install_service": "Instalar servicio",
-    "run_once": "Ejecutar una vez",
-    "service_status": "Estado del servicio",
-    "running": "Ejecutando",
-    "stopped": "Detenido",
-    "not_installed": "No instalado"
-  },
   "byedpi": {
     "title": "ByeDPI/ciadpi Proxy",
-    "description": "Evitar DPI usando proxy SOCKS",
+    "description": "Procesamiento de trafico usando proxy SOCKS",
     "port": "Puerto del proxy",
     "strategy": "Estrategia",
     "strategy_disorder": "Desorden",
@@ -82,7 +66,16 @@
     "strategy_fake": "Falsificacion",
     "proxy_apps": "Aplicaciones del proxy",
     "proxy_apps_desc": "Aplicaciones para enrutar a traves del proxy",
-    "service_status": "Estado del servicio"
+    "service_status": "Estado del servicio",
+    "advanced": "Advanced Settings",
+    "browser_enabled": "Browsers will be included",
+    "custom_params": "Custom ByeDPI Parameters",
+    "options": "Options",
+    "params": "Parameters",
+    "preset": "Preset",
+    "remove": "Remove ByeDPI",
+    "setup": "Setup",
+    "split_setup": "ByeDPI Split Tunneling Setup"
   },
   "dns": {
     "title": "Configuracion DNS",
@@ -106,7 +99,20 @@
     "minimize_tray": "Minimizar a bandeja del sistema",
     "start_minimized": "Iniciar minimizado",
     "autostart": "Iniciar con el sistema",
-    "check_updates": "Buscar actualizaciones"
+    "check_updates": "Buscar actualizaciones",
+    "about": "About",
+    "dns": "DNS Settings",
+    "dns_server": "DNS Server",
+    "doh_enabled": "DNS over HTTPS (DoH)",
+    "doh_subtitle": "Use encrypted DNS queries",
+    "language_subtitle": "Select application language",
+    "logs": "Logs",
+    "logs_subtitle": "View application logs",
+    "open_logs": "Open Logs Folder",
+    "support": "Support",
+    "theme_subtitle": "Select application theme",
+    "updates_subtitle": "Check for new version",
+    "version": "Version"
   },
   "advanced": {
     "title": "Avanzado",
@@ -119,16 +125,20 @@
     "backup": "Copia de seguridad",
     "restore": "Restaurar configuracion",
     "logs": "Ver registros",
-    "system_info": "Informacion del sistema"
+    "system_info": "Informacion del sistema",
+    "actions": "Actions",
+    "auto_dns": "Apply DNS and DoH settings on every install",
+    "open_logs": "Open Logs Folder",
+    "options": "Options",
+    "uninstall": "Uninstall SplitWire-Turkey"
   },
   "about": {
     "title": "Acerca de",
-    "description": "Herramienta para evadir restricciones de red para Linux",
+    "description": "Herramienta de enrutamiento de red para Linux",
     "version": "Version {0}",
     "github": "Repositorio GitHub",
     "license": "Licencia: MIT",
     "credits": "Creditos",
-    "credits_zapret": "Zapret - bol-van",
     "credits_byedpi": "ByeDPI/ciadpi - hufrea"
   },
   "status": {
@@ -138,7 +148,13 @@
     "removing": "Eliminando...",
     "error": "Error",
     "success": "Exito",
-    "checking": "Verificando..."
+    "checking": "Verificando...",
+    "connecting": "Connecting...",
+    "disconnecting": "Disconnecting...",
+    "installed": "Installed",
+    "not_installed": "Not Installed",
+    "running": "Running",
+    "stopped": "Stopped"
   },
   "messages": {
     "confirm": "Confirmar",
@@ -166,7 +182,18 @@
     "auth_cancelled": "Autenticacion cancelada",
     "root_required": "Esta operacion requiere privilegios de root",
     "error_generic": "Se produjo un error: {0}",
-    "restart_required": "Reinicie la aplicacion para que los cambios surtan efecto"
+    "restart_required": "Reinicie la aplicacion para que los cambios surtan efecto",
+    "list_cleared": "List cleared",
+    "no_custom_apps": "Custom application list is empty",
+    "service_removed": "Service removed",
+    "setup_complete": "Setup completed",
+    "item_added": "Added: {0}",
+    "item_exists": "Already in list: {0}",
+    "all_services_removed": "All services removed",
+    "uninstall_complete": "SplitWire removed. Please close the application.",
+    "language_changed": "Language changed: {0}",
+    "theme_changed": "Theme changed: {0}",
+    "update_check_failed": "Update check failed"
   },
   "errors": {
     "wireguard_not_installed": "Herramientas de WireGuard no instaladas",
@@ -175,22 +202,81 @@
     "permission_denied": "Permiso denegado",
     "network_error": "Error de red: {0}",
     "file_not_found": "Archivo no encontrado: {0}",
-    "invalid_config": "Configuracion invalida: {0}"
+    "invalid_config": "Configuracion invalida: {0}",
+    "config_generate_failed": "Config generation failed",
+    "service_start_failed": "Service start failed",
+    "wgcf_register_failed": "WGCF registration failed"
   },
   "tooltips": {
     "wireguard_connect": "Conectar a VPN",
     "wireguard_disconnect": "Desconectar de VPN",
     "split_tunnel": "Habilitar tunelizacion dividida para enrutar solo las aplicaciones seleccionadas a traves de VPN",
-    "zapret_auto": "Encontrar automaticamente los mejores parametros de evasion DPI para su red",
-    "byedpi_proxy": "Enrutar el trafico de la aplicacion a traves del proxy SOCKS local para evadir DPI",
-    "dns_doh": "Cifrar las consultas DNS usando DNS sobre HTTPS"
+    "byedpi_proxy": "Enrutar el trafico de la aplicacion a traves del proxy SOCKS local para procesamiento de trafico",
+    "dns_doh": "Cifrar las consultas DNS usando DNS sobre HTTPS",
+    "add_folder": "Add custom application folder",
+    "alternative_install": "Alternative WireGuard setup",
+    "auto_dns": "Auto-configure DNS on WireGuard and service setups",
+    "browser_tunneling": "Include Chrome, Firefox, Edge etc. browsers",
+    "byedpi_browser_tunneling": "Include Chrome, Firefox etc. browsers",
+    "byedpi_split": "Application-based traffic processing with ByeDPI",
+    "clean_install_ptb": "Remove existing Discord and install PTB",
+    "clear_list": "Clear custom list",
+    "custom_install": "Setup with custom list",
+    "discord_ptb_install": "Install Discord Public Test Build",
+    "discord_repair": "Clear Discord cache and repair",
+    "folder_customization": "Customize apps for tunneling",
+    "full_tunnel": "Route all network traffic through VPN tunnel",
+    "generate_config": "Generate custom WireGuard config file",
+    "standard_install": "Standard setup with WireGuard/WGCF",
+    "webcord_install": "Install alternative Discord client",
+    "webcord_shortcut": "Create desktop shortcut",
+    "wiresock_repeater": "Refresh connection periodically (30 minutes)"
   },
   "help": {
     "wireguard_title": "Ayuda de WireGuard",
     "wireguard_content": "WireGuard es un protocolo VPN moderno. Seleccione un archivo de configuracion y haga clic en Conectar para establecer una conexion VPN. Habilite la tunelizacion dividida para enrutar solo las aplicaciones seleccionadas a traves de VPN.",
-    "zapret_title": "Ayuda de Zapret",
-    "zapret_content": "Zapret realiza evasion de DPI (Inspeccion Profunda de Paquetes) usando manipulacion de paquetes. Use la Instalacion Automatica para encontrar parametros optimos, o seleccione un preajuste para configuracion manual.",
     "byedpi_title": "Ayuda de ByeDPI",
-    "byedpi_content": "ByeDPI crea un proxy SOCKS local que realiza evasion de DPI. El trafico de las aplicaciones seleccionadas sera enrutado a traves de este proxy."
+    "byedpi_content": "ByeDPI crea un proxy SOCKS local que realiza procesamiento de trafico. El trafico de las aplicaciones seleccionadas sera enrutado a traves de este proxy.",
+    "byedpi_body": "ByeDPI creates a local SOCKS proxy that performs traffic processing. Selected applications will have their traffic routed through this proxy.",
+    "wireguard_body": "WireGuard is a modern VPN protocol. Select a configuration file and click Connect to establish a VPN connection. Enable split tunneling to route only selected applications through the VPN.",
+    "repair_title": "Discord Repair Help",
+    "repair_body": "Discord repair tools help resolve Discord connection issues.\n\nRepair Discord:\n- Clears cache\n- Resets settings\n- Fixes corrupted files\n\nDiscord PTB:\n- Public Test Build\n- Try new features early\n- Clean install option removes existing Discord\n\nWebCord:\n- Alternative Discord client\n- Lighter and privacy-focused\n- Open source Electron-based"
+  },
+  "dialogs": {
+    "confirm_remove": "Remove",
+    "remove_byedpi_body": "ByeDPI will be removed. Do you want to continue?",
+    "remove_wireguard_body": "WireGuard service will be removed. Do you want to continue?",
+    "save_config": "Save Config",
+    "select_folder": "Select Folder",
+    "clean_install_body": "Existing Discord will be removed and PTB will be installed. Do you want to continue?",
+    "remove_all_body": "All SplitWire services will be removed. This cannot be undone. Do you want to continue?",
+    "reset_dns_body": "DNS settings will be reset to defaults. Do you want to continue?",
+    "uninstall_body": "SplitWire and all components will be removed. This cannot be undone. Do you want to continue?"
+  },
+  "main": {
+    "about": "About",
+    "add_folder": "Add Folder",
+    "alternative_setup": "Alternative Setup",
+    "browser_tunneling": "Include Browsers in Tunneling",
+    "clear_list": "Clear List",
+    "custom_setup": "Custom Setup",
+    "folder_customization": "Customize Folder List",
+    "full_tunnel": "Route All Traffic Through VPN",
+    "generate_config": "Generate Custom Config",
+    "options": "Options",
+    "refresh_timer": "Install WireSock Refresher",
+    "remove_service": "Remove Service",
+    "setup": "Setup",
+    "standard_setup": "Standard Setup"
+  },
+  "repair": {
+    "actions": "Actions",
+    "clean_install_ptb": "Clean Install for Discord PTB",
+    "install_ptb": "Install Discord PTB",
+    "install_webcord": "Install WebCord",
+    "options": "Options",
+    "repair_discord": "Repair Discord",
+    "status": "Status",
+    "webcord_shortcut": "Create WebCord Shortcut"
   }
 }

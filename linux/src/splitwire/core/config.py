@@ -1,31 +1,44 @@
 """
-Configuration manager for SplitWire-Turkey Linux.
+Configuration manager for SplitWire Linux.
 
 Handles application settings using XDG Base Directory specification.
 Config is stored in ~/.config/splitwire/config.json
 """
 
 import json
+import logging
 import os
-from dataclasses import dataclass, field, asdict
-from pathlib import Path
-from typing import Optional, Any
+from dataclasses import asdict, dataclass, field
 from enum import Enum
+from pathlib import Path
 
-from splitwire.core.logger import get_logger
-
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class Theme(Enum):
-    """Application theme."""
+    """Application theme enumeration.
+
+    Attributes:
+        LIGHT: Force light theme.
+        DARK: Force dark theme.
+        SYSTEM: Follow system preference.
+    """
+
     LIGHT = "light"
     DARK = "dark"
     SYSTEM = "system"
 
 
 class Language(Enum):
-    """Supported languages."""
+    """Supported UI languages.
+
+    Attributes:
+        TURKISH: Turkish (tr).
+        ENGLISH: English (en).
+        RUSSIAN: Russian (ru).
+        SPANISH: Spanish (es).
+    """
+
     TURKISH = "tr"
     ENGLISH = "en"
     RUSSIAN = "ru"
@@ -34,7 +47,16 @@ class Language(Enum):
 
 @dataclass
 class DNSConfig:
-    """DNS configuration."""
+    """DNS configuration settings.
+
+    Attributes:
+        enabled: Whether custom DNS is active.
+        primary: Primary DNS server address.
+        secondary: Secondary DNS server address.
+        doh_enabled: Whether DNS-over-HTTPS is active.
+        doh_url: DNS-over-HTTPS endpoint URL.
+    """
+
     enabled: bool = False
     primary: str = "1.1.1.1"
     secondary: str = "1.0.0.1"
@@ -44,25 +66,49 @@ class DNSConfig:
 
 @dataclass
 class WireGuardConfig:
-    """WireGuard/VPN configuration."""
+    """WireGuard VPN configuration settings.
+
+    Attributes:
+        config_path: Path to the WireGuard config file.
+        auto_connect: Connect VPN on application start.
+        split_tunnel_enabled: Route only selected apps.
+        allowed_apps: Apps routed through the VPN tunnel.
+        excluded_apps: Apps excluded from the VPN tunnel.
+        custom_apps: User-added custom application paths.
+        enabled_known_apps: Toggle map for known applications.
+        kill_switch: Block traffic when VPN disconnects.
+        include_browsers: Route browser traffic through VPN.
+        refresh_timer_enabled: Periodically refresh the connection.
+        full_tunnel_mode: True routes all traffic through VPN.
+    """
+
     config_path: str = ""
     auto_connect: bool = False
     split_tunnel_enabled: bool = True
     allowed_apps: list[str] = field(default_factory=list)
     excluded_apps: list[str] = field(default_factory=list)
-    custom_apps: list[str] = field(default_factory=list)  # User-added custom app paths
-    enabled_known_apps: dict[str, bool] = field(default_factory=dict)  # Which known apps are enabled
+    custom_apps: list[str] = field(default_factory=list)
+    enabled_known_apps: dict[str, bool] = field(default_factory=dict)
     kill_switch: bool = False
     include_browsers: bool = False
     refresh_timer_enabled: bool = False
-    full_tunnel_mode: bool = True  # True = all traffic through VPN (default), False = split tunnel
+    full_tunnel_mode: bool = True
 
 
 @dataclass
 class ZapretConfig:
-    """Zapret DPI bypass configuration."""
+    """Zapret packet processing configuration.
+
+    Attributes:
+        enabled: Whether Zapret is active.
+        mode: Processing mode ("nfqws" or "tpws").
+        strategy: Named strategy preset.
+        custom_args: Additional CLI arguments.
+        auto_start: Start Zapret on application launch.
+    """
+
     enabled: bool = False
-    mode: str = "nfqws"  # nfqws or tpws
+    mode: str = "nfqws"
     strategy: str = "default"
     custom_args: str = ""
     auto_start: bool = False
@@ -70,7 +116,16 @@ class ZapretConfig:
 
 @dataclass
 class ByeDPIConfig:
-    """ByeDPI/ciadpi proxy configuration."""
+    """ByeDPI/ciadpi proxy configuration.
+
+    Attributes:
+        enabled: Whether ByeDPI proxy is active.
+        port: Local SOCKS proxy listen port.
+        strategy: DPI evasion strategy name.
+        custom_args: Additional CLI arguments.
+        proxy_apps: Apps routed through the proxy.
+    """
+
     enabled: bool = False
     port: int = 10080
     strategy: str = "disorder"
@@ -80,7 +135,23 @@ class ByeDPIConfig:
 
 @dataclass
 class AppConfig:
-    """Main application configuration."""
+    """Main application configuration container.
+
+    Attributes:
+        theme: UI theme identifier string.
+        language: UI language code string.
+        minimize_to_tray: Minimize to system tray on close.
+        start_minimized: Launch minimized to tray.
+        auto_start: Start application on login.
+        check_updates: Check for updates on launch.
+        dns: DNS configuration section.
+        wireguard: WireGuard VPN configuration section.
+        zapret: Zapret packet processing section.
+        byedpi: ByeDPI proxy configuration section.
+        first_run: True on first application launch.
+        version: Application version string.
+    """
+
     # General
     theme: str = Theme.SYSTEM.value
     language: str = Language.ENGLISH.value
@@ -95,35 +166,37 @@ class AppConfig:
     zapret: ZapretConfig = field(default_factory=ZapretConfig)
     byedpi: ByeDPIConfig = field(default_factory=ByeDPIConfig)
 
-    # State (not saved)
+    # State (not saved)  # noqa: ERA001 -- section header, not dead code
     first_run: bool = True
     version: str = "1.0.0"
 
 
 class ConfigManager:
-    """
-    Manages application configuration.
+    """Manages application configuration via JSON files.
 
     Uses XDG Base Directory specification:
     - Config: ~/.config/splitwire/
     - Data: ~/.local/share/splitwire/
     - Cache: ~/.cache/splitwire/
+
+    Attributes:
+        APP_NAME: Application directory name.
+        CONFIG_FILE: Configuration filename.
     """
 
     APP_NAME = "splitwire"
     CONFIG_FILE = "config.json"
 
-    def __init__(self, config_dir: Optional[Path] = None):
-        """
-        Initialize config manager.
+    def __init__(self, config_dir: Path | None = None) -> None:
+        """Initialize config manager.
 
         Args:
-            config_dir: Override config directory (for testing)
+            config_dir: Override config directory (for testing).
         """
         self._config_dir = config_dir or self._get_xdg_config_dir()
         self._data_dir = self._get_xdg_data_dir()
         self._cache_dir = self._get_xdg_cache_dir()
-        self._config: Optional[AppConfig] = None
+        self._config: AppConfig | None = None
         self._config_file = self._config_dir / self.CONFIG_FILE
 
         # Ensure directories exist
@@ -178,59 +251,78 @@ class ConfigManager:
         return self._config
 
     def load(self) -> AppConfig:
-        """
-        Load configuration from file.
+        """Load configuration from file.
 
         Returns:
-            Loaded configuration (or defaults if file doesn't exist)
+            Loaded AppConfig (or defaults if file missing/corrupt).
+
+        Example:
+            >>> mgr = ConfigManager()
+            >>> cfg = mgr.load()
+            >>> cfg.language
+            'en'
         """
-        _logger.info(f"[CONFIG] Loading config from {self._config_file}")
+        logger.info(f"[CONFIG] Loading config from {self._config_file}")
         if self._config_file.exists():
             try:
-                with open(self._config_file, "r", encoding="utf-8") as f:
+                with open(self._config_file, encoding="utf-8") as f:
                     data = json.load(f)
                 self._config = self._dict_to_config(data)
                 self._config.first_run = False
-                _logger.debug(f"[CONFIG] Config loaded: theme={self._config.theme}, language={self._config.language}")
+                logger.debug(
+                    "[CONFIG] Config loaded: theme=%s, language=%s",
+                    self._config.theme,
+                    self._config.language,
+                )
             except (json.JSONDecodeError, KeyError, TypeError) as e:
                 # Config file corrupted, use defaults
-                _logger.error(f"[CONFIG] Failed to load config (corrupted), using defaults: {e}")
+                logger.error(f"[CONFIG] Failed to load config (corrupted), using defaults: {e}")
                 self._config = AppConfig()
         else:
-            _logger.debug("[CONFIG] Config file not found, using defaults")
+            logger.debug("[CONFIG] Config file not found, using defaults")
             self._config = AppConfig()
 
         return self._config
 
     def save(self) -> bool:
-        """
-        Save configuration to file.
+        """Save configuration to file.
 
         Returns:
-            True if save succeeded
+            True if save succeeded, False on I/O error.
+
+        Example:
+            >>> mgr = ConfigManager()
+            >>> mgr.config.language = "tr"
+            >>> mgr.save()
+            True
         """
         if self._config is None:
             self._config = AppConfig()
 
-        _logger.info(f"[CONFIG] Saving config to {self._config_file}")
+        logger.info(f"[CONFIG] Saving config to {self._config_file}")
         try:
             data = self._config_to_dict(self._config)
             with open(self._config_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
-            _logger.debug("[CONFIG] Config saved successfully")
+            logger.debug("[CONFIG] Config saved successfully")
             return True
-        except Exception as e:
-            _logger.error(f"[CONFIG] Failed to save config: {e}")
+        except (OSError, TypeError, ValueError) as e:
+            logger.error("[CONFIG] Failed to save config: %s", e)
             return False
 
     def reset(self) -> AppConfig:
-        """
-        Reset configuration to defaults.
+        """Reset configuration to defaults and save.
 
         Returns:
-            New default configuration
+            New default AppConfig instance.
+
+        Example:
+            >>> mgr = ConfigManager()
+            >>> cfg = mgr.reset()
+            >>> cfg.first_run
+            True
         """
-        _logger.info("[CONFIG] Resetting config to defaults")
+        logger.info("[CONFIG] Resetting config to defaults")
         self._config = AppConfig()
         self.save()
         return self._config
@@ -279,36 +371,61 @@ class ConfigManager:
     # Convenience methods
 
     def get_wireguard_configs_dir(self) -> Path:
-        """Get directory for WireGuard configuration files."""
+        """Get directory for WireGuard configuration files.
+
+        Returns:
+            Path to the WireGuard configs directory (created if absent).
+        """
         wg_dir = self._data_dir / "wireguard"
         wg_dir.mkdir(parents=True, exist_ok=True)
         return wg_dir
 
     def get_zapret_dir(self) -> Path:
-        """Get directory for Zapret installation."""
+        """Get directory for Zapret installation.
+
+        Returns:
+            Path to the Zapret data directory (created if absent).
+        """
         zapret_dir = self._data_dir / "zapret"
         zapret_dir.mkdir(parents=True, exist_ok=True)
         return zapret_dir
 
     def get_logs_dir(self) -> Path:
-        """Get directory for log files."""
+        """Get directory for log files.
+
+        Returns:
+            Path to the logs directory (created if absent).
+        """
         logs_dir = self._cache_dir / "logs"
         logs_dir.mkdir(parents=True, exist_ok=True)
         return logs_dir
 
     def get_backups_dir(self) -> Path:
-        """Get directory for backup files."""
+        """Get directory for backup files.
+
+        Returns:
+            Path to the backups directory (created if absent).
+        """
         backups_dir = self._data_dir / "backups"
         backups_dir.mkdir(parents=True, exist_ok=True)
         return backups_dir
 
 
 # Global instance for convenience
-_config_manager: Optional[ConfigManager] = None
+_config_manager: ConfigManager | None = None
 
 
 def get_config_manager() -> ConfigManager:
-    """Get the global ConfigManager instance."""
+    """Get the global ConfigManager singleton.
+
+    Returns:
+        The shared ConfigManager instance.
+
+    Example:
+        >>> mgr = get_config_manager()
+        >>> mgr.config.language
+        'en'
+    """
     global _config_manager
     if _config_manager is None:
         _config_manager = ConfigManager()
@@ -316,42 +433,27 @@ def get_config_manager() -> ConfigManager:
 
 
 def get_config() -> AppConfig:
-    """Get the current application configuration."""
+    """Get the current application configuration.
+
+    Returns:
+        The active AppConfig instance.
+
+    Example:
+        >>> cfg = get_config()
+        >>> isinstance(cfg, AppConfig)
+        True
+    """
     return get_config_manager().config
 
 
 def save_config() -> bool:
-    """Save the current configuration."""
+    """Save the current configuration to disk.
+
+    Returns:
+        True if save succeeded, False on error.
+
+    Example:
+        >>> save_config()
+        True
+    """
     return get_config_manager().save()
-
-
-if __name__ == "__main__":
-    # Test the config manager
-    manager = ConfigManager()
-
-    print("=" * 50)
-    print("ConfigManager Test")
-    print("=" * 50)
-    print(f"Config dir: {manager.config_dir}")
-    print(f"Data dir: {manager.data_dir}")
-    print(f"Cache dir: {manager.cache_dir}")
-    print(f"Config file: {manager._config_file}")
-
-    # Load config
-    config = manager.load()
-    print(f"\nLoaded config:")
-    print(f"  Theme: {config.theme}")
-    print(f"  Language: {config.language}")
-    print(f"  First run: {config.first_run}")
-    print(f"  DNS enabled: {config.dns.enabled}")
-    print(f"  WireGuard split tunnel: {config.wireguard.split_tunnel_enabled}")
-
-    # Modify and save
-    config.theme = Theme.DARK.value
-    manager.save()
-    print("\nConfig saved!")
-
-    # Reload to verify
-    manager2 = ConfigManager()
-    config2 = manager2.load()
-    print(f"Reloaded theme: {config2.theme}")

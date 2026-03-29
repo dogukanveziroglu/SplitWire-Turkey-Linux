@@ -20,6 +20,7 @@ from splitwire.services.split_tunnel import (
     BROWSER_APPS,
     CGPROXY_CONFIG_FILE,
 )
+from splitwire.services.split_tunnel.service import build_app_list
 from splitwire.services.base import ServiceStatus, ServiceType
 
 
@@ -114,8 +115,8 @@ class TestSplitTunnelService:
             mock_logger.return_value = MagicMock()
             with patch('splitwire.services.split_tunnel.get_shell') as mock_shell:
                 mock_shell.return_value = MagicMock()
-                with patch('splitwire.services.split_tunnel.LOCAL_CONFIG_DIR', Path(tempfile.mkdtemp())):
-                    with patch('splitwire.services.split_tunnel.APPS_CONFIG_FILE', Path(tempfile.mktemp())):
+                with patch('splitwire.services.split_tunnel.service.LOCAL_CONFIG_DIR', Path(tempfile.mkdtemp())):
+                    with patch('splitwire.services.split_tunnel.service.APPS_CONFIG_FILE', Path(tempfile.mktemp())):
                         service = SplitTunnelService()
                         return service
 
@@ -153,14 +154,14 @@ class TestSplitTunnelService:
     def test_build_app_list_with_browsers(self, service):
         """Test building app list with browsers included."""
         with patch.object(Path, 'exists', return_value=True):
-            apps = service._build_app_list(["discord"], include_browsers=True)
+            apps = build_app_list(["discord"], include_browsers=True)
             app_names = [app.name for app in apps]
             assert "discord" in app_names
 
     def test_build_app_list_discord_default(self, service):
         """Test Discord is always added by default if available."""
         with patch.object(Path, 'exists', return_value=True):
-            apps = service._build_app_list([], include_browsers=False)
+            apps = build_app_list([], include_browsers=False)
             app_names = [app.name for app in apps]
             assert "discord" in app_names
 

@@ -1,11 +1,11 @@
 """
-SplitWire-Turkey Linux
+SplitWire Linux
 
-Network restriction bypass tool for Ubuntu/Linux.
+Privacy-focused network routing tool for Ubuntu/Linux.
 
 This package provides:
 - WireGuard VPN with split tunneling (via cgproxy)
-- Zapret DPI bypass (nfqws/tpws)
+- Zapret packet processing (nfqws/tpws)
 - ByeDPI/ciadpi proxy
 - DNS management with DoH support
 """
@@ -19,10 +19,18 @@ VERSION_INFO = (1, 0, 0)
 
 
 def get_version() -> str:
-    """Get version string."""
+    """Get the application version string.
+
+    Returns:
+        Semantic version string (e.g. "1.0.0").
+    """
     return __version__
 
 
 def get_version_info() -> tuple[int, int, int]:
-    """Get version as tuple."""
+    """Get the application version as a numeric tuple.
+
+    Returns:
+        Tuple of (major, minor, patch) integers.
+    """
     return VERSION_INFO

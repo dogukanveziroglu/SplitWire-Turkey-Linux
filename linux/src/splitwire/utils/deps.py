@@ -5,20 +5,25 @@ Checks for required system packages and Python dependencies,
 and provides installation commands/automation.
 """
 
+import logging
 import subprocess
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Optional
 
-from splitwire.core.logger import get_logger
-
-_logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class DependencyStatus(Enum):
-    """Status of a dependency."""
+    """Status of a checked dependency.
+
+    Attributes:
+        INSTALLED: Dependency is present and working.
+        MISSING: Dependency is not installed.
+        OUTDATED: Dependency needs an update.
+        UNKNOWN: Status could not be determined.
+    """
+
     INSTALLED = "installed"
     MISSING = "missing"
     OUTDATED = "outdated"
@@ -26,7 +31,15 @@ class DependencyStatus(Enum):
 
 
 class PackageManager(Enum):
-    """Available package managers."""
+    """Available system package managers.
+
+    Attributes:
+        APT: Debian/Ubuntu apt.
+        SNAP: Snap package manager.
+        FLATPAK: Flatpak package manager.
+        PIP: Python pip.
+    """
+
     APT = "apt"
     SNAP = "snap"
     FLATPAK = "flatpak"
@@ -35,9 +48,21 @@ class PackageManager(Enum):
 
 @dataclass
 class Dependency:
-    """Represents a system or Python dependency."""
+    """Represents a system or Python dependency.
+
+    Attributes:
+        name: Human-readable dependency name.
+        package_name: Package manager package name.
+        description: Short description of what it provides.
+        required: Whether the app needs this to function.
+        status: Current installation status.
+        version: Detected version string (if known).
+        check_command: Command to verify installation.
+        install_command: Command to install the package.
+    """
+
     name: str
-    package_name: str  # apt package name
+    package_name: str
     description: str
     required: bool = True
     status: DependencyStatus = DependencyStatus.UNKNOWN
@@ -46,6 +71,11 @@ class Dependency:
     install_command: list[str] = field(default_factory=list)
 
     def __str__(self) -> str:
+        """Return a formatted status string for display.
+
+        Returns:
+            Status icon, required flag, name, and description.
+        """
         status_icon = {
             DependencyStatus.INSTALLED: "[OK]",
             DependencyStatus.MISSING: "[!!]",
@@ -78,16 +108,23 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         package_name="gir1.2-gtk-4.0",
         description="GTK4 GObject introspection",
         required=True,
-        check_command=["python3", "-c", "import gi; gi.require_version('Gtk', '4.0'); from gi.repository import Gtk"],
+        check_command=[
+            "python3",
+            "-c",
+            "import gi; gi.require_version('Gtk', '4.0'); from gi.repository import Gtk",
+        ],
     ),
     Dependency(
         name="Libadwaita",
         package_name="gir1.2-adw-1",
         description="Libadwaita for GNOME styling",
         required=True,
-        check_command=["python3", "-c", "import gi; gi.require_version('Adw', '1'); from gi.repository import Adw"],
+        check_command=[
+            "python3",
+            "-c",
+            "import gi; gi.require_version('Adw', '1'); from gi.repository import Adw",
+        ],
     ),
-
     # WireGuard
     Dependency(
         name="wireguard-tools",
@@ -96,7 +133,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=True,
         check_command=["which", "wg-quick"],
     ),
-
     # Zapret dependencies
     Dependency(
         name="libnetfilter-queue-dev",
@@ -112,7 +148,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=True,
         check_command=["which", "iptables"],
     ),
-
     # cgroups for app-based routing
     Dependency(
         name="cgroup-tools",
@@ -121,7 +156,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=False,  # Optional, for advanced features
         check_command=["which", "cgcreate"],
     ),
-
     # General utilities
     Dependency(
         name="curl",
@@ -144,7 +178,6 @@ SYSTEM_DEPENDENCIES: list[Dependency] = [
         required=True,
         check_command=["which", "git"],
     ),
-
     # Polkit for GUI privilege elevation
     Dependency(
         name="policykit-1",
@@ -176,28 +209,39 @@ PYTHON_DEPENDENCIES: list[Dependency] = [
 
 
 class DependencyChecker:
-    """Checks and manages system and Python dependencies."""
+    """Checks and manages system and Python dependencies.
 
-    def __init__(self):
+    Attributes:
+        system_deps: List of system-level dependencies.
+        python_deps: List of Python package dependencies.
+    """
+
+    # Timeout constants (seconds)
+    TIMEOUT_CHECK_COMMAND = 10  # dependency check commands
+    TIMEOUT_APT_UPDATE = 120  # apt update
+    TIMEOUT_APT_INSTALL = 300  # apt install (interactive, may be slow)
+    TIMEOUT_PIP_INSTALL = 120  # pip install
+
+    def __init__(self) -> None:
+        """Initialize checker with copies of dependency lists."""
         self.system_deps = [Dependency(**d.__dict__) for d in SYSTEM_DEPENDENCIES]
         self.python_deps = [Dependency(**d.__dict__) for d in PYTHON_DEPENDENCIES]
-        self._apt_available: Optional[bool] = None
+        self._apt_available: bool | None = None
 
-    def _run_command(self, cmd: list[str], timeout: int = 10) -> tuple[int, str, str]:
+    def _run_command(
+        self,
+        cmd: list[str],
+        timeout: int = TIMEOUT_CHECK_COMMAND,
+    ) -> tuple[int, str, str]:
         """Run a command and return (returncode, stdout, stderr)."""
         try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             return result.returncode, result.stdout.strip(), result.stderr.strip()
         except subprocess.TimeoutExpired:
             return -1, "", "Command timed out"
         except FileNotFoundError:
             return -1, "", "Command not found"
-        except Exception as e:
+        except OSError as e:
             return -1, "", str(e)
 
     def _is_apt_available(self) -> bool:
@@ -208,179 +252,193 @@ class DependencyChecker:
         return self._apt_available
 
     def check_all(self) -> tuple[list[Dependency], list[Dependency]]:
-        """
-        Check all dependencies.
+        """Check all system and Python dependencies.
 
         Returns:
-            Tuple of (system_deps, python_deps) with updated status
+            Tuple of (system_deps, python_deps) with updated status.
+
+        Example:
+            >>> checker = DependencyChecker()
+            >>> sys_deps, py_deps = checker.check_all()
+            >>> isinstance(sys_deps, list)
+            True
         """
         self.check_system_dependencies()
         self.check_python_dependencies()
         return self.system_deps, self.python_deps
 
     def check_system_dependencies(self) -> list[Dependency]:
-        """Check all system dependencies."""
-        _logger.info("[DEPS] Checking system dependencies...")
+        """Check all system dependencies and update their status.
+
+        Returns:
+            List of system dependencies with updated status.
+        """
+        logger.info("[DEPS] Checking system dependencies...")
         for dep in self.system_deps:
             if dep.check_command:
                 code, _, _ = self._run_command(dep.check_command)
-                dep.status = (
-                    DependencyStatus.INSTALLED if code == 0
-                    else DependencyStatus.MISSING
-                )
+                dep.status = DependencyStatus.INSTALLED if code == 0 else DependencyStatus.MISSING
                 status_str = "installed" if dep.status == DependencyStatus.INSTALLED else "missing"
-                _logger.debug(f"[DEPS] {dep.name}: {status_str}")
+                logger.debug(f"[DEPS] {dep.name}: {status_str}")
             else:
                 dep.status = DependencyStatus.UNKNOWN
 
         missing = [d.name for d in self.system_deps if d.status == DependencyStatus.MISSING]
         if missing:
-            _logger.warning(f"[DEPS] Missing system packages: {', '.join(missing)}")
+            logger.warning(f"[DEPS] Missing system packages: {', '.join(missing)}")
         else:
-            _logger.debug("[DEPS] All system dependencies satisfied")
+            logger.debug("[DEPS] All system dependencies satisfied")
         return self.system_deps
 
     def check_python_dependencies(self) -> list[Dependency]:
-        """Check all Python dependencies."""
-        _logger.info("[DEPS] Checking Python dependencies...")
+        """Check all Python dependencies and update their status.
+
+        Returns:
+            List of Python dependencies with updated status.
+        """
+        logger.info("[DEPS] Checking Python dependencies...")
         for dep in self.python_deps:
             if dep.check_command:
                 code, _, _ = self._run_command(dep.check_command)
-                dep.status = (
-                    DependencyStatus.INSTALLED if code == 0
-                    else DependencyStatus.MISSING
-                )
+                dep.status = DependencyStatus.INSTALLED if code == 0 else DependencyStatus.MISSING
                 status_str = "installed" if dep.status == DependencyStatus.INSTALLED else "missing"
-                _logger.debug(f"[DEPS] {dep.name}: {status_str}")
+                logger.debug(f"[DEPS] {dep.name}: {status_str}")
             else:
                 dep.status = DependencyStatus.UNKNOWN
 
         missing = [d.name for d in self.python_deps if d.status == DependencyStatus.MISSING]
         if missing:
-            _logger.warning(f"[DEPS] Missing Python packages: {', '.join(missing)}")
+            logger.warning(f"[DEPS] Missing Python packages: {', '.join(missing)}")
         else:
-            _logger.debug("[DEPS] All Python dependencies satisfied")
+            logger.debug("[DEPS] All Python dependencies satisfied")
         return self.python_deps
 
     def get_missing_system_deps(self) -> list[Dependency]:
-        """Get list of missing system dependencies."""
+        """Get list of missing system dependencies.
+
+        Returns:
+            Dependencies with MISSING status.
+        """
         return [d for d in self.system_deps if d.status == DependencyStatus.MISSING]
 
     def get_missing_python_deps(self) -> list[Dependency]:
-        """Get list of missing Python dependencies."""
+        """Get list of missing Python dependencies.
+
+        Returns:
+            Dependencies with MISSING status.
+        """
         return [d for d in self.python_deps if d.status == DependencyStatus.MISSING]
 
     def get_missing_required_deps(self) -> list[Dependency]:
-        """Get list of missing required dependencies (both system and Python)."""
+        """Get all missing required dependencies.
+
+        Returns:
+            Combined system and Python deps that are required
+            but have MISSING status.
+        """
         missing = []
-        missing.extend([d for d in self.system_deps if d.status == DependencyStatus.MISSING and d.required])
-        missing.extend([d for d in self.python_deps if d.status == DependencyStatus.MISSING and d.required])
+        missing.extend(
+            [d for d in self.system_deps if d.status == DependencyStatus.MISSING and d.required]
+        )
+        missing.extend(
+            [d for d in self.python_deps if d.status == DependencyStatus.MISSING and d.required]
+        )
         return missing
 
     def get_apt_install_command(self) -> list[str]:
-        """Get the apt install command for missing system dependencies."""
+        """Get the apt install command for missing system packages.
+
+        Returns:
+            Command list for ``sudo apt install``, or empty list.
+        """
         missing = self.get_missing_system_deps()
         if not missing:
             return []
 
         packages = [d.package_name for d in missing]
-        return ["sudo", "apt", "install", "-y"] + packages
+        return ["sudo", "apt", "install", "-y", *packages]
 
     def get_pip_install_command(self) -> list[str]:
-        """Get the pip install command for missing Python dependencies."""
+        """Get the pip install command for missing Python packages.
+
+        Returns:
+            Command list for ``pip install``, or empty list.
+        """
         missing = self.get_missing_python_deps()
         if not missing:
             return []
 
         packages = [d.package_name for d in missing]
-        return [sys.executable, "-m", "pip", "install"] + packages
+        return [sys.executable, "-m", "pip", "install", *packages]
 
     def install_system_dependencies(self, interactive: bool = True) -> bool:
-        """
-        Install missing system dependencies using apt.
+        """Install missing system dependencies using apt.
 
         Args:
-            interactive: If True, asks for confirmation
+            interactive: If True, asks for confirmation.
 
         Returns:
-            True if installation succeeded or nothing to install
+            True if installation succeeded or nothing to install.
         """
         missing = self.get_missing_system_deps()
         if not missing:
-            _logger.debug("[DEPS] No missing system dependencies to install")
+            logger.debug("[DEPS] No missing system dependencies to install")
             return True
 
         if not self._is_apt_available():
-            _logger.error("[DEPS] apt package manager not available")
-            print("Error: apt package manager not available")
+            logger.error("[DEPS] apt package manager not available")
             return False
 
         packages = [d.package_name for d in missing]
-        _logger.info(f"[DEPS] Installing system packages: {', '.join(packages)}")
-        print(f"Missing system packages: {', '.join(packages)}")
+        logger.info("[DEPS] Installing system packages: %s", ", ".join(packages))
 
-        if interactive:
-            response = input("Install missing packages? [Y/n]: ").strip().lower()
-            if response and response != 'y':
-                _logger.info("[DEPS] User cancelled installation")
-                return False
-
-        cmd = ["sudo", "apt", "update"]
-        _logger.debug(f"[DEPS] Running: {' '.join(cmd)}")
-        print(f"Running: {' '.join(cmd)}")
-        code, _, _ = self._run_command(cmd, timeout=120)
-        if code != 0:
-            _logger.warning("[DEPS] apt update failed, continuing anyway...")
-            print("Warning: apt update failed, continuing anyway...")
-
-        cmd = ["sudo", "apt", "install", "-y"] + packages
-        _logger.debug(f"[DEPS] Running: {' '.join(cmd)}")
-        print(f"Running: {' '.join(cmd)}")
-
-        # For installation, we need to run interactively
-        try:
-            result = subprocess.run(cmd, timeout=300)
-            if result.returncode == 0:
-                _logger.info("[DEPS] System packages installed successfully")
-            else:
-                _logger.error(f"[DEPS] Package installation failed with code {result.returncode}")
-            return result.returncode == 0
-        except Exception as e:
-            _logger.error(f"[DEPS] Error installing packages: {e}")
-            print(f"Error installing packages: {e}")
+        if interactive and not self._confirm_install():
             return False
 
+        return self._run_apt_update_and_install(packages)
+
+    def _confirm_install(self) -> bool:
+        """Prompt for confirmation, returning True if user agrees."""
+        response = input("Install missing packages? [Y/n]: ").strip().lower()
+        if response and response != "y":
+            logger.info("[DEPS] User cancelled installation")
+            return False
+        return True
+
+    def _run_apt_update_and_install(self, packages: list[str]) -> bool:
+        """Run apt update then apt install for the given packages."""
+        cmd = ["sudo", "apt", "update"]
+        logger.debug("[DEPS] Running: %s", " ".join(cmd))
+        code, _, _ = self._run_command(cmd, timeout=self.TIMEOUT_APT_UPDATE)
+        if code != 0:
+            logger.warning("[DEPS] apt update failed, continuing anyway...")
+
+        from .deps_install import _run_apt_install
+
+        return _run_apt_install(packages, self.TIMEOUT_APT_INSTALL)
+
     def install_python_dependencies(self, interactive: bool = True) -> bool:
-        """
-        Install missing Python dependencies using pip.
+        """Install missing Python dependencies using pip.
 
         Args:
-            interactive: If True, asks for confirmation
+            interactive: If True, asks for confirmation.
 
         Returns:
-            True if installation succeeded or nothing to install
+            True if installation succeeded or nothing to install.
         """
         missing = self.get_missing_python_deps()
         if not missing:
             return True
 
         packages = [d.package_name for d in missing]
-        print(f"Missing Python packages: {', '.join(packages)}")
+        logger.info("[DEPS] Missing Python packages: %s", ", ".join(packages))
 
-        if interactive:
-            response = input("Install missing packages? [Y/n]: ").strip().lower()
-            if response and response != 'y':
-                return False
-
-        cmd = [sys.executable, "-m", "pip", "install"] + packages
-        print(f"Running: {' '.join(cmd)}")
-
-        try:
-            result = subprocess.run(cmd, timeout=120)
-            return result.returncode == 0
-        except Exception as e:
-            print(f"Error installing packages: {e}")
+        if interactive and not self._confirm_install():
             return False
+
+        from .deps_install import _run_pip_install
+
+        return _run_pip_install(packages, self.TIMEOUT_PIP_INSTALL)
 
     def check_python_version(self) -> tuple[bool, str]:
         """
@@ -398,92 +456,43 @@ class DependencyChecker:
 
 
 def check_dependencies() -> tuple[list[Dependency], list[Dependency]]:
-    """Check all dependencies (convenience function)."""
+    """Check all dependencies and return their status.
+
+    Returns:
+        Tuple of (system_deps, python_deps) with updated status.
+    """
     checker = DependencyChecker()
     return checker.check_all()
 
 
-def print_dependency_status(system_deps: list[Dependency], python_deps: list[Dependency]) -> None:
-    """Print dependency status in a formatted way."""
-    print("=" * 50)
-    print("SplitWire-Turkey Dependency Check")
-    print("=" * 50)
+def print_dependency_status(
+    system_deps: list[Dependency],
+    python_deps: list[Dependency],
+) -> None:
+    """Log dependency status in a formatted table.
 
-    print("\nSystem Dependencies:")
-    print("-" * 40)
-    for dep in system_deps:
-        print(f"  {dep}")
+    Delegates to deps_install module.
 
-    print("\nPython Dependencies:")
-    print("-" * 40)
-    for dep in python_deps:
-        print(f"  {dep}")
+    Args:
+        system_deps: System dependencies with checked status.
+        python_deps: Python dependencies with checked status.
+    """
+    from .deps_install import print_dependency_status as _print_status
 
-    # Summary
-    missing_sys = [d for d in system_deps if d.status == DependencyStatus.MISSING]
-    missing_py = [d for d in python_deps if d.status == DependencyStatus.MISSING]
-
-    print("\n" + "=" * 50)
-    if not missing_sys and not missing_py:
-        print("All dependencies are installed!")
-    else:
-        if missing_sys:
-            print(f"Missing system packages: {len(missing_sys)}")
-            print(f"  Install with: sudo apt install {' '.join(d.package_name for d in missing_sys)}")
-        if missing_py:
-            print(f"Missing Python packages: {len(missing_py)}")
-            print(f"  Install with: pip install {' '.join(d.package_name for d in missing_py)}")
-    print("=" * 50)
+    _print_status(system_deps, python_deps)
 
 
 def install_all_dependencies(interactive: bool = True) -> bool:
-    """
-    Check and install all missing dependencies.
+    """Check and install all missing dependencies.
+
+    Delegates to deps_install module.
 
     Args:
-        interactive: If True, asks for confirmation before installing
+        interactive: If True, asks for confirmation before installing.
 
     Returns:
-        True if all dependencies are satisfied
+        True if all dependencies are satisfied.
     """
-    checker = DependencyChecker()
-    checker.check_all()
+    from .deps_install import install_all_dependencies as _install_all
 
-    # Check Python version first
-    compatible, msg = checker.check_python_version()
-    print(msg)
-    if not compatible:
-        return False
-
-    # Print current status
-    print_dependency_status(checker.system_deps, checker.python_deps)
-
-    # Install missing
-    if checker.get_missing_system_deps():
-        if not checker.install_system_dependencies(interactive):
-            print("Failed to install system dependencies")
-            return False
-        # Re-check
-        checker.check_system_dependencies()
-
-    if checker.get_missing_python_deps():
-        if not checker.install_python_dependencies(interactive):
-            print("Failed to install Python dependencies")
-            return False
-        # Re-check
-        checker.check_python_dependencies()
-
-    # Final check
-    missing = checker.get_missing_required_deps()
-    if missing:
-        print(f"\nStill missing required dependencies: {', '.join(d.name for d in missing)}")
-        return False
-
-    print("\nAll dependencies satisfied!")
-    return True
-
-
-if __name__ == "__main__":
-    # Test the dependency checker
-    system_deps, python_deps = check_dependencies()
-    print_dependency_status(system_deps, python_deps)
+    return _install_all(interactive)

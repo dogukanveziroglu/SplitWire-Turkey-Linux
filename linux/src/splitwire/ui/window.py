@@ -5,25 +5,28 @@ The main application window with navigation and all pages.
 """
 
 import gi
-gi.require_version('Gtk', '4.0')
-gi.require_version('Adw', '1')
 
-from gi.repository import Gtk, Adw, Gio, GLib, GdkPixbuf
-from typing import Optional, Dict, Callable
-import os
+gi.require_version("Gtk", "4.0")
+gi.require_version("Adw", "1")
 
-from splitwire.core import get_text, get_logger
+
+import logging
+
+from gi.repository import Adw, Gio, GLib, Gtk
+
+from splitwire.core import get_text
 
 
 class SplitWireWindow(Adw.ApplicationWindow):
     """Main window for SplitWire-Turkey application."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: object) -> None:
+        """Initialize the main application window and build the UI."""
         super().__init__(**kwargs)
 
-        self._logger = get_logger()
-        self._pages: Dict[str, Gtk.Widget] = {}
-        self._current_page: Optional[str] = None
+        self._logger = logging.getLogger(__name__)
+        self._pages: dict[str, Gtk.Widget] = {}
+        self._current_page: str | None = None
 
         # Setup window properties
         self.set_title("SplitWire-Turkey")
@@ -36,7 +39,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         # Load initial page
         GLib.idle_add(self._on_page_selected, "main")
 
-    def _build_ui(self):
+    def _build_ui(self) -> None:
         """Build the main UI structure."""
         # Main box
         main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -67,7 +70,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         # Status bar
         self._build_status_bar(content_box)
 
-    def _build_header(self, parent: Gtk.Box):
+    def _build_header(self, parent: Gtk.Box) -> None:
         """Build the header with logo and controls."""
         header_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
@@ -95,7 +98,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._init_theme_toggle()
         # Use notify::active instead of state-set for reliable toggle handling
         self._theme_toggle.connect("notify::active", self._on_theme_toggled)
-        
+
         theme_box = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
             spacing=8,
@@ -162,7 +165,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._build_language_menu()
         controls_box.append(self._lang_button)
 
-    def _build_language_menu(self):
+    def _build_language_menu(self) -> None:
         """Build the language selection menu."""
         menu = Gio.Menu()
         menu.append("Türkçe", "win.set-language::tr")
@@ -177,7 +180,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         action.connect("activate", self._on_language_selected)
         self.add_action(action)
 
-    def _build_navigation(self, parent: Gtk.Box):
+    def _build_navigation(self, parent: Gtk.Box) -> None:
         """Build the navigation tabs."""
         # ViewSwitcher for navigation
         self._view_switcher = Adw.ViewSwitcher(
@@ -187,7 +190,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         )
         parent.append(self._view_switcher)
 
-    def _build_content_stack(self, parent: Gtk.Box):
+    def _build_content_stack(self, parent: Gtk.Box) -> None:
         """Build the content stack for pages."""
         # Scrolled window for content
         scrolled = Gtk.ScrolledWindow(
@@ -206,61 +209,36 @@ class SplitWireWindow(Adw.ApplicationWindow):
         # Add pages
         self._add_pages()
 
-    def _add_pages(self):
+    def _add_pages(self) -> None:
         """Add all pages to the stack."""
         # Import pages here to avoid circular imports
-        from splitwire.ui.pages.main_page import MainPage
-        from splitwire.ui.pages.byedpi_page import ByeDPIPage
-        # Zapret/GoodbyeDPI disabled - doesn't work against Turkish ISP deep packet inspection
-        # from splitwire.ui.pages.zapret_page import ZapretPage
-        # from splitwire.ui.pages.goodbyedpi_page import GoodbyeDPIPage
-        from splitwire.ui.pages.repair_page import RepairPage
         from splitwire.ui.pages.advanced_page import AdvancedPage
+        from splitwire.ui.pages.byedpi_page import ByeDPIPage
+        from splitwire.ui.pages.main_page import MainPage
+        from splitwire.ui.pages.repair_page import RepairPage
         from splitwire.ui.pages.settings_page import SettingsPage
 
         # Main page (WireGuard)
         main_page = MainPage(window=self)
         self._stack.add_titled_with_icon(
-            main_page,
-            "main",
-            get_text("tabs", "main") or "Ana Sayfa",
-            "go-home-symbolic"
+            main_page, "main", get_text("tabs", "main"), "go-home-symbolic"
         )
         self._pages["main"] = main_page
 
         # ByeDPI page
         byedpi_page = ByeDPIPage(window=self)
         self._stack.add_titled_with_icon(
-            byedpi_page,
-            "byedpi",
-            "ByeDPI",
-            "network-transmit-receive-symbolic"
+            byedpi_page, "byedpi", "ByeDPI", "network-transmit-receive-symbolic"
         )
         self._pages["byedpi"] = byedpi_page
-
-        # Zapret/GoodbyeDPI pages disabled - doesn't work against Turkish ISP
-        # Turkish ISPs use aggressive deep packet inspection that defeats these methods
-        # Keeping code for potential future use (other countries)
-        #
-        # zapret_page = ZapretPage(window=self)
-        # self._stack.add_titled_with_icon(
-        #     zapret_page, "zapret", "Zapret", "security-high-symbolic"
-        # )
-        # self._pages["zapret"] = zapret_page
-        #
-        # goodbyedpi_page = GoodbyeDPIPage(window=self)
-        # self._stack.add_titled_with_icon(
-        #     goodbyedpi_page, "goodbyedpi", "GoodbyeDPI", "security-medium-symbolic"
-        # )
-        # self._pages["goodbyedpi"] = goodbyedpi_page
 
         # Repair page (Discord)
         repair_page = RepairPage(window=self)
         self._stack.add_titled_with_icon(
             repair_page,
             "repair",
-            get_text("tabs", "repair") or "Onarım",
-            "applications-games-symbolic"
+            get_text("tabs", "repair"),
+            "applications-games-symbolic",
         )
         self._pages["repair"] = repair_page
 
@@ -269,8 +247,8 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._stack.add_titled_with_icon(
             advanced_page,
             "advanced",
-            get_text("tabs", "advanced") or "Gelişmiş",
-            "applications-system-symbolic"
+            get_text("tabs", "advanced"),
+            "applications-system-symbolic",
         )
         self._pages["advanced"] = advanced_page
 
@@ -279,12 +257,12 @@ class SplitWireWindow(Adw.ApplicationWindow):
         self._stack.add_titled_with_icon(
             settings_page,
             "settings",
-            get_text("tabs", "settings") or "Ayarlar",
-            "preferences-system-symbolic"
+            get_text("tabs", "settings"),
+            "preferences-system-symbolic",
         )
         self._pages["settings"] = settings_page
 
-    def _build_status_bar(self, parent: Gtk.Box):
+    def _build_status_bar(self, parent: Gtk.Box) -> None:
         """Build the status bar at the bottom."""
         status_bar = Gtk.Box(
             orientation=Gtk.Orientation.HORIZONTAL,
@@ -311,19 +289,20 @@ class SplitWireWindow(Adw.ApplicationWindow):
         )
         status_bar.append(version_label)
 
-    def _on_page_selected(self, page_name: str):
+    def _on_page_selected(self, page_name: str) -> None:
         """Handle page selection."""
         self._current_page = page_name
         self._stack.set_visible_child_name(page_name)
 
         # Refresh page if it has a refresh method
         page = self._pages.get(page_name)
-        if page and hasattr(page, 'refresh'):
+        if page and hasattr(page, "refresh"):
             page.refresh()
 
-    def _init_theme_toggle(self):
+    def _init_theme_toggle(self) -> None:
         """Initialize theme toggle state from config."""
         from splitwire.core import get_config_manager
+
         try:
             config = get_config_manager().load()
             # Switch ON = dark mode
@@ -332,7 +311,7 @@ class SplitWireWindow(Adw.ApplicationWindow):
         except Exception:
             pass
 
-    def _on_theme_toggled(self, switch: Gtk.Switch, pspec) -> None:
+    def _on_theme_toggled(self, switch: Gtk.Switch, _pspec: object) -> None:
         """Handle theme toggle."""
         app = self.get_application()
         if app:
@@ -340,34 +319,34 @@ class SplitWireWindow(Adw.ApplicationWindow):
             theme = "dark" if is_active else "light"
             app.set_theme(theme)
 
-    def _on_language_selected(self, action, param):
+    def _on_language_selected(self, action: object, param: object) -> None:
         """Handle language selection."""
         language = param.get_string()
         app = self.get_application()
         if app:
             app.set_language(language)
 
-    def _on_about_clicked(self, button):
+    def _on_about_clicked(self, button: object) -> None:
         """Handle about button click."""
         app = self.get_application()
         if app:
             app.on_about(None, None)
 
-    def navigate_to_settings(self):
+    def navigate_to_settings(self) -> None:
         """Navigate to settings page."""
         self._stack.set_visible_child_name("settings")
 
-    def refresh_translations(self):
+    def refresh_translations(self) -> None:
         """Refresh all UI translations."""
         # Refresh each page
         for page in self._pages.values():
-            if hasattr(page, 'refresh_translations'):
+            if hasattr(page, "refresh_translations"):
                 page.refresh_translations()
 
         # Update window title
         self.set_title("SplitWire-Turkey")
 
-    def show_toast(self, message: str, timeout: int = 3):
+    def show_toast(self, message: str, timeout: int = 3) -> None:
         """Show a toast notification."""
         toast = Adw.Toast(
             title=message,
@@ -375,10 +354,10 @@ class SplitWireWindow(Adw.ApplicationWindow):
         )
         self._toast_overlay.add_toast(toast)
 
-    def set_status(self, message: str):
+    def set_status(self, message: str) -> None:
         """Set the status bar message."""
         self._status_label.set_label(message)
 
-    def get_page(self, name: str) -> Optional[Gtk.Widget]:
+    def get_page(self, name: str) -> Gtk.Widget | None:
         """Get a page by name."""
         return self._pages.get(name)

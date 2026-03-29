@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=SplitWire Turkey
+Comment=Privacy-focused network routing tool for Linux
+Exec=/home/dogukan/Desktop/Projects/Linux-Splitwire/Projects/linux/splitwire-launcher.sh
+Icon=/home/dogukan/Desktop/Projects/Linux-Splitwire/Projects/linux/data/icons/hicolor/scalable/apps/com.splitwire.turkey.svg
+Terminal=false
+Categories=Network;Utility;
+StartupNotify=true
